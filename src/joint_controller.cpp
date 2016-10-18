@@ -39,19 +39,33 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
   }
 
   ROS_INFO("Loaded joint names:");
-  for(int i = 0; i < joint_names_.size(); i++) // initialize the joint controllers. Expecting one set of PID gains per actuated joint
+  for(int i = 0; i < joint_names_.size(); i++) // initialize the position joint controllers. Expecting one set of PID gains per actuated joint
   {
     ROS_INFO("%s", joint_names_[i].c_str());
-    if(!n.hasParam("controller_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+    if(!n.hasParam("position_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
     {
-      ROS_ERROR("Joint controller expects controller gains for joint %s (%s/controller_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (%s/position_loop_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
       return false;
     }
 
     // create a controller instance and give it a unique namespace for setting the controller gains
-    joint_controllers_.push_back(new control_toolbox::Pid());
+    position_joint_controllers_.push_back(new control_toolbox::Pid());
     time_of_last_cycle_.push_back(robot_->getTime());
-    joint_controllers_[i]->init(ros::NodeHandle(n, "controller_gains/" + joint_names_[i]));
+    position_joint_controllers_[i]->init(ros::NodeHandle(n, "position_loop_gains/" + joint_names_[i]));
+  }
+
+  for(int i = 0; i < joint_names_.size(); i++) // initialize the velocity joint controllers. Expecting one set of PID gains per actuated joint
+  {
+    if(!n.hasParam("velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+    {
+      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (%s/velocity_loop_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
+      return false;
+    }
+
+    // create a controller instance and give it a unique namespace for setting the controller gains
+    velocity_joint_controllers_.push_back(new control_toolbox::Pid());
+    time_of_last_cycle_.push_back(robot_->getTime());
+    velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "velocity_loop_gains/" + joint_names_[i]));
   }
 
   action_server_ = new actionlib::SimpleActionServer<pr2_controller::PR2JointCommandAction>(n, action_name_, false);
@@ -159,9 +173,10 @@ void JointController::preemptCB()
 /// Controller startup in realtime
 void JointController::starting()
 {
-  for(int i = 0; i < joint_controllers_.size(); i++)
+  for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
-    joint_controllers_[i]->reset();
+    position_joint_controllers_[i]->reset();
+    velocity_joint_controllers_[i]->reset();
     time_of_last_cycle_[i] = robot_->getTime();
   }
 }
@@ -172,12 +187,16 @@ void JointController::update()
   ros::Duration dt;
   pr2_mechanism_model::JointState *joint_state;
   double current_position = 0.0;
+  double current_velocity = 0.0;
   double desired_position = 0.0;
+  double desired_velocity = 0.0;
+  double position_error = 0.0;
+  double velocity_error = 0.0;
 
   boost::mutex::scoped_lock lock(reference_mutex_, boost::try_to_lock); // If no lock is obtained, this means the controller is updating references and we will set the control to the current position
   if (lock && action_server_->isActive())
   {
-    for (int i = 0; i < joint_controllers_.size(); i++)
+    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
     {
       joint_state = robot_->getJointState(joint_names_[i]);
       if(!joint_state)
@@ -185,11 +204,18 @@ void JointController::update()
         ROS_ERROR("Failed to get joint state in joint controller update loop!! This should NEVER happen");
         break;
       }
+      dt = robot_->getTime() - time_of_last_cycle_[i];
 
       current_position = joint_state->position_;
       desired_position = getReferencePosition(joint_names_[i]);
-      dt = robot_->getTime() - time_of_last_cycle_[i];
-      joint_state->commanded_effort_ = joint_controllers_[i]->computeCommand(current_position - desired_position, dt);
+      position_error = desired_position - current_position;
+
+      current_velocity = joint_state->velocity_;
+      desired_velocity = getReferenceVelocity(joint_names_[i]) + position_joint_controllers_[i]->computeCommand(position_error, dt);
+      velocity_error = desired_velocity - current_velocity;
+
+      joint_state->commanded_effort_ = velocity_joint_controllers_[i]->computeCommand(velocity_error, dt);
+      time_of_last_cycle_[i] = robot_->getTime();
     }
   }
   else
@@ -199,7 +225,7 @@ void JointController::update()
       ROS_WARN("Joint controller lock fail (possibly updating references)");
     }
 
-    for (int i = 0; i < joint_controllers_.size(); i++)
+    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
     {
       joint_state = robot_->getJointState(joint_names_[i]);
       if(!joint_state)
@@ -209,7 +235,8 @@ void JointController::update()
       }
 
       dt = robot_->getTime() - time_of_last_cycle_[i];
-      joint_state->commanded_effort_ = joint_controllers_[i]->computeCommand(0, dt); // keep the current position
+      joint_state->commanded_effort_ = velocity_joint_controllers_[i]->computeCommand(-joint_state->velocity_, dt); // keep the current position
+      time_of_last_cycle_[i] = robot_->getTime();
     }
   }
 }
@@ -232,6 +259,23 @@ double JointController::getReferencePosition(std::string joint_name)
 }
 
 /*
+  Get the velocity value in the control references for the given joint
+*/
+double JointController::getReferenceVelocity(std::string joint_name)
+{
+  for (int i = 0; i < control_references_.name.size(); i++)
+  {
+    if (control_references_.name[i] == joint_name)
+    {
+      return control_references_.velocity[i];
+    }
+  }
+
+  ROS_ERROR("No reference available for joint name %s. This should NEVER happen.", joint_name.c_str());
+  return 0.0;
+}
+
+/*
   Check if the given joint name is actuated by the controller
 */
 bool JointController::isActuatedJoint(std::string joint_name)
@@ -245,17 +289,23 @@ bool JointController::isActuatedJoint(std::string joint_name)
 void JointController::publishFeedback()
 {
   ros::Rate feedback_rate(feedback_hz_);
+  pr2_mechanism_model::JointState *joint_state;
 
   while(ros::ok())
   {
     feedback_.commanded_effort.clear();
+    feedback_.position_error.clear();
+    feedback_.velocity_error.clear();
     if (action_server_ != 0)
     {
       if (action_server_->isActive())
       {
-        for (int i = 0; i < joint_controllers_.size(); i++)
+        for (int i = 0; i < control_references_.name.size(); i++)
         {
-          feedback_.commanded_effort.push_back(joint_controllers_[i]->getCurrentCmd());
+          joint_state = robot_->getJointState(control_references_.name[i]);
+          feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
+          feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
+          feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
         }
 
         action_server_->publishFeedback(feedback_);
@@ -271,9 +321,9 @@ void JointController::publishFeedback()
 */
 void JointController::stopping()
 {
-  for (int i = 0; i < joint_controllers_.size(); i++)
+  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
-    delete joint_controllers_[i];
+    delete velocity_joint_controllers_[i];
   }
 
   delete action_server_;

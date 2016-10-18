@@ -20,3 +20,5 @@ pr2_controller:
 
   actionlib_server_name: position_control
   actionlib_feedback_rate: 10
+
+  control_timeout: 0.02

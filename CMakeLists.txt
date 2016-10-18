@@ -22,9 +22,10 @@ add_action_files(
   FILES PR2JointCommand.action
 )
 
-# add_message_files(
-#   FILES
-# )
+add_message_files(
+  FILES
+	PR2JointControlReference.msg
+)
 
 generate_messages(
   DEPENDENCIES std_msgs actionlib_msgs sensor_msgs

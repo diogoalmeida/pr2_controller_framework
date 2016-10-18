@@ -76,6 +76,18 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   boost::thread(boost::bind(&JointController::publishFeedback, this));
 
+  // subscribe to the reference topic
+  reference_subscriber_ = n.subscribe(n.getNamespace() + "/control_reference", 1, &JointController::referenceCallback, this);
+
+  double timeout = 0.0;
+  if (!n.getParam("control_timeout", timeout))
+  {
+    ROS_WARN("No control timeout set, will default to 0.01 sec (%s/control_timeout)", n.getNamespace().c_str());
+    timeout = 0.01;
+  }
+
+  control_timeout_ = ros::Duration(timeout);
+
   return true;
 }
 
@@ -86,14 +98,23 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
 */
 void JointController::goalCB()
 {
+  time_of_last_reference_update_ = robot_->getTime();
+  action_server_->acceptNewGoal();
+}
+
+/*
+  Update the current controller reference. If no update is sent for a predefined
+  ammount of time, abort.
+*/
+void JointController::referenceCallback(const pr2_controller::PR2JointControlReference::ConstPtr &msg)
+{
   int number_of_matching_joints = 0;
   pr2_mechanism_model::JointState *joint_state;
-  goal_ = action_server_->acceptNewGoal();
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
-  if (goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.position.size()
-      || goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.velocity.size()
-      || goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.effort.size())
+  if (msg->commanded_joint_state.name.size() != msg->commanded_joint_state.position.size()
+      || msg->commanded_joint_state.name.size() != msg->commanded_joint_state.velocity.size()
+      || msg->commanded_joint_state.name.size() != msg->commanded_joint_state.effort.size())
   {
     ROS_ERROR("Joint controller goal request does not have consistent size for name, position, velocity and effort");
     action_server_->setAborted();
@@ -105,7 +126,7 @@ void JointController::goalCB()
   control_references_.velocity.clear();
   control_references_.effort.clear();
 
-  for (int i = 0; i < goal_->commanded_joint_state.name.size(); i++)
+  for (int i = 0; i < msg->commanded_joint_state.name.size(); i++)
   {
     if (i >= joint_names_.size())
     {
@@ -114,16 +135,16 @@ void JointController::goalCB()
       return;
     }
 
-    if (isActuatedJoint(goal_->commanded_joint_state.name[i]))
+    if (isActuatedJoint(msg->commanded_joint_state.name[i]))
     {
       number_of_matching_joints++;
-      if (goal_->use_current_position)
+      if (msg->use_current_position)
       {
-        joint_state = robot_->getJointState(goal_->commanded_joint_state.name[i]);
+        joint_state = robot_->getJointState(msg->commanded_joint_state.name[i]);
 
         if(!joint_state)
         {
-          ROS_ERROR("Could not find joint %s", goal_->commanded_joint_state.name[i].c_str());
+          ROS_ERROR("Could not find joint %s", msg->commanded_joint_state.name[i].c_str());
           action_server_->setAborted();
           return;
         }
@@ -134,12 +155,12 @@ void JointController::goalCB()
       }
       else
       {
-        control_references_.position.push_back(goal_->commanded_joint_state.position[i]);
+        control_references_.position.push_back(msg->commanded_joint_state.position[i]);
       }
 
-      control_references_.velocity.push_back(goal_->commanded_joint_state.velocity[i]);
-      control_references_.effort.push_back(goal_->commanded_joint_state.effort[i]);
-      control_references_.name.push_back(goal_->commanded_joint_state.name[i]);
+      control_references_.velocity.push_back(msg->commanded_joint_state.velocity[i]);
+      control_references_.effort.push_back(msg->commanded_joint_state.effort[i]);
+      control_references_.name.push_back(msg->commanded_joint_state.name[i]);
 
       if (number_of_matching_joints == joint_names_.size())
       {
@@ -155,6 +176,8 @@ void JointController::goalCB()
     action_server_->setAborted();
     return;
   }
+
+  time_of_last_reference_update_ = robot_->getTime();
 }
 
 /// Handles preemption requests from the actionlib client
@@ -192,6 +215,15 @@ void JointController::update()
   double desired_velocity = 0.0;
   double position_error = 0.0;
   double velocity_error = 0.0;
+
+  if (robot_->getTime() - time_of_last_reference_update_ > control_timeout_)
+  {
+    if(action_server_->isActive())
+    {
+      ROS_ERROR("Joint controller timed out! (no reference received)");
+      action_server_->setAborted();
+    }
+  }
 
   boost::mutex::scoped_lock lock(reference_mutex_, boost::try_to_lock); // If no lock is obtained, this means the controller is updating references and we will set the control to the current position
   if (lock && action_server_->isActive())

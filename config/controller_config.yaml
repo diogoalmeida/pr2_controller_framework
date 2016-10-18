@@ -1,0 +1,12 @@
+pr2_controller:
+  type: pr2_controller/JointController
+  actuated_joint_names: [r_shoulder_pan_joint]
+  controller_gains:
+    r_shoulder_pan_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp_max: 10
+      i_clamp_min: 0
+  actionlib_server_name: position_control
+  actionlib_feedback_rate: 10

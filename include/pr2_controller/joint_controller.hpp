@@ -28,8 +28,11 @@ private:
   pr2_controller::PR2JointCommandFeedback feedback_;
   pr2_controller::PR2JointCommandResult result_;
   std::string action_name_;
+  double feedback_hz_;
 
+  bool isActuatedJoint(std::string joint_name);
   double getReferencePosition(std::string joint_name);
+  void publishFeedback();
 
 public:
   // Controller interface methods

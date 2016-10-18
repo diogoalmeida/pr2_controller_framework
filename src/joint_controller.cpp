@@ -11,24 +11,40 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
 {
   // copy robot pointer so we can access time
   robot_ = robot;
+  action_server_ = 0;
+  ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
   if (!n.getParam("actionlib_server_name", action_name_))
   {
-    ROS_WARN("Action name not set. Using default 'PR2_pos_control'");
+    ROS_WARN("Action name not set. Using default 'PR2_pos_control' (%s/actionlib_server_name)", n.getNamespace().c_str());
     action_name_ = "PR2_pos_control";
+  }
+
+  if (!n.getParam("actionlib_feedback_rate", feedback_hz_))
+  {
+    ROS_WARN("Action feedback rate not set. Using defaul 10 Hz (%s/actionlib_feedback_rate)", n.getNamespace().c_str());
+    feedback_hz_ = 10.0;
   }
 
   if (!n.getParam("actuated_joint_names", joint_names_))
   {
-    ROS_ERROR("Joint controller requires a set of joint names (actuated_joint_names)");
+    ROS_ERROR("Joint controller requires a set of joint names (%s/actuated_joint_names)", n.getNamespace().c_str());
     return false;
   }
 
+  if (joint_names_.size() == 0)
+  {
+    ROS_ERROR("Joint controller initialized with no joint names");
+    return false;
+  }
+
+  ROS_INFO("Loaded joint names:");
   for(int i = 0; i < joint_names_.size(); i++) // initialize the joint controllers. Expecting one set of PID gains per actuated joint
   {
+    ROS_INFO("%s", joint_names_[i].c_str());
     if(!n.hasParam("controller_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
     {
-      ROS_ERROR("Joint controller expects controller gains for joint %s (controller_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects controller gains for joint %s (%s/controller_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
       return false;
     }
 
@@ -41,6 +57,10 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
   action_server_ = new actionlib::SimpleActionServer<pr2_controller::PR2JointCommandAction>(n, action_name_, false);
   action_server_->registerGoalCallback(boost::bind(&JointController::goalCB, this));
   action_server_->registerPreemptCallback(boost::bind(&JointController::preemptCB, this));
+  action_server_->start();
+
+  // launch feedback thread. Allows publishing feedback outside of the realtime loop
+  boost::thread(boost::bind(&JointController::publishFeedback, this));
 
   return true;
 }
@@ -57,6 +77,15 @@ void JointController::goalCB()
   goal_ = action_server_->acceptNewGoal();
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  if (goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.position.size()
+      || goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.velocity.size()
+      || goal_->commanded_joint_state.name.size() != goal_->commanded_joint_state.effort.size())
+  {
+    ROS_ERROR("Joint controller goal request does not have consistent size for name, position, velocity and effort");
+    action_server_->setAborted();
+    return;
+  }
+
   control_references_.name.clear();
   control_references_.position.clear();
   control_references_.velocity.clear();
@@ -71,11 +100,11 @@ void JointController::goalCB()
       return;
     }
 
-    if (std::find(joint_names_.begin(), joint_names_.end(), goal_->commanded_joint_state.name[i]) != joint_names_.end())
+    if (isActuatedJoint(goal_->commanded_joint_state.name[i]))
     {
+      number_of_matching_joints++;
       if (goal_->use_current_position)
       {
-        number_of_matching_joints++;
         joint_state = robot_->getJointState(goal_->commanded_joint_state.name[i]);
 
         if(!joint_state)
@@ -106,9 +135,9 @@ void JointController::goalCB()
     }
   }
 
-  if (number_of_matching_joints < joint_names_.size())
+  if (number_of_matching_joints != joint_names_.size())
   {
-    ROS_ERROR("Goal request does not set references to all the commanded joints");
+    ROS_ERROR("Goal request does not set references to all the commanded joints. Got %d matching joints for %d actuated joints", number_of_matching_joints, (int)joint_names_.size());
     action_server_->setAborted();
     return;
   }
@@ -146,7 +175,7 @@ void JointController::update()
   double desired_position = 0.0;
 
   boost::mutex::scoped_lock lock(reference_mutex_, boost::try_to_lock); // If no lock is obtained, this means the controller is updating references and we will set the control to the current position
-  if (lock)
+  if (lock && action_server_->isActive())
   {
     for (int i = 0; i < joint_controllers_.size(); i++)
     {
@@ -165,7 +194,11 @@ void JointController::update()
   }
   else
   {
-    ROS_WARN("Joint controller lock fail (possibly updating references)");
+    if(action_server_->isActive())
+    {
+      ROS_WARN("Joint controller lock fail (possibly updating references)");
+    }
+
     for (int i = 0; i < joint_controllers_.size(); i++)
     {
       joint_state = robot_->getJointState(joint_names_[i]);
@@ -198,9 +231,54 @@ double JointController::getReferencePosition(std::string joint_name)
   return 0.0;
 }
 
-/// Controller stopping in realtime
+/*
+  Check if the given joint name is actuated by the controller
+*/
+bool JointController::isActuatedJoint(std::string joint_name)
+{
+  return std::find(joint_names_.begin(), joint_names_.end(), joint_name) != joint_names_.end();
+}
+
+/*
+  Publish feedback at a (non-realtime) rate
+*/
+void JointController::publishFeedback()
+{
+  ros::Rate feedback_rate(feedback_hz_);
+
+  while(ros::ok())
+  {
+    feedback_.commanded_effort.clear();
+    if (action_server_ != 0)
+    {
+      if (action_server_->isActive())
+      {
+        for (int i = 0; i < joint_controllers_.size(); i++)
+        {
+          feedback_.commanded_effort.push_back(joint_controllers_[i]->getCurrentCmd());
+        }
+
+        action_server_->publishFeedback(feedback_);
+      }
+    }
+
+    feedback_rate.sleep();
+  }
+}
+
+/*
+  Controller stopping in realtime
+*/
 void JointController::stopping()
-{}
+{
+  for (int i = 0; i < joint_controllers_.size(); i++)
+  {
+    delete joint_controllers_[i];
+  }
+
+  delete action_server_;
+  action_server_ = 0;
+}
 } // namespace
 
 /// Register controller to pluginlib

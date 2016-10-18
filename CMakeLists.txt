@@ -3,6 +3,7 @@ project(pr2_controller)
 
 find_package(
 catkin REQUIRED COMPONENTS
+	actionlib
   roscpp
 	std_msgs
   geometry_msgs

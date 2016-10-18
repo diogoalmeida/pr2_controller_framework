@@ -215,6 +215,7 @@ void JointController::update()
       velocity_error = desired_velocity - current_velocity;
 
       joint_state->commanded_effort_ = velocity_joint_controllers_[i]->computeCommand(velocity_error, dt);
+      joint_state->enforceLimits();
       time_of_last_cycle_[i] = robot_->getTime();
     }
   }
@@ -236,6 +237,7 @@ void JointController::update()
 
       dt = robot_->getTime() - time_of_last_cycle_[i];
       joint_state->commanded_effort_ = velocity_joint_controllers_[i]->computeCommand(-joint_state->velocity_, dt); // keep the current position
+      joint_state->enforceLimits();
       time_of_last_cycle_[i] = robot_->getTime();
     }
   }

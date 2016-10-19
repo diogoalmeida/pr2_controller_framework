@@ -106,4 +106,4 @@ pr2_controller:
 
   feedback_rate: 10
   receive_position_reference: False
-  control_timeout: 0.02
+  control_timeout: 0.1

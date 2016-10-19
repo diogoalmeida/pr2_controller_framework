@@ -18,7 +18,6 @@ pr2_controller:
       i_clamp_max: 10
       i_clamp_min: 0
 
-  actionlib_server_name: position_control
-  actionlib_feedback_rate: 10
-
+  feedback_rate: 10
+  receive_position_reference: False
   control_timeout: 0.02

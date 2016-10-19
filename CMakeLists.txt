@@ -3,12 +3,10 @@ project(pr2_controller)
 
 find_package(
 catkin REQUIRED COMPONENTS
-	actionlib
   roscpp
 	std_msgs
   geometry_msgs
 	sensor_msgs
-	actionlib_msgs
 	message_generation
   pr2_controller_interface
   pr2_mechanism_model
@@ -17,18 +15,13 @@ catkin REQUIRED COMPONENTS
 
 link_directories(${catkin_LIBRARY_DIRS})
 
-add_action_files(
-  DIRECTORY action
-  FILES PR2JointCommand.action
-)
-
 add_message_files(
   FILES
-	PR2JointControlReference.msg
+	PR2JointControllerFeedback.msg
 )
 
 generate_messages(
-  DEPENDENCIES std_msgs actionlib_msgs sensor_msgs
+  DEPENDENCIES std_msgs sensor_msgs
 )
 
 catkin_package(
@@ -40,8 +33,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  #${Eigen_INCLUDE_DIRS}
 )
 
 add_library(pr2_joint_controller src/joint_controller.cpp)
-target_link_libraries(pr2_joint_controller ${catkin_LIBRARIES})# ${Eigen_LIBRARIES})
+target_link_libraries(pr2_joint_controller ${catkin_LIBRARIES})

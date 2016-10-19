@@ -214,14 +214,16 @@ void JointController::update()
     {
       ROS_WARN("Joint controller lock fail (possibly updating references)");
     }
-
-    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+    else
     {
-      joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
-      dt = robot_->getTime() - time_of_last_cycle_[i];
-      joint_state->commanded_effort_ = applyControlLoop(joint_state, last_active_joint_position_[i], 0, i, dt);
-      joint_state->enforceLimits();
-      time_of_last_cycle_[i] = robot_->getTime();
+      for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+      {
+        joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
+        dt = robot_->getTime() - time_of_last_cycle_[i];
+        joint_state->commanded_effort_ = applyControlLoop(joint_state, last_active_joint_position_[i], 0, i, dt);
+        joint_state->enforceLimits();
+        time_of_last_cycle_[i] = robot_->getTime();
+      }
     }
   }
 }
@@ -298,12 +300,11 @@ void JointController::publishFeedback()
 
   while(ros::ok())
   {
-    feedback_.commanded_effort.clear();
-    feedback_.position_error.clear();
-    feedback_.velocity_error.clear();
-
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      feedback_.commanded_effort.clear();
+      feedback_.position_error.clear();
+      feedback_.velocity_error.clear();
       for (int i = 0; i < control_references_.name.size(); i++)
       {
         joint_state = robot_->getJointState(control_references_.name[i]);

@@ -301,8 +301,9 @@ void JointController::publishFeedback()
     feedback_.commanded_effort.clear();
     feedback_.position_error.clear();
     feedback_.velocity_error.clear();
-    if (reference_active_)
+
     {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
       for (int i = 0; i < control_references_.name.size(); i++)
       {
         joint_state = robot_->getJointState(control_references_.name[i]);
@@ -313,10 +314,18 @@ void JointController::publishFeedback()
         feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
         feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
       }
-
-      feedback_pub_.publish(feedback_);
     }
 
+    if (reference_active_)
+    {
+      feedback_.active = true;
+    }
+    else
+    {
+      feedback_.active = false;
+    }
+
+    feedback_pub_.publish(feedback_);
     feedback_rate.sleep();
   }
 }

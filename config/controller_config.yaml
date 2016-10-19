@@ -104,6 +104,6 @@ pr2_controller:
       i_clamp_max: 10
       i_clamp_min: -10
 
-  feedback_rate: 10
+  feedback_rate: 50
   receive_position_reference: False
-  control_timeout: 0.1
+  control_timeout: 1

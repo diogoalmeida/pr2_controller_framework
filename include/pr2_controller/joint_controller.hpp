@@ -20,6 +20,7 @@ private:
   std::vector<std::string> joint_names_; // the controller will only accept a command that includes ALL the joint_names_ it's expecting to receive. It ignores all other names
   std::vector<ros::Time> time_of_last_cycle_; // Per controller
   std::vector<double> last_active_joint_position_; // Keeps the last recorded position of actuated joints while the controller is active
+  std::vector<double> modified_velocity_references_; // Allows sending feedback of the true velocity control loop performance
   double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt); // applies the nested control strategy
   bool receive_pos_reference_, reference_active_;
 

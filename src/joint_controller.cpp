@@ -51,6 +51,7 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
 
     // create a controller instance and give it a unique namespace for setting the controller gains
     position_joint_controllers_.push_back(new control_toolbox::Pid());
+    modified_velocity_references_.push_back(0);
     time_of_last_cycle_.push_back(robot_->getTime());
     joint = robot_->getJointState(joint_names_[i]);
 
@@ -240,6 +241,7 @@ double JointController::applyControlLoop(const pr2_mechanism_model::JointState *
   current_velocity = joint_state->velocity_;
   position_feedback = position_joint_controllers_[controller_num]->computeCommand(position_error, dt);
   velocity_error = desired_velocity + position_feedback - current_velocity;
+  modified_velocity_references_[controller_num] = desired_velocity + position_feedback;
 
   return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt);
 }
@@ -307,6 +309,9 @@ void JointController::publishFeedback()
         feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
         feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
         feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
+
+        feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
+        feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
       }
 
       feedback_pub_.publish(feedback_);

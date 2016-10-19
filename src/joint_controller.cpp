@@ -313,6 +313,8 @@ void JointController::publishFeedback()
 
         feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
         feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
+        feedback_.effort_single =joint_state->commanded_effort_;
+        feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
       }
     }
 

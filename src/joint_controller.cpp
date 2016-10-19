@@ -21,10 +21,10 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
     feedback_hz_ = 10.0;
   }
 
-  if (!n.getParam("receive_position_reference", use_current_position_))
+  if (!n.getParam("receive_position_reference", receive_pos_reference_))
   {
     ROS_WARN("Missing position reference setting. Defaulting to using a position reference (%s/receive_position_reference)", n.getNamespace().c_str());
-    use_current_position_ = false;
+    receive_pos_reference_ = true;
   }
 
   if (!n.getParam("actuated_joint_names", joint_names_))
@@ -135,7 +135,7 @@ void JointController::referenceCallback(const sensor_msgs::JointState::ConstPtr 
     if (isActuatedJoint(msg->name[i]))
     {
       number_of_matching_joints++;
-      if (use_current_position_)
+      if (!receive_pos_reference_)
       {
         joint_state = robot_->getJointState(msg->name[i]); // joint_state name was verified in init()
         control_references_.position.push_back(joint_state->position_);

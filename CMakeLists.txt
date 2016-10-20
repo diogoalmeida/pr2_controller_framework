@@ -37,3 +37,4 @@ include_directories(
 
 add_library(pr2_joint_controller src/joint_controller.cpp)
 target_link_libraries(pr2_joint_controller ${catkin_LIBRARIES})
+add_dependencies(pr2_joint_controller pr2_controller_generate_messages_cpp)

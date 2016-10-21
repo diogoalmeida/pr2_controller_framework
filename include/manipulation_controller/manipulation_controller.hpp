@@ -4,23 +4,39 @@
 #include <sensor_msgs/JointState.h>
 #include <manipulation_controller/ManipulationControllerAction.h>
 #include <boost/thread.hpp>
-
+#include <urdf/model.h>
+#include <kdl/chainiksolvervel_wdls.hpp>
+#include <kdl_parser/kdl_parser.hpp>
+#include <kdl/kdl.hpp>
+#include <kdl/frames.hpp>
+#include <actionlib/server/simple_action_server.h>
 
 namespace manipulation{
 
 class ManipulationController
 {
 private:
+  // Robot related
   sensor_msgs::JointState robot_state;
-  std::vector<std::string> joint_names_;
+  KDL::ChainIkSolverVel_wdls *ikvel_;
+  KDL::Chain chain_;
+  KDL::Tree tree_;
+  urdf::Model model_;
+  std::string end_effector_link_;
 
+  // Actionlib
+  actionlib::SimpleActionServer<manipulation_controller::ManipulationControllerAction> action_server_;
   manipulation_controller::ManipulationControllerFeedback feedback_;
   double feedback_hz_;
-
   void publishFeedback();
+  void goalCB();
+  void preemptCB();
 
 public:
   ManipulationController();
+
+  // Control topic: meant to be called in the realtime loop
+  sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);
 };
 }
 

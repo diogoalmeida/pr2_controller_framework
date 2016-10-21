@@ -1,0 +1,3 @@
+<launch>
+  <rosparam command="load" file="$(find manipulation_controller)/config/controller_config.yaml"/>
+</launch>

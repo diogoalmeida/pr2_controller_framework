@@ -1,0 +1,94 @@
+pr2_controller:
+  type: pr2_controller/JointController
+  actuated_joint_names: [r_upper_arm_roll_joint, r_shoulder_pan_joint, r_shoulder_lift_joint, r_forearm_roll_joint, r_elbow_flex_joint, r_wrist_flex_joint, r_wrist_roll_joint]
+
+  # Controllers
+  position_loop_gains:
+    r_upper_arm_roll_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_shoulder_pan_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_shoulder_lift_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_forearm_roll_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_elbow_flex_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_wrist_flex_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+    r_wrist_roll_joint:
+      p: 1
+      i: 0
+      d: 0
+      i_clamp: 10
+
+  velocity_loop_gains:
+    r_upper_arm_roll_joint:
+      p: 2
+      i: 10
+      d: 0
+      i_clamp: 10
+
+    r_shoulder_pan_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+    r_shoulder_lift_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+    r_forearm_roll_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+    r_elbow_flex_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+    r_wrist_flex_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+    r_wrist_roll_joint:
+      p: 1
+      i: 0.1
+      d: 0
+      i_clamp: 10
+
+  feedback_rate: 50
+  receive_position_reference: False
+  control_timeout: 1

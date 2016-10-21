@@ -25,12 +25,18 @@ private:
   std::string end_effector_link_;
 
   // Actionlib
-  actionlib::SimpleActionServer<manipulation_controller::ManipulationControllerAction> action_server_;
+  actionlib::SimpleActionServer<manipulation_controller::ManipulationControllerAction> *action_server_;
   manipulation_controller::ManipulationControllerFeedback feedback_;
+  manipulation_controller::ManipulationControllerResult result_;
+  std::string action_name_;
   double feedback_hz_;
   void publishFeedback();
   void goalCB();
   void preemptCB();
+  bool loadParams();
+
+  // ROS
+  ros::NodeHandle nh_;
 
 public:
   ManipulationController();

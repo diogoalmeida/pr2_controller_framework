@@ -1,4 +1,6 @@
 # Goal: triggers the controller.
+geometry_msgs/PoseStamped surface_frame
+geometry_msgs/PoseStamped goal_pose
 ---
 # Result:
 ---

@@ -10,6 +10,7 @@
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl/chainiksolvervel_wdls.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/kdl.hpp>
 #include <kdl/frames.hpp>

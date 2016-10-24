@@ -118,7 +118,12 @@ namespace manipulation {
   {
     sensor_msgs::JointState control_output;
     KDL::Frame end_effector_kdl;
-    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque;
+    KDL::JntArray commanded_joint_velocities;
+    KDL::Twist input_twist;
+    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands;
+    double x_e, y_e, theta_e, x_d, y_d, theta_d;
+    Eigen::Matrix3d inv_g;
+    Eigen::Matrix<double, 6, 1> twist_eig;
 
     if (!action_server_->isActive())
     {
@@ -138,12 +143,46 @@ namespace manipulation {
     surface_normal = surface_frame_.matrix().block<1,3>(0,2);
     surface_tangent = surface_frame_.matrix().block<1,3>(0,1);
 
-    // Magic happens
+    // Estimate the grasped object pose. Current: direct computation
     force = measured_wrench_.block<1,3>(0,0);
     torque = measured_wrench_.block<1,3>(3,0);
     estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<1,3>(0,1))); // TODO: Check indeces
     estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
     estimated_r_ = (end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+
+    // Compute the cartesian twist to command the end-effector. Current: straightly compensate for the kinematics
+    inv_g << 1, -estimated_length_*std::sin(estimated_orientation_), 0                           ,
+             0, -estimated_length_*std::cos(estimated_orientation_), 0                           ,
+             0, -1                                                 , -estimated_length_/k_spring_;
+
+
+    Eigen::AngleAxisd goal_aa(goal_pose_.rotation()), end_effector_aa(end_effector_pose_.rotation());
+
+    x_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
+    y_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
+    theta_d = goal_aa.angle();
+
+    x_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
+    y_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
+    theta_d = end_effector_aa.angle();
+
+    errors <<  x_d - x_e,
+               y_d - y_e,
+               theta_d - theta_e;
+
+    commands = inv_g*errors;
+    twist_eig << commands[0]*surface_tangent + commands[1]*surface_normal, commands[2]*end_effector_aa.axis();
+
+    tf::twistEigenToKDL(twist_eig, input_twist);
+
+    ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
+
+    control_output = current_state;
+
+    for (int i = 0; i < 7; i++)
+    {
+      control_output.velocity[i] = commanded_joint_velocities(i);
+    }
 
     return control_output;
   }

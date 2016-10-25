@@ -143,6 +143,18 @@ namespace manipulation {
     }
   }
 
+  void ManipulationController::estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt)
+  {
+    Eigen::Vector3d force, torque;
+
+    // Estimate the grasped object pose. Current: direct computation
+    force = measured_wrench_.block<1,3>(0,0);
+    torque = measured_wrench_.block<1,3>(3,0);
+    estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<1,3>(0,1))); // TODO: Check indeces
+    estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
+    estimated_r_ = (end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+  }
+
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
@@ -167,17 +179,13 @@ namespace manipulation {
     fkpos_->JntToCart(joint_positions_, end_effector_kdl);
     tf::transformKDLToEigen(end_effector_kdl, end_effector_pose_);
 
+
     // TODO: Get the proper vectors
     rotation_axis = end_effector_pose_.matrix().block<1,3>(0,2);
     surface_normal = surface_frame_.matrix().block<1,3>(0,2);
     surface_tangent = surface_frame_.matrix().block<1,3>(0,1);
 
-    // Estimate the grasped object pose. Current: direct computation
-    force = measured_wrench_.block<1,3>(0,0);
-    torque = measured_wrench_.block<1,3>(3,0);
-    estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<1,3>(0,1))); // TODO: Check indeces
-    estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
-    estimated_r_ = (end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+    estimatePose(rotation_axis, surface_tangent, surface_normal, dt);
 
     // Compute the cartesian twist to command the end-effector. Current: straightly compensate for the kinematics
     inv_g << 1, -estimated_length_*std::sin(estimated_orientation_), 0                           ,

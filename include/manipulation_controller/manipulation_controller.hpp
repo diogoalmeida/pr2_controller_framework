@@ -59,6 +59,7 @@ private:
   Eigen::Matrix<double, 6, 1> measured_wrench_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
+  void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
 
 public:
   ManipulationController();

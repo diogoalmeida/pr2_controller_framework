@@ -57,6 +57,7 @@ private:
   double k_spring_, estimated_length_, estimated_orientation_;
   Eigen::Affine3d surface_frame_, goal_pose_, end_effector_pose_;
   Eigen::Matrix<double, 6, 1> measured_wrench_;
+  Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
 
 public:

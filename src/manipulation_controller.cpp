@@ -108,6 +108,35 @@ namespace manipulation {
       return false;
     }
 
+    if (!nh_.getParam("manipulation_controller/spring_constant", k_spring_))
+    {
+      ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
+      return false;
+    }
+
+    double k_1, k_2, k_3;
+    if (!nh_.getParam("manipulation_controller/gains/k_1", k_1))
+    {
+      ROS_ERROR("Missing k_1 (/manipulation_controller/gains/k_1)");
+      return false;
+    }
+
+    if (!nh_.getParam("manipulation_controller/gains/k_2", k_2))
+    {
+      ROS_ERROR("Missing k_2 (/manipulation_controller/gains/k_2)");
+      return false;
+    }
+
+    if (!nh_.getParam("manipulation_controller/gains/k_3", k_3))
+    {
+      ROS_ERROR("Missing k_3 (/manipulation_controller/gains/k_3)");
+      return false;
+    }
+
+    control_gains_ << k_1, 0  , 0  ,
+                      0  , k_2, 0  ,
+                      0  , 0  , k_3;
+
     if(!model_.initParam("/robot_description")){
         ROS_ERROR("ERROR getting robot description (/robot_description)");
         return false;
@@ -170,7 +199,7 @@ namespace manipulation {
                y_d - y_e,
                theta_d - theta_e;
 
-    commands = inv_g*errors;
+    commands = control_gains_*inv_g*errors;
     twist_eig << commands[0]*surface_tangent + commands[1]*surface_normal, commands[2]*end_effector_aa.axis();
 
     tf::twistEigenToKDL(twist_eig, input_twist);

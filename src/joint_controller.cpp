@@ -21,12 +21,6 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
     feedback_hz_ = 10.0;
   }
 
-  if (!n.getParam("receive_position_reference", receive_pos_reference_))
-  {
-    ROS_WARN("Missing position reference setting. Defaulting to using a position reference (%s/receive_position_reference)", n.getNamespace().c_str());
-    receive_pos_reference_ = true;
-  }
-
   if (!n.getParam("actuated_joint_names", joint_names_))
   {
     ROS_ERROR("Joint controller requires a set of joint names (%s/actuated_joint_names)", n.getNamespace().c_str());
@@ -84,89 +78,9 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   boost::thread(boost::bind(&JointController::publishFeedback, this));
 
-  // subscribe to the reference topic
-  reference_subscriber_ = n.subscribe(n.getNamespace() + "/control_reference", 1, &JointController::referenceCallback, this);
-
-  double timeout = 0.0;
-  if (!n.getParam("control_timeout", timeout))
-  {
-    ROS_WARN("No control timeout set, will default to 0.01 sec (%s/control_timeout)", n.getNamespace().c_str());
-    timeout = 0.01;
-  }
-
-  control_timeout_ = ros::Duration(timeout);
   time_of_last_reference_update_ = robot_->getTime();
 
   return true;
-}
-
-/*
-  Update the current controller reference. If no update is sent for a predefined
-  ammount of time, abort.
-*/
-void JointController::referenceCallback(const sensor_msgs::JointState::ConstPtr &msg)
-{
-  int number_of_matching_joints = 0;
-  pr2_mechanism_model::JointState *joint_state;
-
-  boost::lock_guard<boost::mutex> guard(reference_mutex_);
-  if (msg->name.size() != msg->position.size()
-      || msg->name.size() != msg->velocity.size()
-      || msg->name.size() != msg->effort.size())
-  {
-    ROS_ERROR("Joint controller reference does not have consistent size for name, position, velocity and effort");
-    reference_active_ = false;
-    return;
-  }
-
-  control_references_.name.clear();
-  control_references_.position.clear();
-  control_references_.velocity.clear();
-  control_references_.effort.clear();
-
-  for (int i = 0; i < msg->name.size(); i++)
-  {
-    if (i >= joint_names_.size())
-    {
-      ROS_ERROR("Joint controller reference does not set references for all the commanded joints");
-      reference_active_ = false;
-      return;
-    }
-
-    if (isActuatedJoint(msg->name[i]))
-    {
-      number_of_matching_joints++;
-      if (!receive_pos_reference_)
-      {
-        joint_state = robot_->getJointState(msg->name[i]); // joint_state name was verified in init()
-        control_references_.position.push_back(joint_state->position_);
-      }
-      else
-      {
-        control_references_.position.push_back(msg->position[i]);
-      }
-
-      control_references_.velocity.push_back(msg->velocity[i]);
-      control_references_.effort.push_back(msg->effort[i]);
-      control_references_.name.push_back(msg->name[i]);
-
-      if (number_of_matching_joints == joint_names_.size())
-      {
-        ROS_DEBUG("Joint controller received a valid request");
-        break;
-      }
-    }
-  }
-
-  if (number_of_matching_joints != joint_names_.size())
-  {
-    ROS_ERROR("Reference does not set references to all the commanded joints. Got %d matching joints for %d actuated joints", number_of_matching_joints, (int)joint_names_.size());
-    reference_active_ = false;
-    return;
-  }
-
-  reference_active_ = true;
-  time_of_last_reference_update_ = robot_->getTime();
 }
 
 /// Controller startup in realtime
@@ -178,6 +92,7 @@ void JointController::starting()
     velocity_joint_controllers_[i]->reset();
     time_of_last_cycle_[i] = robot_->getTime();
   }
+  time_of_last_manipulation_call_ = robot_->getTime();
 }
 
 /// Controller update loop in realtime
@@ -185,46 +100,30 @@ void JointController::update()
 {
   ros::Duration dt;
   pr2_mechanism_model::JointState *joint_state;
+  sensor_msgs::JointState current_state;
 
-  if (robot_->getTime() - time_of_last_reference_update_ > control_timeout_)
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
-    if(reference_active_)
-    {
-      ROS_ERROR("Joint controller timed out! (no reference received)");
-      reference_active_ = false;
-    }
+    joint_state = robot_->getJointState(joint_names_[i]);
+    current_state.name.push_back(joint_names_[i]);
+    current_state.position.push_back(joint_state->position_);
+    current_state.velocity.push_back(joint_state->velocity_);
+    current_state.effort.push_back(joint_state->measured_effort_);
   }
 
-  boost::mutex::scoped_lock lock(reference_mutex_, boost::try_to_lock); // If no lock is obtained, this means the controller is updating references and we will set the control to the current position
-  if (lock && reference_active_)
+  current_state.header.stamp = robot_->getTime();
+  dt = robot_->getTime() - time_of_last_manipulation_call_;
+  control_references_ = manipulation_controller.updateControl(current_state, dt);
+
+  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
-    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-    {
-      joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
-      dt = robot_->getTime() - time_of_last_cycle_[i];
-      last_active_joint_position_[i] = joint_state->position_;
-      joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
-      joint_state->enforceLimits();
-      time_of_last_cycle_[i] = robot_->getTime();
-    }
-  }
-  else
-  { // If the controller is not active, or the references are being updated, keep the last recorded position reference
-    if(reference_active_)
-    {
-      ROS_WARN("Joint controller lock fail (possibly updating references)");
-    }
-    else
-    {
-      for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-      {
-        joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
-        dt = robot_->getTime() - time_of_last_cycle_[i];
-        joint_state->commanded_effort_ = applyControlLoop(joint_state, last_active_joint_position_[i], 0, i, dt);
-        joint_state->enforceLimits();
-        time_of_last_cycle_[i] = robot_->getTime();
-      }
-    }
+    joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
+    dt = robot_->getTime() - time_of_last_cycle_[i];
+    last_active_joint_position_[i] = joint_state->position_;
+    joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
+    joint_state->enforceLimits();
+    time_of_last_cycle_[i] = robot_->getTime();
   }
 }
 

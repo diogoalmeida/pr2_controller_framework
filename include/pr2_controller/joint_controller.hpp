@@ -2,6 +2,7 @@
 #include <pr2_mechanism_model/joint.h>
 #include <control_toolbox/pid.h>
 #include <pr2_controller/PR2JointControllerFeedback.h>
+#include <manipulation_controller/manipulation_controller.hpp>
 #include <sensor_msgs/JointState.h>
 #include <boost/thread.hpp>
 
@@ -19,6 +20,7 @@ private:
   std::vector<control_toolbox::Pid*> velocity_joint_controllers_;
   std::vector<std::string> joint_names_; // the controller will only accept a command that includes ALL the joint_names_ it's expecting to receive. It ignores all other names
   std::vector<ros::Time> time_of_last_cycle_; // Per controller
+  ros::Time time_of_last_manipulation_call_;
   std::vector<double> last_active_joint_position_; // Keeps the last recorded position of actuated joints while the controller is active
   std::vector<double> modified_velocity_references_; // Allows sending feedback of the true velocity control loop performance
   double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt); // applies the nested control strategy
@@ -42,6 +44,9 @@ private:
   double getReferencePosition(std::string joint_name);
   double getReferenceVelocity(std::string joint_name);
   void publishFeedback();
+
+  // Manipulation controller
+  manipulation::ManipulationController manipulation_controller;
 
 public:
   // Controller interface methods

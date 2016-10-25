@@ -10,6 +10,7 @@ catkin REQUIRED COMPONENTS
 	message_generation
   pr2_controller_interface
   pr2_mechanism_model
+	manipulation_controller
   pluginlib
 )
 
@@ -25,7 +26,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs pr2_controller_interface pr2_mechanism_model pluginlib
+  CATKIN_DEPENDS roscpp geometry_msgs pr2_controller_interface pr2_mechanism_model pluginlib manipulation_controller
   INCLUDE_DIRS include
   LIBRARIES
 )

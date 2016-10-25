@@ -5,7 +5,8 @@ find_package(
 catkin REQUIRED COMPONENTS
   roscpp
 	std_msgs
-  geometry_msgs
+	geometry_msgs
+  visualization_msgs
 	sensor_msgs
 	actionlib_msgs
 	actionlib
@@ -25,11 +26,11 @@ add_action_files(
 )
 
 generate_messages(
-  DEPENDENCIES std_msgs sensor_msgs actionlib_msgs
+  DEPENDENCIES std_msgs sensor_msgs actionlib_msgs visualization_msgs
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser
+  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs
   INCLUDE_DIRS include
   LIBRARIES manipulation_controller
 )

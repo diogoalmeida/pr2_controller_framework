@@ -3,7 +3,7 @@ manipulation_controller:
   end_effector_link_name: eef_name
   base_link_name: pr2_base_name
   wdls_epsilon: 0.01
-
+  feedback_rate: 10
   spring_constant: 2
 
   gains:

@@ -15,6 +15,7 @@
 #include <kdl/kdl.hpp>
 #include <kdl/frames.hpp>
 #include <geometry_msgs/WrenchStamped.h>
+#include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
 
 namespace manipulation{

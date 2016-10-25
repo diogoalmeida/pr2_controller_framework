@@ -29,6 +29,8 @@ namespace manipulation {
     action_server_->registerPreemptCallback(boost::bind(&ManipulationController::preemptCB, this));
 
     action_server_->start();
+
+    boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
 
   /*
@@ -76,7 +78,40 @@ namespace manipulation {
   */
   void ManipulationController::publishFeedback()
   {
+    ros::Rate feedback_rate(feedback_hz_);
+    visualization_msgs::Marker object_pose;
+    std_msgs::ColorRGBA object_color;
+    Eigen::Vector3d r_1;
 
+    object_color.r = 1;
+    object_color.g = 0;
+    object_color.b = 0;
+    object_color.a = 1;
+
+    object_pose.ns = "manipulation_controller";
+    object_pose.id = 1;
+    object_pose.type = object_pose.CYLINDER;
+    object_pose.action = object_pose.ADD;
+    object_pose.color = object_color;
+    object_pose.lifetime = ros::Duration(0);
+    object_pose.frame_locked = false; // not sure about this
+
+    while(ros::ok())
+    {
+      if (action_server_->isActive())
+      {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_);
+        r_1 = estimated_r_/estimated_r_.norm();
+        tf::poseEigenToMsg(end_effector_pose_, object_pose.pose);
+        // TODO: Needs to be checked
+        object_pose.scale.x = estimated_length_;
+        object_pose.scale.y = 0.02;
+        object_pose.scale.z = 0.02;
+
+        feedback_.object_pose = object_pose;
+        action_server_->publishFeedback(feedback_);
+      }
+    }
   }
 
   /*
@@ -105,6 +140,12 @@ namespace manipulation {
     if (!nh_.getParam("/manipulation_controller/wdls_epsilon", eps_))
     {
       ROS_ERROR("Missing wdls epsilon (/manipulation_controller/wdls_epsilon)");
+      return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/feedback_rate", feedback_hz_))
+    {
+      ROS_ERROR("Missing feedback_rate (/manipulation_controller/feedback_rate)");
       return false;
     }
 
@@ -143,6 +184,9 @@ namespace manipulation {
     }
   }
 
+  /*
+    Estimates the pose of the grasped object with respect to the end-effector
+  */
   void ManipulationController::estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt)
   {
     Eigen::Vector3d force, torque;
@@ -155,6 +199,10 @@ namespace manipulation {
     estimated_r_ = (end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
   }
 
+  /*
+    Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
+    take more than 1ms to execute.
+  */
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;

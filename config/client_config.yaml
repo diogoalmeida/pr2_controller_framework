@@ -1,0 +1,8 @@
+vision:
+  surface_frame_name: id_0
+
+initialization:
+  initial_pose_offset: [0.0, 0.0, 0.15] # w.r.t the surface_frame_name
+
+tool_frame_name: l_gripper_tool_frame
+base_link_name: base_link

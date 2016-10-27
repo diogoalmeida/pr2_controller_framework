@@ -9,6 +9,7 @@ catkin REQUIRED COMPONENTS
 	sensor_msgs
 	actionlib_msgs
 	actionlib
+  tf
   manipulation_controller
 	message_generation
 )

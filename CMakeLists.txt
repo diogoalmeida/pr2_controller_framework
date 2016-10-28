@@ -36,6 +36,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(pr2_joint_controller src/manipulation_joint_controller.cpp)
-target_link_libraries(pr2_joint_controller ${catkin_LIBRARIES})
-add_dependencies(pr2_joint_controller pr2_joint_controllers_generate_messages_cpp)
+add_library(pr2_manipulation_joint_controller src/manipulation_joint_controller.cpp)
+target_link_libraries(pr2_manipulation_joint_controller ${catkin_LIBRARIES})
+add_dependencies(pr2_manipulation_joint_controller pr2_joint_controllers_generate_messages_cpp)
+
+add_library(pr2_approach_joint_controller src/approach_joint_controller.cpp)
+target_link_libraries(pr2_approach_joint_controller ${catkin_LIBRARIES})
+add_dependencies(pr2_approach_joint_controller pr2_joint_controllers_generate_messages_cpp)

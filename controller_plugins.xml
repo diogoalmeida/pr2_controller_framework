@@ -1,4 +1,10 @@
-<library path="lib/libpr2_joint_controller">
+<library path="lib/libpr2_manipulation_joint_controller">
+  <class name="pr2_controller/JointController"
+         type="pr2_joint_controller::JointController"
+         base_class_type="pr2_controller_interface::Controller" />
+</library>
+
+<library path="lib/libpr2_approach_joint_controller">
   <class name="pr2_controller/JointController"
          type="pr2_joint_controller::JointController"
          base_class_type="pr2_controller_interface::Controller" />

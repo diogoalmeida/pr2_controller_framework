@@ -1,8 +1,8 @@
-#ifndef __MANIPULATION_CONTROLLER__
-#define __MANIPULATION_CONTROLLER__
+#ifndef __APPROACH_CONTROLLER__
+#define __APPROACH_CONTROLLER__
 
 #include <sensor_msgs/JointState.h>
-#include <pr2_cartesian_controllers/ManipulationControllerAction.h>
+#include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
 #include <boost/thread.hpp>
 #include <urdf/model.h>
@@ -21,7 +21,7 @@
 
 namespace manipulation{
 
-class ManipulationController : public cartesian_controllers::ControllerTemplate
+class ApproachController : public cartesian_controllers::ControllerTemplate
 {
 private:
   // Robot related
@@ -38,9 +38,9 @@ private:
   boost::mutex reference_mutex_;
 
   // Actionlib
-  actionlib::SimpleActionServer<pr2_cartesian_controllers::ManipulationControllerAction> *action_server_;
-  pr2_cartesian_controllers::ManipulationControllerFeedback feedback_;
-  pr2_cartesian_controllers::ManipulationControllerResult result_;
+  actionlib::SimpleActionServer<pr2_cartesian_controllers::GuardedApproachAction> *action_server_;
+  pr2_cartesian_controllers::GuardedApproachFeedback feedback_;
+  pr2_cartesian_controllers::GuardedApproachResult result_;
   std::string action_name_;
   void publishFeedback();
   void goalCB();
@@ -57,15 +57,10 @@ private:
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
 
   // Controller values
-  double k_spring_, estimated_length_, estimated_orientation_;
-  Eigen::Affine3d surface_frame_, goal_pose_, end_effector_pose_;
   Eigen::Matrix<double, 6, 1> measured_wrench_;
-  Eigen::Matrix3d control_gains_;
-  Eigen::Vector3d estimated_r_;
-  void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
 
 public:
-  ManipulationController();
+  ApproachController();
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

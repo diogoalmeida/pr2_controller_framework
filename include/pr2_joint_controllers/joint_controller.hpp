@@ -1,8 +1,8 @@
 #include <pr2_controller_interface/controller.h>
 #include <pr2_mechanism_model/joint.h>
 #include <control_toolbox/pid.h>
-#include <pr2_controller/PR2JointControllerFeedback.h>
-#include <manipulation_controller/manipulation_controller.hpp>
+#include <pr2_joint_controllers/PR2JointControllerFeedback.h>
+#include <pr2_cartesian_controllers/controller_template.hpp>
 #include <sensor_msgs/JointState.h>
 #include <boost/thread.hpp>
 
@@ -31,7 +31,7 @@ private:
 
   // Feedback elements
   ros::Publisher feedback_pub_;
-  pr2_controller::PR2JointControllerFeedback feedback_;
+  pr2_joint_controllers::PR2JointControllerFeedback feedback_;
   double feedback_hz_;
 
   // Listen to topic to update reference
@@ -45,8 +45,8 @@ private:
   double getReferenceVelocity(std::string joint_name);
   void publishFeedback();
 
-  // Manipulation controller
-  manipulation::ManipulationController manipulation_controller;
+  // Cartesian controller
+  cartesian_controllers::ControllerTemplate *cartesian_controller_;
 
 public:
   // Controller interface methods

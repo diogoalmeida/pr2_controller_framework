@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pr2_controller)
+project(pr2_joint_controllers)
 
 find_package(
 catkin REQUIRED COMPONENTS
@@ -10,7 +10,7 @@ catkin REQUIRED COMPONENTS
 	message_generation
   pr2_controller_interface
   pr2_mechanism_model
-	manipulation_controller
+	pr2_cartesian_controllers
   pluginlib
 )
 
@@ -26,7 +26,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs pr2_controller_interface pr2_mechanism_model pluginlib manipulation_controller
+  CATKIN_DEPENDS roscpp geometry_msgs pr2_controller_interface pr2_mechanism_model pluginlib pr2_cartesian_controllers
   INCLUDE_DIRS include
   LIBRARIES
 )
@@ -36,6 +36,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(pr2_joint_controller src/joint_controller.cpp)
+add_library(pr2_joint_controller src/manipulation_joint_controller.cpp)
 target_link_libraries(pr2_joint_controller ${catkin_LIBRARIES})
-add_dependencies(pr2_joint_controller pr2_controller_generate_messages_cpp)
+add_dependencies(pr2_joint_controller pr2_joint_controllers_generate_messages_cpp)

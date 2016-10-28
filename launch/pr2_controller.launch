@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="pr2_controller_manager" type="spawner" args="pr2_controller" name="pr2_controller_spawner" />
+  <!-- <node pkg="pr2_controller_manager" type="spawner" args="pr2_controller" name="pr2_controller_spawner" /> -->
   <rosparam command="load" file="$(find pr2_controller)/config/controller_config.yaml"/>
 </launch>

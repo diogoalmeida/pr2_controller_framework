@@ -13,15 +13,27 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
-  if(!nh_.getParam("base_link_name", base_link_name_))
+  if(!nh_.getParam("experiment/base_link_name", base_link_name_))
   {
     ROS_ERROR("No base link frame name defined (base_link_name)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/tool_frame_name", tool_frame_name_))
+  {
+    ROS_ERROR("No tool frame frame name defined (tool_frame_name)");
     return false;
   }
 
   if(!nh_.getParam("initialization/initial_pose_offset", initial_pose_offset_))
   {
     ROS_ERROR("No inital eef offset defined (initialization/initial_pose_offset)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/num_of_experiments", num_of_experiments_))
+  {
+    ROS_ERROR("No number of experiments defined (experiment/num_of_experiments)");
     return false;
   }
 }

@@ -10,7 +10,7 @@ catkin REQUIRED COMPONENTS
 	actionlib_msgs
 	actionlib
   tf
-  manipulation_controller
+  pr2_cartesian_controllers
 	message_generation
 )
 
@@ -30,7 +30,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 # )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib manipulation_controller
+  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers
   INCLUDE_DIRS include
   LIBRARIES
 )

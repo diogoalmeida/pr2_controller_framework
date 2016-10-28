@@ -5,7 +5,7 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <actionlib/client/simple_action_client.h>
-#include <manipulation_controller/ManipulationControllerAction.h>
+#include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 
 namespace manipulation{
 
@@ -26,7 +26,7 @@ namespace manipulation{
     bool loadParams();
 
     // actionlib
-    actionlib::SimpleActionClient<manipulation_controller::ManipulationControllerAction> action_client_;
+    actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> action_client_;
     std::string action_name_;
     double server_timeout_;
 
@@ -40,7 +40,8 @@ namespace manipulation{
     std::vector<double> initial_pose_offset_;
     geometry_msgs::PoseStamped surface_frame_pose_;
     geometry_msgs::PoseStamped initial_eef_pose_;
-    std::string base_link_name_;
+    std::string base_link_name_, tool_frame_name_;
+    int num_of_experiments_;
   };
   }
 #endif

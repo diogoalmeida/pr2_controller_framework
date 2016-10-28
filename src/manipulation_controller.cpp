@@ -1,4 +1,4 @@
-#include <manipulation_controller/manipulation_controller.hpp>
+#include <pr2_cartesian_controllers/manipulation_controller.hpp>
 
 namespace manipulation {
   ManipulationController::ManipulationController()
@@ -22,7 +22,7 @@ namespace manipulation {
     ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ManipulationController::forceTorqueCB, this);
 
     // Initialize actionlib server
-    action_server_ = new actionlib::SimpleActionServer<manipulation_controller::ManipulationControllerAction>(nh_, action_name_, false);
+    action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_controllers::ManipulationControllerAction>(nh_, action_name_, false);
 
     // Register callbacks
     action_server_->registerGoalCallback(boost::bind(&ManipulationController::goalCB, this));
@@ -59,7 +59,7 @@ namespace manipulation {
   */
   void ManipulationController::goalCB()
   {
-    boost::shared_ptr<const manipulation_controller::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
+    boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose_in, pose_out;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);

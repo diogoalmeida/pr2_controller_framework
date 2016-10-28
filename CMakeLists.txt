@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(manipulation_controller)
+project(pr2_cartesian_controllers)
 
 find_package(
 catkin REQUIRED COMPONENTS
@@ -15,10 +15,6 @@ catkin REQUIRED COMPONENTS
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
-
-# add_message_files(
-#   FILES
-# )
 
 add_action_files(
 	DIRECTORY action
@@ -42,4 +38,4 @@ include_directories(
 
 add_library(manipulation_controller src/manipulation_controller.cpp)
 target_link_libraries(manipulation_controller ${catkin_LIBRARIES})
-add_dependencies(manipulation_controller pr2_controller_generate_messages_cpp)
+add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_messages_cpp)

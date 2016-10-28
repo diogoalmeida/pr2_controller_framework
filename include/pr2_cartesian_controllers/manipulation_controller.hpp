@@ -2,7 +2,8 @@
 #define __MANIPULATION_CONTROLLER__
 
 #include <sensor_msgs/JointState.h>
-#include <manipulation_controller/ManipulationControllerAction.h>
+#include <pr2_cartesian_controllers/ManipulationControllerAction.h>
+#include <pr2_cartesian_controllers/controller_template.hpp>
 #include <boost/thread.hpp>
 #include <urdf/model.h>
 #include <tf/transform_listener.h>
@@ -20,7 +21,7 @@
 
 namespace manipulation{
 
-class ManipulationController
+class ManipulationController : public cartesian_controllers::ControllerTemplate
 {
 private:
   // Robot related
@@ -37,14 +38,26 @@ private:
   boost::mutex reference_mutex_;
 
   // Actionlib
-  actionlib::SimpleActionServer<manipulation_controller::ManipulationControllerAction> *action_server_;
-  manipulation_controller::ManipulationControllerFeedback feedback_;
-  manipulation_controller::ManipulationControllerResult result_;
+  actionlib::SimpleActionServer<pr2_cartesian_controllers::ManipulationControllerAction> *action_server_;
+  pr2_cartesian_controllers::ManipulationControllerFeedback feedback_;
+  pr2_cartesian_controllers::ManipulationControllerResult result_;
   std::string action_name_;
-  double feedback_hz_;
   void publishFeedback();
   void goalCB();
   void preemptCB();
+
+  // TODO: convert the PR2 controller class into a joint controller that gets inputs
+  // from one of several possible and mutually exclusive action servers. Several different
+  // joint controllers, each loading their own al server?
+  // actionlib::SimpleActionServer<manipulation_controller::GuardedApproachAction> *approach_action_server_;
+  // manipulation_controller::GuardedApproachFeedback approach_feedback_;
+  // manipulation_controller::GuardedApproachResult approach_result_;
+  // std::string approach_action_name_;
+  // void approachPublishFeedback();
+  // void approachGoalCB();
+  // void approachPreemptCB();
+
+  double feedback_hz_;
 
   // ROS
   ros::NodeHandle nh_;
@@ -66,7 +79,7 @@ public:
   ManipulationController();
 
   // Control topic: meant to be called in the realtime loop
-  sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);
+  virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);
 };
 }
 

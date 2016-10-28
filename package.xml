@@ -1,9 +1,12 @@
 <?xml version="1.0"?>
 <package>
 
-  <name>manipulation_controller</name>
-  <version>0.0.1</version>
-  <description>Implements a manipulation controller</description>
+  <name>pr2_cartesian_controllers</name>
+  <version>0.0.2</version>
+  <description>
+    Implements a cartesian controllers for the PR2, able to run at the realtime
+    loop, each with their own actionlib interface for external communication.
+  </description>
   <maintainer email="diogoa@kth.se">diogo</maintainer>
   <license>KTH</license>
 

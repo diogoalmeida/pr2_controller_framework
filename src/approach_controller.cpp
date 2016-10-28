@@ -60,9 +60,14 @@ namespace manipulation {
   void ApproachController::goalCB()
   {
     boost::shared_ptr<const pr2_cartesian_controllers::GuardedApproachGoal> goal = action_server_->acceptNewGoal();
-    geometry_msgs::PoseStamped pose_in, pose_out;
+    geometry_msgs::TwistStamped twist;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
+
+    twist = goal->approach_command;
+    tf::twistMsgToKDL(twist.twist, velocity_reference_);
+
+    force_threshold_ = goal->contact_force;
   }
 
   /*
@@ -71,15 +76,19 @@ namespace manipulation {
   void ApproachController::publishFeedback()
   {
     ros::Rate feedback_rate(feedback_hz_);
+    feedback_.current_wrench.header.frame_id = base_link_;
 
     while(ros::ok())
     {
       if (action_server_->isActive())
       {
         boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
-
+        feedback_.current_wrench.header.stamp = ros::Time::now();
+        tf::wrenchEigenToMsg(measured_wrench_, feedback_.current_wrench.wrench);
+        action_server_->publishFeedback(feedback_);
       }
+
+      feedback_rate.sleep();
     }
   }
 
@@ -131,13 +140,7 @@ namespace manipulation {
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::Frame end_effector_kdl;
     KDL::JntArray commanded_joint_velocities;
-    KDL::Twist input_twist;
-    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands;
-    double x_e, y_e, theta_e, x_d, y_d, theta_d;
-    Eigen::Matrix3d inv_g;
-    Eigen::Matrix<double, 6, 1> twist_eig;
 
     if (!action_server_->isActive())
     {
@@ -145,22 +148,19 @@ namespace manipulation {
     }
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
+
+    if (measured_wrench_.block<3,1>(0,0).norm() > force_threshold_)
+    {
+      action_server_->setSucceeded(result_, "contact force achieved");
+      return current_state;
+    }
+
     for (int i = 0; i < 7; i++)
     {
       joint_positions_(i) = current_state.position[i];
     }
-    fkpos_->JntToCart(joint_positions_, end_effector_kdl);
-    // tf::transformKDLToEigen(end_effector_kdl, end_effector_pose_);
 
-
-    // TODO: Get the proper vectors
-    // rotation_axis = end_effector_pose_.matrix().block<1,3>(0,2);
-    // surface_normal = surface_frame_.matrix().block<1,3>(0,2);
-    // surface_tangent = surface_frame_.matrix().block<1,3>(0,1);
-
-    tf::twistEigenToKDL(twist_eig, input_twist);
-
-    ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
+    ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 
     control_output = current_state;
 

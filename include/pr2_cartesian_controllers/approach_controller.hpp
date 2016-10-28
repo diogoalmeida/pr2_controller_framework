@@ -14,8 +14,10 @@
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/kdl.hpp>
+#include <kdl_conversions/kdl_msg.h>
 #include <kdl/frames.hpp>
 #include <geometry_msgs/WrenchStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
 
@@ -57,7 +59,9 @@ private:
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
 
   // Controller values
+  double force_threshold_;
   Eigen::Matrix<double, 6, 1> measured_wrench_;
+  KDL::Twist velocity_reference_;
 
 public:
   ApproachController();

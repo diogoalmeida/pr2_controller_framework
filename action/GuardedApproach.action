@@ -1,5 +1,9 @@
 # Goal: triggers the controller.
+geometry_msgs/TwistStamped approach_command
+float64 contact_force
 ---
 # Result:
+
 ---
 # Feedback: information that may be used to debug the controller
+geometry_msgs/WrenchStamped current_wrench

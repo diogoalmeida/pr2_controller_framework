@@ -11,6 +11,7 @@ catkin REQUIRED COMPONENTS
 	actionlib_msgs
 	actionlib
 	kdl_parser
+  kdl_conversions
 	message_generation
 )
 

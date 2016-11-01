@@ -11,6 +11,7 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   // copy robot pointer so we can access time
   robot_ = robot;
   reference_active_ = false;
+  controller_is_loaded_ = false;
   pr2_mechanism_model::JointState *joint;
   ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
@@ -76,9 +77,6 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 
   feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
 
-  // launch feedback thread. Allows publishing feedback outside of the realtime loop
-  boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
-
   time_of_last_reference_update_ = robot_->getTime();
 
   ROS_INFO("%s has loaded successfully!", n.getNamespace().c_str());
@@ -89,6 +87,7 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 /// Controller startup in realtime
 void TemplateJointController::starting()
 {
+  controller_is_loaded_ = true;
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     position_joint_controllers_[i]->reset();
@@ -96,6 +95,25 @@ void TemplateJointController::starting()
     time_of_last_cycle_[i] = robot_->getTime();
   }
   time_of_last_manipulation_call_ = robot_->getTime();
+
+  // launch feedback thread. Allows publishing feedback outside of the realtime loop
+  feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
+  // feedback_thread_.detach();
+}
+
+void TemplateJointController::stopping()
+{
+  controller_is_loaded_ = false;
+  ROS_INFO("Joint controller stopping!");
+  feedback_thread_.join();
+  for(int i = 0; i < velocity_joint_controllers_.size(); i++)
+  {
+    delete position_joint_controllers_[i];
+    delete velocity_joint_controllers_[i];
+  }
+
+  delete cartesian_controller_;
+  ROS_INFO("Joint controller stopped successfully!");
 }
 
 /// Controller update loop in realtime
@@ -197,10 +215,11 @@ bool TemplateJointController::isActuatedJoint(std::string joint_name)
 */
 void TemplateJointController::publishFeedback()
 {
-  ros::Rate feedback_rate(feedback_hz_);
   pr2_mechanism_model::JointState *joint_state;
 
-  while(ros::ok())
+  ROS_INFO("FEEDBACK THREAD STARTED");
+
+  while(controller_is_loaded_)
   {
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -231,18 +250,9 @@ void TemplateJointController::publishFeedback()
     }
 
     feedback_pub_.publish(feedback_);
-    feedback_rate.sleep();
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
   }
-}
 
-/*
-  Controller stopping in realtime
-*/
-void TemplateJointController::stopping()
-{
-  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-  {
-    delete velocity_joint_controllers_[i];
-  }
+  ROS_INFO("FEEDBACK THREAD DESTROYED");
 }
 } // namespace

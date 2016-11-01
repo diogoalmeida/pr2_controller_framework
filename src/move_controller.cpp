@@ -26,6 +26,7 @@ namespace manipulation {
     action_server_->registerPreemptCallback(boost::bind(&MoveController::preemptCB, this));
 
     action_server_->start();
+    ROS_INFO("Move controller initialized successfully!");
   }
 
   /*

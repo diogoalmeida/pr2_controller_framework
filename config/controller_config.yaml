@@ -1,5 +1,5 @@
 manipulation_joint_controller:
-  type: pr2_controller/JointController
+  type: pr2_joint_position_controllers/JointController
   # actuated_joint_names: [r_upper_arm_roll_joint, r_shoulder_pan_joint, r_shoulder_lift_joint, r_forearm_roll_joint, r_elbow_flex_joint, r_wrist_flex_joint, r_wrist_roll_joint]
   actuated_joint_names: [l_upper_arm_roll_joint, l_shoulder_pan_joint, l_shoulder_lift_joint, l_forearm_roll_joint, l_elbow_flex_joint, l_wrist_flex_joint, l_wrist_roll_joint]
 
@@ -178,7 +178,7 @@ manipulation_joint_controller:
   control_timeout: 1
 
 approach_joint_controller:
-  type: pr2_controller/JointController
+  type: pr2_joint_position_controllers/JointController
   # actuated_joint_names: [r_upper_arm_roll_joint, r_shoulder_pan_joint, r_shoulder_lift_joint, r_forearm_roll_joint, r_elbow_flex_joint, r_wrist_flex_joint, r_wrist_roll_joint]
   actuated_joint_names: [l_upper_arm_roll_joint, l_shoulder_pan_joint, l_shoulder_lift_joint, l_forearm_roll_joint, l_elbow_flex_joint, l_wrist_flex_joint, l_wrist_roll_joint]
 
@@ -357,7 +357,7 @@ approach_joint_controller:
   control_timeout: 1
 
 move_joint_controller:
-  type: pr2_controller/JointController
+  type: pr2_joint_position_controllers/JointController
   # actuated_joint_names: [r_upper_arm_roll_joint, r_shoulder_pan_joint, r_shoulder_lift_joint, r_forearm_roll_joint, r_elbow_flex_joint, r_wrist_flex_joint, r_wrist_roll_joint]
   actuated_joint_names: [l_upper_arm_roll_joint, l_shoulder_pan_joint, l_shoulder_lift_joint, l_forearm_roll_joint, l_elbow_flex_joint, l_wrist_flex_joint, l_wrist_roll_joint]
 

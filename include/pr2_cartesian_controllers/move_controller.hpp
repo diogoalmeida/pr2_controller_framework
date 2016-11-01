@@ -1,5 +1,5 @@
-#ifndef __APPROACH_CONTROLLER__
-#define __APPROACH_CONTROLLER__
+#ifndef __MOVE_CONTROLLER__
+#define __MOVE_CONTROLLER__
 
 #include <sensor_msgs/JointState.h>
 #include <pr2_cartesian_controllers/MoveAction.h>

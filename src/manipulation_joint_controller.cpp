@@ -14,6 +14,4 @@ cartesian_controllers::ControllerTemplate * ManipulationJointController::initial
 } // namespace
 
 /// Register controller to pluginlib
-PLUGINLIB_DECLARE_CLASS(pr2_joint_position_controllers, ManipulationJointController,
-                         pr2_joint_controller::ManipulationJointController,
-                         pr2_controller_interface::Controller)
+PLUGINLIB_EXPORT_CLASS(pr2_joint_controller::ManipulationJointController, pr2_controller_interface::Controller)

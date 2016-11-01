@@ -14,6 +14,4 @@ cartesian_controllers::ControllerTemplate * ApproachJointController::initializeC
 } // namespace
 
 /// Register controller to pluginlib
-PLUGINLIB_DECLARE_CLASS(pr2_joint_position_controllers, ApproachJointController,
-                         pr2_joint_controller::ApproachJointController,
-                         pr2_controller_interface::Controller)
+PLUGINLIB_EXPORT_CLASS(pr2_joint_controller::ApproachJointController, pr2_controller_interface::Controller)

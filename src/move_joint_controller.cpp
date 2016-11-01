@@ -14,6 +14,4 @@ cartesian_controllers::ControllerTemplate * MoveJointController::initializeContr
 } // namespace
 
 /// Register controller to pluginlib
-PLUGINLIB_DECLARE_CLASS(pr2_joint_position_controllers, MoveJointController,
-                         pr2_joint_controller::MoveJointController,
-                         pr2_controller_interface::Controller)
+PLUGINLIB_EXPORT_CLASS(pr2_joint_controller::MoveJointController, pr2_controller_interface::Controller)

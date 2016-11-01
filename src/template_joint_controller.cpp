@@ -6,7 +6,7 @@ namespace pr2_joint_controller {
 /*
   Controller initialization
 */
-bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
+bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
   // copy robot pointer so we can access time
   robot_ = robot;
@@ -77,7 +77,7 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
   feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
-  boost::thread(boost::bind(&JointController::publishFeedback, this));
+  boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
 
   time_of_last_reference_update_ = robot_->getTime();
 
@@ -85,7 +85,7 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
 }
 
 /// Controller startup in realtime
-void JointController::starting()
+void TemplateJointController::starting()
 {
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
@@ -97,7 +97,7 @@ void JointController::starting()
 }
 
 /// Controller update loop in realtime
-void JointController::update()
+void TemplateJointController::update()
 {
   ros::Duration dt;
   pr2_mechanism_model::JointState *joint_state;
@@ -132,7 +132,7 @@ void JointController::update()
   Apply position feedback, add it to the velocity reference (which acts as a
   feedforward term) and then apply the velocity feedback.
 */
-double JointController::applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt)
+double TemplateJointController::applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt)
 {
   double current_position, position_error, position_feedback;
   double current_velocity, velocity_error;
@@ -151,7 +151,7 @@ double JointController::applyControlLoop(const pr2_mechanism_model::JointState *
 /*
   Get the position value in the control references for the given joint
 */
-double JointController::getReferencePosition(std::string joint_name)
+double TemplateJointController::getReferencePosition(std::string joint_name)
 {
   for (int i = 0; i < control_references_.name.size(); i++)
   {
@@ -168,7 +168,7 @@ double JointController::getReferencePosition(std::string joint_name)
 /*
   Get the velocity value in the control references for the given joint
 */
-double JointController::getReferenceVelocity(std::string joint_name)
+double TemplateJointController::getReferenceVelocity(std::string joint_name)
 {
   for (int i = 0; i < control_references_.name.size(); i++)
   {
@@ -185,7 +185,7 @@ double JointController::getReferenceVelocity(std::string joint_name)
 /*
   Check if the given joint name is actuated by the controller
 */
-bool JointController::isActuatedJoint(std::string joint_name)
+bool TemplateJointController::isActuatedJoint(std::string joint_name)
 {
   return std::find(joint_names_.begin(), joint_names_.end(), joint_name) != joint_names_.end();
 }
@@ -193,7 +193,7 @@ bool JointController::isActuatedJoint(std::string joint_name)
 /*
   Publish feedback at a (non-realtime) rate
 */
-void JointController::publishFeedback()
+void TemplateJointController::publishFeedback()
 {
   ros::Rate feedback_rate(feedback_hz_);
   pr2_mechanism_model::JointState *joint_state;
@@ -236,7 +236,7 @@ void JointController::publishFeedback()
 /*
   Controller stopping in realtime
 */
-void JointController::stopping()
+void TemplateJointController::stopping()
 {
   for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {

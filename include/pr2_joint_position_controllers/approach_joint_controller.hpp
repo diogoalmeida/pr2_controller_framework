@@ -9,6 +9,7 @@ namespace pr2_joint_controller{
 class ApproachJointController: public TemplateJointController
 {
 public:
+  ApproachJointController();
   virtual cartesian_controllers::ControllerTemplate *initializeController();
 };
 }

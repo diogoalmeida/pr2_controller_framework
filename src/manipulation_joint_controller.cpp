@@ -1,4 +1,4 @@
-#include <pr2_joint_controllers/joint_controller.hpp>
+#include <pr2_joint_position_controllers/joint_controller.hpp>
 #include <pr2_cartesian_controllers/manipulation_controller.hpp>
 #include <pluginlib/class_list_macros.h>
 
@@ -75,7 +75,7 @@ bool JointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHand
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "velocity_loop_gains/" + joint_names_[i]));
   }
 
-  feedback_pub_ = n.advertise<pr2_joint_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
+  feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   boost::thread(boost::bind(&JointController::publishFeedback, this));
@@ -247,6 +247,6 @@ void JointController::stopping()
 } // namespace
 
 /// Register controller to pluginlib
-PLUGINLIB_DECLARE_CLASS(pr2_joint_controllers, JointController,
+PLUGINLIB_DECLARE_CLASS(pr2_joint_position_controllers, ManipulationJointController,
                          pr2_joint_controller::JointController,
                          pr2_controller_interface::Controller)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pr2_joint_controllers)
+project(pr2_joint_position_controllers)
 
 find_package(
 catkin REQUIRED COMPONENTS

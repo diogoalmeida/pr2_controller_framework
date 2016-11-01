@@ -1,7 +1,7 @@
 #include <pr2_controller_interface/controller.h>
 #include <pr2_mechanism_model/joint.h>
 #include <control_toolbox/pid.h>
-#include <pr2_joint_controllers/PR2JointControllerFeedback.h>
+#include <pr2_joint_position_controllers/PR2JointControllerFeedback.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
 #include <sensor_msgs/JointState.h>
 #include <boost/thread.hpp>
@@ -31,7 +31,7 @@ private:
 
   // Feedback elements
   ros::Publisher feedback_pub_;
-  pr2_joint_controllers::PR2JointControllerFeedback feedback_;
+  pr2_joint_position_controllers::PR2JointControllerFeedback feedback_;
   double feedback_hz_;
 
   // Listen to topic to update reference

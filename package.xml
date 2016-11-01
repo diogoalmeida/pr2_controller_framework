@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>pr2_joint_controllers</name>
+  <name>pr2_joint_position_controllers</name>
   <version>0.0.2</version>
   <description>
     This package offers a joint controller template for the PR2, which can

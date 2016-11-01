@@ -6,6 +6,9 @@
 #include <control_toolbox/pid.h>
 #include <pr2_joint_position_controllers/PR2JointControllerFeedback.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
+#include <pr2_cartesian_controllers/approach_controller.hpp>
+#include <pr2_cartesian_controllers/manipulation_controller.hpp>
+#include <pr2_cartesian_controllers/move_controller.hpp>
 #include <sensor_msgs/JointState.h>
 #include <boost/thread.hpp>
 

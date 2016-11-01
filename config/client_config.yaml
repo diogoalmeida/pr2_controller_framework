@@ -7,5 +7,5 @@ initialization:
 
 experiment:
   tool_frame_name: l_gripper_tool_frame
-  base_link_name: base_link
+  base_link_name: torso_lift_link
   num_of_experiments: 1

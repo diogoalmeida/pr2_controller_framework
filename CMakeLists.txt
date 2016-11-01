@@ -29,7 +29,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs
   INCLUDE_DIRS include
-  LIBRARIES manipulation_controller
+  LIBRARIES manipulation_controller approach_controller move_controller
 )
 
 include_directories(

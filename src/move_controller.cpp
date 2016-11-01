@@ -79,6 +79,8 @@ namespace manipulation {
         ROS_ERROR("ERROR getting robot description (/robot_description)");
         return false;
     }
+
+    return true;
   }
 
   /*

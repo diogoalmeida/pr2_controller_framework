@@ -81,6 +81,8 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 
   time_of_last_reference_update_ = robot_->getTime();
 
+  ROS_INFO("%s has loaded successfully!", n.getNamespace().c_str());
+
   return true;
 }
 

@@ -1,17 +1,17 @@
 <library path="lib/libpr2_manipulation_joint_controller">
   <class name="pr2_joint_position_controllers/ManipulationJointController"
-         type="pr2_joint_controller::JointController"
+         type="pr2_joint_controller::ManipulationJointController"
          base_class_type="pr2_controller_interface::Controller" />
 </library>
 
 <library path="lib/libpr2_approach_joint_controller">
   <class name="pr2_joint_position_controllers/ApproachJointController"
-         type="pr2_joint_controller::JointController"
+         type="pr2_joint_controller::ApproachJointController"
          base_class_type="pr2_controller_interface::Controller" />
 </library>
 
 <library path="lib/libpr2_move_joint_controller">
   <class name="pr2_joint_position_controllers/MoveJointController"
-         type="pr2_joint_controller::JointController"
+         type="pr2_joint_controller::MoveJointController"
          base_class_type="pr2_controller_interface::Controller" />
 </library>

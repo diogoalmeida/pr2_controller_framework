@@ -3,6 +3,7 @@ vision:
 
 initialization:
   initial_pose_offset: [0.0, 0.0, 0.15] # w.r.t the surface_frame_name
+  initial_approach_angle: 0.62831853071 # in radians
 
 experiment:
   tool_frame_name: l_gripper_tool_frame

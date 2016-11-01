@@ -10,6 +10,7 @@ catkin REQUIRED COMPONENTS
 	actionlib_msgs
 	actionlib
   tf
+  eigen_conversions
   pr2_cartesian_controllers
 	message_generation
 )

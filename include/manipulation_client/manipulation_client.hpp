@@ -33,7 +33,8 @@ namespace manipulation{
     // actionlib
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction> *approach_action_client_;
-    std::string manipulation_action_name_, approach_action_name_;
+    actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction> *move_action_client_;
+    std::string move_action_name_, manipulation_action_name_, approach_action_name_;
     double server_timeout_;
 
     // Vision feedback

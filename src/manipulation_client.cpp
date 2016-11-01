@@ -31,6 +31,12 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("initialization/initial_approach_angle", initial_approach_angle_))
+  {
+    ROS_ERROR("No inital approach angle defined (initialization/initial_approach_angle)");
+    return false;
+  }
+
   if(!nh_.getParam("initialization/manipulation_action_name", manipulation_action_name_))
   {
     ROS_ERROR("No manipulation action name defined (initialization/manipulation_action_name)");
@@ -67,6 +73,7 @@ void ManipulationClient::runExperiment()
 
   manipulation_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction>(manipulation_action_name_, true);
   approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
+  move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
 
   ROS_INFO("%s client waiting for server", manipulation_action_name_.c_str());
   if(!manipulation_action_client_->waitForServer(ros::Duration(server_timeout_)))
@@ -80,6 +87,14 @@ void ManipulationClient::runExperiment()
   if(!approach_action_client_->waitForServer(ros::Duration(server_timeout_)))
   {
     ROS_ERROR("%s was not found. Aborting", approach_action_name_.c_str());
+    ros::shutdown();
+    return;
+  }
+
+  ROS_INFO("%s client waiting for server", move_action_name_.c_str());
+  if(!move_action_client_->waitForServer(ros::Duration(server_timeout_)))
+  {
+    ROS_ERROR("%s was not found. Aborting", move_action_name_.c_str());
     ros::shutdown();
     return;
   }
@@ -115,23 +130,38 @@ void ManipulationClient::runExperiment()
   Eigen::Vector3d initial_offset;
   initial_offset << initial_pose_offset_[0], initial_pose_offset_[1], initial_pose_offset_[2];
 
+  // Compose the transform
   desired_initial_pose.translate(initial_offset);
   desired_initial_pose.rotate(initial_orientation);
+
+  // Convert to pose
+  tf::poseEigenToMsg(desired_initial_pose, initial_eef_pose_.pose);
+  initial_eef_pose_.header.frame_id = surface_frame_name_;
+
+  // Get in world frame
+  listener_.transformPose(base_link_name_, initial_eef_pose_, initial_eef_pose_);
+
+  initial_eef_pose_.pose.position.x += surface_frame_pose_.pose.position.x;
+  initial_eef_pose_.pose.position.y += surface_frame_pose_.pose.position.y;
+  initial_eef_pose_.pose.position.z += surface_frame_pose_.pose.position.z;
+
+  pr2_cartesian_controllers::MoveGoal move_goal;
+  pr2_cartesian_controllers::GuardedApproachGoal approach_goal;
+  pr2_cartesian_controllers::ManipulationControllerGoal manipulation_goal;
 
   //while(experiment_conditions)
   {
     // Send experiment arm to right initial pose
-    pr2_cartesian_controllers::MoveGoal move_goal;
+    move_goal.desired_pose = initial_eef_pose_;
+    move_action_client_->sendGoal(move_goal);
 
     // Do a guarded approach in the -z direction of the table frame
-    // pr2_cartesian_controllers::GuardedApproachGoal
 
     // Get ground truth of the contact point
 
     // Determine desired final pose
 
     // Initialize experiment.
-    // pr2_cartesian_controllers::ManipulationControllerGoal
   }
 }
 

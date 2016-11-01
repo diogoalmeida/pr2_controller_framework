@@ -19,7 +19,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 add_action_files(
 	DIRECTORY action
-	FILES ManipulationController.action GuardedApproach.action
+	FILES ManipulationController.action GuardedApproach.action Move.action
 )
 
 generate_messages(
@@ -44,3 +44,7 @@ add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_mess
 add_library(approach_controller src/approach_controller.cpp)
 target_link_libraries(approach_controller ${catkin_LIBRARIES})
 add_dependencies(approach_controller pr2_cartesian_controllers_generate_messages_cpp)
+
+add_library(move_controller src/move_controller.cpp)
+target_link_libraries(move_controller ${catkin_LIBRARIES})
+add_dependencies(move_controller pr2_cartesian_controllers_generate_messages_cpp)

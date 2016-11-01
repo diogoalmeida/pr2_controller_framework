@@ -9,7 +9,7 @@ namespace pr2_joint_controller{
 class MoveJointController: public TemplateJointController
 {
 public:
-  MoveJointController();
+  MoveJointController(){}
   virtual cartesian_controllers::ControllerTemplate *initializeController();
 };
 }

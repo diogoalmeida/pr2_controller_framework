@@ -31,9 +31,27 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("initialization/manipulation_action_name", manipulation_action_name_))
+  {
+    ROS_ERROR("No manipulation action name defined (initialization/manipulation_action_name)");
+    return false;
+  }
+
+  if(!nh_.getParam("initialization/approach_action_name", approach_action_name_))
+  {
+    ROS_ERROR("No approach action name defined (initialization/approach_action_name)");
+    return false;
+  }
+
   if(!nh_.getParam("experiment/num_of_experiments", num_of_experiments_))
   {
     ROS_ERROR("No number of experiments defined (experiment/num_of_experiments)");
+    return false;
+  }
+
+  if(!nh_.getParam("initialization/gravity_compensation_service_name", gravity_compensation_service_name_))
+  {
+    ROS_ERROR("No number gravity compensation service name defined (initialization/gravity_compensation_service_name)");
     return false;
   }
 }
@@ -45,15 +63,28 @@ bool ManipulationClient::loadParams()
 */
 void ManipulationClient::runExperiment()
 {
-  ROS_INFO("%s client waiting for server", action_name_.c_str());
-  if(!action_client_.waitForServer(ros::Duration(server_timeout_)))
+  loadParams();
+
+  manipulation_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction>(manipulation_action_name_, true);
+  approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
+
+  ROS_INFO("%s client waiting for server", manipulation_action_name_.c_str());
+  if(!manipulation_action_client_->waitForServer(ros::Duration(server_timeout_)))
   {
-    ROS_ERROR("%s was not found. Aborting", action_name_.c_str());
+    ROS_ERROR("%s was not found. Aborting", manipulation_action_name_.c_str());
     ros::shutdown();
     return;
   }
 
-  ROS_INFO("%s client waiting for table pose", action_name_.c_str());
+  ROS_INFO("%s client waiting for server", approach_action_name_.c_str());
+  if(!approach_action_client_->waitForServer(ros::Duration(server_timeout_)))
+  {
+    ROS_ERROR("%s was not found. Aborting", approach_action_name_.c_str());
+    ros::shutdown();
+    return;
+  }
+
+  ROS_INFO("Cartesian client waiting for table pose");
   if(!waitForTablePose(ros::Duration(vision_timeout_)))
   {
     ROS_ERROR("Could not find table frame. Aborting");
@@ -61,20 +92,46 @@ void ManipulationClient::runExperiment()
     return;
   }
 
+  gravity_compensation_client_ = nh_.serviceClient<std_srvs::Empty>(gravity_compensation_service_name_);
+
+  // Zero the ft sensor readings
+  std_srvs::Empty srv;
+
+  if(!gravity_compensation_client_.call(srv))
+  {
+    ROS_ERROR("Error calling the gravity compensation server!");
+    ros::shutdown();
+    return;
+  }
+
   // At this point I have knowledge of the arm that I want to move (tool frame)
-  // and what is my desired initial pose for the robotic manipulator
+  // and I can compute the desired initial pose of the end-effector
+  Eigen::Affine3d desired_initial_pose;
+
+  // Define the intended orientation of the end-effector in the surface frame
+  Eigen::AngleAxisd initial_orientation(initial_approach_angle_, Eigen::Vector3d::UnitX()); // need to check axis
+
+  // Set the intended offset
+  Eigen::Vector3d initial_offset;
+  initial_offset << initial_pose_offset_[0], initial_pose_offset_[1], initial_pose_offset_[2];
+
+  desired_initial_pose.translate(initial_offset);
+  desired_initial_pose.rotate(initial_orientation);
 
   //while(experiment_conditions)
   {
     // Send experiment arm to right initial pose
+    pr2_cartesian_controllers::MoveGoal move_goal;
 
     // Do a guarded approach in the -z direction of the table frame
+    // pr2_cartesian_controllers::GuardedApproachGoal
 
     // Get ground truth of the contact point
 
     // Determine desired final pose
 
     // Initialize experiment.
+    // pr2_cartesian_controllers::ManipulationControllerGoal
   }
 }
 
@@ -98,13 +155,6 @@ bool ManipulationClient::waitForTablePose(ros::Duration max_time)
   surface_frame_pose_.pose.orientation.y = 0;
   surface_frame_pose_.pose.orientation.z = 0;
   surface_frame_pose_.pose.orientation.w = 1;
-
-  initial_eef_pose_ = surface_frame_pose_;
-  initial_eef_pose_.pose.position.x = initial_pose_offset_[0];
-  initial_eef_pose_.pose.position.y = initial_pose_offset_[1];
-  initial_eef_pose_.pose.position.z = initial_pose_offset_[2];
-  initial_eef_pose_.pose.orientation.x = 1;
-  initial_eef_pose_.pose.orientation.w = 0;
 
   listener_.transformPose(base_link_name_, surface_frame_pose_, surface_frame_pose_);
   return true;

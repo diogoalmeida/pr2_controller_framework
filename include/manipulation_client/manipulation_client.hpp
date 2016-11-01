@@ -5,29 +5,35 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <actionlib/client/simple_action_client.h>
+#include <eigen_conversions/eigen_msg.h>
+#include <eigen_conversions/eigen_kdl.h>
 #include <pr2_cartesian_controllers/ManipulationControllerAction.h>
+#include <pr2_cartesian_controllers/GuardedApproachAction.h>
+#include <pr2_cartesian_controllers/MoveAction.h>
+#include <std_srvs/Empty.h>
 
 namespace manipulation{
 
   class ManipulationClient
   {
   public:
-    ManipulationClient(std::string action_name) : action_client_(action_name, true)
+    ManipulationClient()
     {
       nh_ = ros::NodeHandle("~");
-      action_name_ = action_name;
       runExperiment();
     }
 
   private:
     // ros
     ros::NodeHandle nh_;
+    ros::ServiceClient gravity_compensation_client_;
     tf::TransformListener listener_;
     bool loadParams();
 
     // actionlib
-    actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> action_client_;
-    std::string action_name_;
+    actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
+    actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction> *approach_action_client_;
+    std::string manipulation_action_name_, approach_action_name_;
     double server_timeout_;
 
     // Vision feedback
@@ -38,9 +44,11 @@ namespace manipulation{
     // Experimental setup
     void runExperiment();
     std::vector<double> initial_pose_offset_;
+    double initial_approach_angle_;
     geometry_msgs::PoseStamped surface_frame_pose_;
     geometry_msgs::PoseStamped initial_eef_pose_;
     std::string base_link_name_, tool_frame_name_;
+    std::string gravity_compensation_service_name_;
     int num_of_experiments_;
   };
   }

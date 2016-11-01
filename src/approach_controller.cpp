@@ -71,6 +71,15 @@ namespace manipulation {
   }
 
   /*
+    Preempt controller.
+  */
+  void ApproachController::preemptCB()
+  {
+    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    action_server_->setPreempted(result_);
+  }
+
+  /*
     Asynchronously publish a feedback message on the control status
   */
   void ApproachController::publishFeedback()

@@ -55,6 +55,15 @@ namespace manipulation {
   }
 
   /*
+    Preempt controller.
+  */
+  void ManipulationController::preemptCB()
+  {
+    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    action_server_->setPreempted(result_);
+  }
+
+  /*
     Receive a new actiongoal: update controller input parameters.
   */
   void ManipulationController::goalCB()

@@ -1,7 +1,7 @@
 manipulation_controller:
   action_server_name: dexterous_manipulation
-  end_effector_link_name: eef_name
-  base_link_name: pr2_base_name
+  end_effector_link_name: l_wrist_roll_link
+  base_link_name: torso_lift_link
   wdls_epsilon: 0.01
   feedback_rate: 10
   spring_constant: 2
@@ -10,3 +10,15 @@ manipulation_controller:
     k_1: 1
     k_2: 1
     k_3: 1
+
+approach_controller:
+  action_server_name: approach_controller
+  end_effector_link_name: l_wrist_roll_link
+  base_link_name: torso_lift_link
+  wdls_epsilon: 0.01
+  feedback_rate: 10
+
+move_controller:
+  action_server_name: move_controller
+  end_effector_link_name: l_wrist_roll_link
+  base_link_name: torso_lift_link

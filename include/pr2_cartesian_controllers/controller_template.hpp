@@ -9,7 +9,7 @@ namespace cartesian_controllers{
 class ControllerTemplate
 {
 public:
-  ControllerTemplate();
+  ControllerTemplate(){}
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt) = 0;

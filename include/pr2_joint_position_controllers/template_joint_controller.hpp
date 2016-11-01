@@ -1,3 +1,6 @@
+#ifndef __TEMPLATE_JOINT_CONTROLLER__
+#define __TEMPLATE_JOINT_CONTROLLER__
+
 #include <pr2_controller_interface/controller.h>
 #include <pr2_mechanism_model/joint.h>
 #include <control_toolbox/pid.h>
@@ -8,7 +11,7 @@
 
 namespace pr2_joint_controller{
 
-class JointController: public pr2_controller_interface::Controller
+class TemplateJointController: public pr2_controller_interface::Controller
 {
 private:
   // PR2 state class
@@ -55,5 +58,10 @@ public:
   virtual void starting();
   virtual void update();
   virtual void stopping();
+
+  // implementable method
+  virtual cartesian_controllers::ControllerTemplate *initializeController() = 0;
 };
 }
+
+#endif

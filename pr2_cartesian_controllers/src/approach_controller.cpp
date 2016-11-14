@@ -73,8 +73,11 @@ namespace cartesian_controllers {
 
     if (!action_server_->isActive())
     {
-      return current_state;
+      return lastState(current_state);
     }
+
+    // TODO: This should be handled in the template class 
+    has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 

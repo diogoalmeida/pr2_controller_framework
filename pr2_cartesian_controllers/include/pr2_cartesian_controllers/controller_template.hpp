@@ -50,6 +50,9 @@ protected:
   std::string end_effector_link_, base_link_, ft_topic_name_;
   double eps_; // weighted damped least squares epsilon
   double feedback_hz_;
+  bool has_state_;
+  sensor_msgs::JointState last_state_;
+  sensor_msgs::JointState lastState(const sensor_msgs::JointState current);
 
   //Actionlib
   actionlib::SimpleActionServer<ActionClass> *action_server_;
@@ -95,9 +98,30 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
   ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
+  has_state_ = false;
 
   // Subscribe to force and torque measurements
   ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ControllerTemplate::forceTorqueCB, this);
+}
+
+/*
+  Return last controlled joint state
+*/
+template <class ActionClass, class ActionFeedback, class ActionResult>
+sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState current)
+{
+  if(!has_state_)
+  {
+    last_state_ = current;
+    for (int i = 0; i < last_state_.velocity.size(); i++)
+    {
+      last_state_.velocity[i] = 0.0;
+    }
+
+    has_state_ = true;
+  }
+
+  return last_state_;
 }
 
 /*

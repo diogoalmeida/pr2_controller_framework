@@ -27,7 +27,17 @@ private:
 public:
   ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,
                                             pr2_cartesian_controllers::GuardedApproachFeedback,
-                                            pr2_cartesian_controllers::GuardedApproachResult>(){};
+                                            pr2_cartesian_controllers::GuardedApproachResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+    
+    startActionlib();
+    boost::thread(boost::bind(&ApproachController::publishFeedback, this));
+  };
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

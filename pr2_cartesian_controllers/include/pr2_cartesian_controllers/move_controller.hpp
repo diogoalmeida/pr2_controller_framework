@@ -24,7 +24,16 @@ private:
 public:
   MoveController() : ControllerTemplate<pr2_cartesian_controllers::MoveAction,
                                         pr2_cartesian_controllers::MoveFeedback,
-                                        pr2_cartesian_controllers::MoveResult>(){};
+                                        pr2_cartesian_controllers::MoveResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+
+    startActionlib();
+  }
 
 
   // Control topic: meant to be called in the realtime loop

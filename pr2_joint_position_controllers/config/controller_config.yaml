@@ -364,85 +364,85 @@ move_joint_controller:
   # Controllers
   position_loop_gains:
     r_upper_arm_roll_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_shoulder_pan_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_shoulder_lift_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_forearm_roll_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_elbow_flex_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_wrist_flex_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     r_wrist_roll_joint:
-      p: 1
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_upper_arm_roll_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_shoulder_pan_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_shoulder_lift_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_forearm_roll_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_elbow_flex_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_wrist_flex_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
 
     l_wrist_roll_joint:
-      p: 10
+      p: 100
       i: 0
       d: 0
       i_clamp: 10
@@ -531,6 +531,6 @@ move_joint_controller:
       d: 0
       i_clamp: 10
 
-  feedback_rate: 1
+  feedback_rate: 100
   receive_position_reference: True
   control_timeout: 1

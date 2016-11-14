@@ -28,7 +28,17 @@ private:
 public:
   ManipulationController() : ControllerTemplate<pr2_cartesian_controllers::ManipulationControllerAction,
                                                 pr2_cartesian_controllers::ManipulationControllerFeedback,
-                                                pr2_cartesian_controllers::ManipulationControllerResult>(){};
+                                                pr2_cartesian_controllers::ManipulationControllerResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+
+    startActionlib();
+    boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
+  }
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

@@ -21,14 +21,21 @@
 
 namespace cartesian_controllers{
 
-template <class ActionClass, class ActionFeedback, class ActionResult>
-class ControllerTemplate
+// Makes life easier for instantiating a pointer to a controller
+class ControllerBase
 {
 public:
-  ControllerTemplate();
+  ControllerBase(){}
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt) = 0;
+};
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+class ControllerTemplate : public ControllerBase
+{
+public:
+  ControllerTemplate();
 
 protected:
   // Robot related

@@ -10,7 +10,7 @@ class MoveJointController: public TemplateJointController
 {
 public:
   MoveJointController(){}
-  virtual cartesian_controllers::ControllerTemplate *initializeController();
+  virtual cartesian_controllers::ControllerBase *initializeController();
 };
 }
 

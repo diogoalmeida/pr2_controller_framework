@@ -10,7 +10,7 @@ class ApproachJointController: public TemplateJointController
 {
 public:
   ApproachJointController(){}
-  virtual cartesian_controllers::ControllerTemplate *initializeController();
+  virtual cartesian_controllers::ControllerBase *initializeController();
 };
 }
 

@@ -7,9 +7,9 @@ namespace pr2_joint_controller {
 /*
   Controller initialization
 */
-cartesian_controllers::ControllerTemplate * ApproachJointController::initializeController()
+cartesian_controllers::ControllerBase * ApproachJointController::initializeController()
 {
-  return new manipulation::ApproachController();
+  return new cartesian_controllers::ApproachController();
 }
 } // namespace
 

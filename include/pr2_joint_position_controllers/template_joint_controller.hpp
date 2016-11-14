@@ -54,7 +54,7 @@ private:
   void publishFeedback();
 
   // Cartesian controller
-  cartesian_controllers::ControllerTemplate *cartesian_controller_;
+  cartesian_controllers::ControllerBase *cartesian_controller_;
 
 public:
   // Controller interface methods
@@ -65,7 +65,7 @@ public:
   virtual void stopping();
 
   // implementable method
-  virtual cartesian_controllers::ControllerTemplate *initializeController() = 0;
+  virtual cartesian_controllers::ControllerBase *initializeController() = 0;
 };
 }
 

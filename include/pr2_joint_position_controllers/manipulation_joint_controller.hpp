@@ -10,7 +10,7 @@ class ManipulationJointController: public TemplateJointController
 {
 public:
   ManipulationJointController(){}
-  virtual cartesian_controllers::ControllerTemplate *initializeController();
+  virtual cartesian_controllers::ControllerBase *initializeController();
 };
 }
 

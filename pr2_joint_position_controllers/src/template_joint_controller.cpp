@@ -223,12 +223,14 @@ void TemplateJointController::publishFeedback()
   {
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      feedback_.joint_name.clear();
       feedback_.commanded_effort.clear();
       feedback_.position_error.clear();
       feedback_.velocity_error.clear();
       for (int i = 0; i < control_references_.name.size(); i++)
       {
         joint_state = robot_->getJointState(control_references_.name[i]);
+        feedback_.joint_name.push_back(control_references_.name[i]);
         feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
         feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
         feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);

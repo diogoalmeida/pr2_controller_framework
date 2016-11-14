@@ -1,4 +1,5 @@
 # Feedback: information that may be used to debug the controller
+string[] joint_name
 float64[] commanded_effort # Values sent to the robot
 float64[] position_error
 float64[] velocity_error

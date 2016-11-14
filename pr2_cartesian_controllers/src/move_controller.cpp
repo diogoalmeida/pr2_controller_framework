@@ -39,6 +39,58 @@ namespace cartesian_controllers {
   }
 
   /*
+    Asynchronously publish a feedback message on the control status
+  */
+  void MoveController::publishFeedback()
+  {
+    ros::Rate feedback_rate(feedback_hz_);
+    visualization_msgs::Marker reference_pose, current_pose;
+    std_msgs::ColorRGBA object_color;
+    Eigen::Vector3d r_1;
+    KDL::Frame current_eef;
+
+    object_color.r = 1;
+    object_color.g = 0;
+    object_color.b = 0;
+    object_color.a = 1;
+
+    reference_pose.header.frame_id = base_link_;
+    reference_pose.header.stamp = ros::Time::now();
+    reference_pose.ns = "move_controller";
+    reference_pose.id = 1;
+    reference_pose.type = reference_pose.SPHERE;
+    reference_pose.action = reference_pose.ADD;
+    reference_pose.color = object_color;
+    reference_pose.lifetime = ros::Duration(0);
+    reference_pose.frame_locked = false; // not sure about this
+    reference_pose.scale.x = 0.1;
+    reference_pose.scale.y = 0.1;
+    reference_pose.scale.z = 0.1;
+
+    current_pose = reference_pose;
+    current_pose.id = 2;
+    object_color.r = 0;
+    object_color.g = 1;
+    current_pose.color = object_color;
+
+
+    while(ros::ok())
+    {
+      if (action_server_->isActive())
+      {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_);
+        fkpos_->JntToCart(joint_positions_, current_eef);
+        tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
+        tf::poseKDLToMsg(current_eef, current_pose.pose);
+
+        target_pub_.publish(reference_pose);
+        current_pub_.publish(current_pose);
+      }
+      feedback_rate.sleep();
+    }
+  }
+
+  /*
     Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
     take more than 1ms to execute.
   */

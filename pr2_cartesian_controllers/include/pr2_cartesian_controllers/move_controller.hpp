@@ -17,9 +17,13 @@ private:
   virtual void goalCB();
   virtual void preemptCB();
   virtual bool loadParams();
+  void publishFeedback();
 
   // Controller values
   KDL::Frame pose_reference_;
+
+  // ROS
+  ros::Publisher target_pub_, current_pub_;
 
 public:
   MoveController() : ControllerTemplate<pr2_cartesian_controllers::MoveAction,
@@ -33,6 +37,9 @@ public:
     }
 
     startActionlib();
+    target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
+    current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
+    boost::thread(boost::bind(&MoveController::publishFeedback, this));
   }
 
 

@@ -67,6 +67,7 @@ namespace cartesian_controllers {
         feedback_.object_pose = object_pose;
         action_server_->publishFeedback(feedback_);
       }
+      feedback_rate.sleep();
     }
   }
 

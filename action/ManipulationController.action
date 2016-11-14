@@ -1,0 +1,8 @@
+# Goal: triggers the controller.
+geometry_msgs/PoseStamped surface_frame
+geometry_msgs/PoseStamped goal_pose
+---
+# Result:
+---
+# Feedback: information that may be used to debug the controller
+visualization_msgs/Marker object_pose

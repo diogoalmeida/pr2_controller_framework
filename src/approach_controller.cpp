@@ -1,59 +1,6 @@
 #include <pr2_cartesian_controllers/approach_controller.hpp>
 
-namespace manipulation {
-  ApproachController::ApproachController()
-  {
-    nh_ = ros::NodeHandle("~");
-
-    if(!loadParams())
-    {
-      ros::shutdown();
-      exit(0);
-    }
-
-    // Initialize KDL variables
-    joint_positions_.resize(7);
-    kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
-    tree_.getChain(base_link_, end_effector_link_, chain_);
-    fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-    ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
-
-    // Subscribe to force and torque measurements
-    ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ApproachController::forceTorqueCB, this);
-
-    // Initialize actionlib server
-    action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_controllers::GuardedApproachAction>(nh_, action_name_, false);
-
-    // Register callbacks
-    action_server_->registerGoalCallback(boost::bind(&ApproachController::goalCB, this));
-    action_server_->registerPreemptCallback(boost::bind(&ApproachController::preemptCB, this));
-
-    action_server_->start();
-
-    boost::thread(boost::bind(&ApproachController::publishFeedback, this));
-  }
-
-  /*
-    Update current force and torque values.
-  */
-  void ApproachController::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
-  {
-    geometry_msgs::Vector3Stamped vector_in, vector_out;
-    geometry_msgs::Wrench transformed_wrench;
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
-    vector_in.vector = msg->wrench.torque;
-    vector_in.header = msg->header;
-    listener_.transformVector(base_link_, vector_in, vector_out);
-    transformed_wrench.torque = vector_in.vector;
-
-    vector_in.vector = msg->wrench.force;
-    listener_.transformVector(base_link_, vector_in, vector_out);
-    transformed_wrench.force = vector_in.vector;
-
-    tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
-  }
-
+namespace cartesian_controllers {
   /*
     Receive a new actiongoal: update controller input parameters.
   */
@@ -110,35 +57,6 @@ namespace manipulation {
     {
       ROS_ERROR("Missing action server name parameter (/approach_controller/action_server_name)");
       return false;
-    }
-
-    if (!nh_.getParam("/approach_controller/end_effector_link_name", end_effector_link_))
-    {
-      ROS_ERROR("Missing end-effector link name (/approach_controller/end_effector_link_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/approach_controller/base_link_name", base_link_))
-    {
-      ROS_ERROR("Missing base link name (/approach_controller/base_link_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/approach_controller/wdls_epsilon", eps_))
-    {
-      ROS_ERROR("Missing wdls epsilon (/approach_controller/wdls_epsilon)");
-      return false;
-    }
-
-    if (!nh_.getParam("/approach_controller/feedback_rate", feedback_hz_))
-    {
-      ROS_ERROR("Missing feedback_rate (/approach_controller/feedback_rate)");
-      return false;
-    }
-
-    if(!model_.initParam("/robot_description")){
-        ROS_ERROR("ERROR getting robot description (/robot_description)");
-        return false;
     }
 
     return true;

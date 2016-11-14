@@ -23,9 +23,9 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     feedback_hz_ = 10.0;
   }
 
-  if (!n.getParam("actuated_joint_names", joint_names_))
+  if (!n.getParam("/common/actuated_joint_names", joint_names_))
   {
-    ROS_ERROR("Joint controller requires a set of joint names (%s/actuated_joint_names)", n.getNamespace().c_str());
+    ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
     return false;
   }
 
@@ -39,9 +39,9 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   for(int i = 0; i < joint_names_.size(); i++) // initialize the position joint controllers. Expecting one set of PID gains per actuated joint
   {
     ROS_INFO("%s", joint_names_[i].c_str());
-    if(!n.hasParam("position_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+    if(!n.hasParam("/common/position_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
     {
-      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (%s/position_loop_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/position_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
       return false;
     }
 
@@ -58,21 +58,21 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     }
 
     last_active_joint_position_.push_back(joint->position_);
-    position_joint_controllers_[i]->init(ros::NodeHandle(n, "position_loop_gains/" + joint_names_[i]));
+    position_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/position_loop_gains/" + joint_names_[i]));
   }
 
   for(int i = 0; i < joint_names_.size(); i++) // initialize the velocity joint controllers. Expecting one set of PID gains per actuated joint
   {
-    if(!n.hasParam("velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+    if(!n.hasParam("/common/velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
     {
-      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (%s/velocity_loop_gains/%s)", joint_names_[i].c_str(), n.getNamespace().c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/velocity_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
       return false;
     }
 
     // create a controller instance and give it a unique namespace for setting the controller gains
     velocity_joint_controllers_.push_back(new control_toolbox::Pid());
     time_of_last_cycle_.push_back(robot_->getTime());
-    velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "velocity_loop_gains/" + joint_names_[i]));
+    velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/velocity_loop_gains/" + joint_names_[i]));
   }
 
   feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);

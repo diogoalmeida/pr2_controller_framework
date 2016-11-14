@@ -17,6 +17,7 @@ namespace cartesian_controllers {
     kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
     tree_.getChain(base_link_, end_effector_link_, chain_);
     fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
+    ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
     ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
 
     // Subscribe to force and torque measurements
@@ -32,6 +33,7 @@ namespace cartesian_controllers {
     action_server_->start();
 
     boost::thread(boost::bind(&ControllerTemplate::publishFeedback, this));
+    ROS_INFO("%s initialized successfully!", action_name_.c_str());
   }
 
   /*

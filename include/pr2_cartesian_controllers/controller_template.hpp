@@ -8,7 +8,9 @@
 #include <tf/transform_listener.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
+#include <kdl_conversions/kdl_msg.h>
 #include <kdl/chainiksolvervel_wdls.hpp>
+#include <kdl/chainiksolverpos_lma.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl_parser/kdl_parser.hpp>
@@ -33,6 +35,7 @@ protected:
   sensor_msgs::JointState robot_state;
   KDL::JntArray joint_positions_;
   KDL::ChainIkSolverVel_wdls *ikvel_;
+  KDL::ChainIkSolverPos_LMA *ikpos_;
   KDL::ChainFkSolverPos_recursive *fkpos_;
   KDL::Chain chain_;
   KDL::Tree tree_;

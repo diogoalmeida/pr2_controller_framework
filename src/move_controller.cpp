@@ -1,34 +1,6 @@
 #include <pr2_cartesian_controllers/move_controller.hpp>
 
-namespace manipulation {
-  MoveController::MoveController()
-  {
-    nh_ = ros::NodeHandle("~");
-
-    if(!loadParams())
-    {
-      ros::shutdown();
-      exit(0);
-    }
-
-    // Initialize KDL variables
-    joint_positions_.resize(7);
-    kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
-    tree_.getChain(base_link_, end_effector_link_, chain_);
-    fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-    ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
-
-    // Initialize actionlib server
-    action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_controllers::MoveAction>(nh_, action_name_, false);
-
-    // Register callbacks
-    action_server_->registerGoalCallback(boost::bind(&MoveController::goalCB, this));
-    action_server_->registerPreemptCallback(boost::bind(&MoveController::preemptCB, this));
-
-    action_server_->start();
-    ROS_INFO("Move controller initialized successfully!");
-  }
-
+namespace cartesian_controllers {
   /*
     Preempt controller.
   */
@@ -61,23 +33,6 @@ namespace manipulation {
     {
       ROS_ERROR("Missing action server name parameter (/move_controller/action_server_name)");
       return false;
-    }
-
-    if (!nh_.getParam("/move_controller/end_effector_link_name", end_effector_link_))
-    {
-      ROS_ERROR("Missing end-effector link name (/move_controller/end_effector_link_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/move_controller/base_link_name", base_link_))
-    {
-      ROS_ERROR("Missing base link name (/approach_controller/base_link_name)");
-      return false;
-    }
-
-    if(!model_.initParam("/robot_description")){
-        ROS_ERROR("ERROR getting robot description (/robot_description)");
-        return false;
     }
 
     return true;

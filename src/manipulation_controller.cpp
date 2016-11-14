@@ -1,59 +1,6 @@
 #include <pr2_cartesian_controllers/manipulation_controller.hpp>
 
-namespace manipulation {
-  ManipulationController::ManipulationController()
-  {
-    nh_ = ros::NodeHandle("~");
-
-    if(!loadParams())
-    {
-      ros::shutdown();
-      exit(0);
-    }
-
-    // Initialize KDL variables
-    joint_positions_.resize(7);
-    kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
-    tree_.getChain(base_link_, end_effector_link_, chain_);
-    fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-    ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
-
-    // Subscribe to force and torque measurements
-    ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ManipulationController::forceTorqueCB, this);
-
-    // Initialize actionlib server
-    action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_controllers::ManipulationControllerAction>(nh_, action_name_, false);
-
-    // Register callbacks
-    action_server_->registerGoalCallback(boost::bind(&ManipulationController::goalCB, this));
-    action_server_->registerPreemptCallback(boost::bind(&ManipulationController::preemptCB, this));
-
-    action_server_->start();
-
-    boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
-  }
-
-  /*
-    Update current force and torque values.
-  */
-  void ManipulationController::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
-  {
-    geometry_msgs::Vector3Stamped vector_in, vector_out;
-    geometry_msgs::Wrench transformed_wrench;
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
-    vector_in.vector = msg->wrench.torque;
-    vector_in.header = msg->header;
-    listener_.transformVector(base_link_, vector_in, vector_out);
-    transformed_wrench.torque = vector_in.vector;
-
-    vector_in.vector = msg->wrench.force;
-    listener_.transformVector(base_link_, vector_in, vector_out);
-    transformed_wrench.force = vector_in.vector;
-
-    tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
-  }
-
+namespace cartesian_controllers {
   /*
     Preempt controller.
   */
@@ -134,30 +81,6 @@ namespace manipulation {
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/end_effector_link_name", end_effector_link_))
-    {
-      ROS_ERROR("Missing end-effector link name (/manipulation_controller/end_effector_link_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/manipulation_controller/base_link_name", base_link_))
-    {
-      ROS_ERROR("Missing base link name (/manipulation_controller/base_link_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/manipulation_controller/wdls_epsilon", eps_))
-    {
-      ROS_ERROR("Missing wdls epsilon (/manipulation_controller/wdls_epsilon)");
-      return false;
-    }
-
-    if (!nh_.getParam("/manipulation_controller/feedback_rate", feedback_hz_))
-    {
-      ROS_ERROR("Missing feedback_rate (/manipulation_controller/feedback_rate)");
-      return false;
-    }
-
     if (!nh_.getParam("manipulation_controller/spring_constant", k_spring_))
     {
       ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
@@ -186,12 +109,6 @@ namespace manipulation {
     control_gains_ << k_1, 0  , 0  ,
                       0  , k_2, 0  ,
                       0  , 0  , k_3;
-
-    if(!model_.initParam("/robot_description")){
-        ROS_ERROR("ERROR getting robot description (/robot_description)");
-        return false;
-    }
-
     return true;
   }
 

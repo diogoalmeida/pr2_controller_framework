@@ -41,10 +41,10 @@ add_library(controller_template src/controller_template.cpp)
 target_link_libraries(controller_template ${catkin_LIBRARIES})
 add_dependencies(controller_template pr2_cartesian_controllers_generate_messages_cpp)
 
-# add_library(manipulation_controller src/manipulation_controller.cpp)
-# target_link_libraries(manipulation_controller ${catkin_LIBRARIES})
-# add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_messages_cpp)
-#
+add_library(manipulation_controller src/manipulation_controller.cpp)
+target_link_libraries(manipulation_controller ${catkin_LIBRARIES})
+add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_messages_cpp)
+
 # add_library(approach_controller src/approach_controller.cpp)
 # target_link_libraries(approach_controller ${catkin_LIBRARIES})
 # add_dependencies(approach_controller pr2_cartesian_controllers_generate_messages_cpp)

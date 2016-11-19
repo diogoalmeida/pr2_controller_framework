@@ -24,6 +24,9 @@ bool TuneJointController::init(pr2_mechanism_model::RobotState *robot, ros::Node
     return false;
   }
 
+  position_joint_controller_ = 0;
+  velocity_joint_controller_ = 0;
+
   action_server_ = new actionlib::SimpleActionServer<pr2_joint_position_controllers::PR2TuneJointAction>(n, action_name_, false);
 
   action_server_->registerGoalCallback(boost::bind(&TuneJointController::goalCallback, this));
@@ -40,24 +43,37 @@ bool TuneJointController::init(pr2_mechanism_model::RobotState *robot, ros::Node
 */
 void TuneJointController::goalCallback()
 {
-  boost::shared_ptr<const pr2_joint_position_controllers::PR2TuneJointGoal> goal = action_server_->acceptNewGoal();
+  ROS_INFO("%s action server received a new goal!", action_name_.c_str());
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
-  control_reference_.name.clear();
-  control_reference_.position.clear();
-  control_reference_.velocity.clear();
-  control_reference_.effort.clear();
+  boost::shared_ptr<const pr2_joint_position_controllers::PR2TuneJointGoal> goal = action_server_->acceptNewGoal();
 
-  control_reference_.name.push_back(goal->joint);
-  control_reference_.position.push_back(goal->target_position);
-  control_reference_.velocity.push_back(goal->target_velocity);
-  control_reference_.effort.push_back(0.0);
+  joint_name_ = goal->joint;
+  pr2_mechanism_model::JointState *joint_state = robot_->getJointState(joint_name_);
 
-  max_time_ = ros::Duration(goal->max_time);
-  start_time_ = robot_->getTime();
-  position_joint_controller_ = new control_toolbox::Pid();
-  velocity_joint_controller_ = new control_toolbox::Pid();
-  ROS_INFO("%s action server started!", action_name_.c_str());
+  if (!joint_state)
+  {
+    ROS_ERROR("Joint %s does not exist in the robot mechanism model!", joint_name_.c_str());
+    action_server_->setAborted();
+  }
+  else
+  {
+    control_reference_.name.clear();
+    control_reference_.position.clear();
+    control_reference_.velocity.clear();
+    control_reference_.effort.clear();
+
+    control_reference_.name.push_back(goal->joint);
+    control_reference_.position.push_back(goal->target_position);
+    control_reference_.velocity.push_back(goal->target_velocity);
+    control_reference_.effort.push_back(0.0);
+
+    max_time_ = ros::Duration(goal->max_time);
+    start_time_ = robot_->getTime();
+    position_joint_controller_ = new control_toolbox::Pid();
+    velocity_joint_controller_ = new control_toolbox::Pid();
+    ROS_INFO("%s action server started!", action_name_.c_str());
+  }
 }
 
 /*
@@ -69,6 +85,10 @@ void TuneJointController::preemptCallback()
   pr2_mechanism_model::JointState *joint_state = robot_->getJointState(joint_name_);
   result_.time_elapsed = (robot_->getTime() - start_time_).toSec();
   result_.final_error = control_reference_.position[0] - joint_state->position_;
+  delete position_joint_controller_;
+  delete velocity_joint_controller_;
+  position_joint_controller_ = 0;
+  velocity_joint_controller_ = 0;
   action_server_->setPreempted(result_);
   ROS_WARN("%s action server preempted!", action_name_.c_str());
 }
@@ -77,18 +97,26 @@ void TuneJointController::preemptCallback()
 void TuneJointController::starting()
 {
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
-  feedback_thread_ = boost::thread(boost::bind(&TuneJointController::publishFeedback, this));
   action_server_->start();
+  feedback_thread_ = boost::thread(boost::bind(&TuneJointController::publishFeedback, this));
   // feedback_thread_.detach();
 }
 
 void TuneJointController::stopping()
 {
   ROS_INFO("Joint controller stopping!");
+  feedback_thread_.interrupt();
   feedback_thread_.join();
-  delete position_joint_controller_;
-  delete velocity_joint_controller_;
+  if (position_joint_controller_)
+  {
+    delete position_joint_controller_;
+  }
+  if (velocity_joint_controller_)
+  {
+    delete velocity_joint_controller_;
+  }
   action_server_->shutdown();
+  delete action_server_;
   ROS_INFO("Joint controller stopped successfully!");
 }
 
@@ -103,12 +131,6 @@ void TuneJointController::update()
   if (action_server_->isActive())
   {
     joint_state = robot_->getJointState(joint_name_);
-
-    if (!joint_state)
-    {
-      ROS_ERROR("Joint %s does not exist in the robot mechanism model!", joint_name_.c_str());
-      action_server_->setAborted();
-    }
 
     dt = robot_->getTime() - time_of_last_cycle_;
     joint_state->commanded_effort_ = applyControlLoop(joint_state, control_reference_.position[0], control_reference_.velocity[0], dt);
@@ -154,22 +176,27 @@ void TuneJointController::publishFeedback()
 
   ROS_INFO("FEEDBACK THREAD STARTED");
 
-  while(true)
+  try
   {
-    if (action_server_->isActive())
+    while(ros::ok())
     {
-      boost::lock_guard<boost::mutex> guard(reference_mutex_);
-      joint_state = robot_->getJointState(joint_name_);
-      feedback_.joint_name = joint_name_;
-      feedback_.commanded_effort = joint_state->commanded_effort_;
-      feedback_.position_error = joint_state->position_ - control_reference_.position[0];
-      feedback_.velocity_error = joint_state->velocity_ - control_reference_.velocity[0];
+      if (action_server_->isActive())
+      {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_);
+        joint_state = robot_->getJointState(joint_name_);
+        feedback_.joint_name = joint_name_;
+        feedback_.commanded_effort = joint_state->commanded_effort_;
+        feedback_.position_error = joint_state->position_ - control_reference_.position[0];
+        feedback_.velocity_error = joint_state->velocity_ - control_reference_.velocity[0];
+        action_server_->publishFeedback(feedback_);
+      }
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
     }
-    action_server_->publishFeedback(feedback_);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
   }
-
-  ROS_INFO("FEEDBACK THREAD DESTROYED");
+  catch(const boost::thread_interrupted &)
+  {
+    ROS_INFO("FEEDBACK THREAD DESTROYED");
+  }
 }
 } // namespace
 

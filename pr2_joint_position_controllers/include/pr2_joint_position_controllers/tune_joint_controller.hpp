@@ -47,6 +47,14 @@ private:
   void publishFeedback();
 
 public:
+  ~TuneJointController()
+  {
+    if(feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+  }
   // Controller interface methods
   virtual bool init(pr2_mechanism_model::RobotState *robot,
                    ros::NodeHandle &n);

@@ -105,7 +105,11 @@ void TemplateJointController::stopping()
 {
   controller_is_loaded_ = false;
   ROS_INFO("Joint controller stopping!");
-  feedback_thread_.join();
+  if(feedback_thread_.joinable())
+  {
+    feedback_thread_.interrupt();
+    feedback_thread_.join();
+  }
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     delete position_joint_controllers_[i];

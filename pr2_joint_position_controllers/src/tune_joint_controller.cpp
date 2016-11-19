@@ -31,6 +31,7 @@ bool TuneJointController::init(pr2_mechanism_model::RobotState *robot, ros::Node
 
   action_server_->registerGoalCallback(boost::bind(&TuneJointController::goalCallback, this));
   action_server_->registerPreemptCallback(boost::bind(&TuneJointController::preemptCallback, this));
+  n_ = n;
 
   ROS_INFO("%s has loaded successfully!", n.getNamespace().c_str());
 
@@ -71,7 +72,9 @@ void TuneJointController::goalCallback()
     max_time_ = ros::Duration(goal->max_time);
     start_time_ = robot_->getTime();
     position_joint_controller_ = new control_toolbox::Pid();
+    position_joint_controller_->init(ros::NodeHandle(n_, "/controller_gains/position_gains"));
     velocity_joint_controller_ = new control_toolbox::Pid();
+    velocity_joint_controller_->init(ros::NodeHandle(n_, "/controller_gains/velocity_gains"));
     ROS_INFO("%s action server started!", action_name_.c_str());
   }
 }

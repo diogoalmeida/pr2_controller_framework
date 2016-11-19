@@ -21,6 +21,7 @@ private:
   pr2_mechanism_model::RobotState *robot_;
 
   // Control elements
+  ros::NodeHandle n_;
   sensor_msgs::JointState control_reference_;
   control_toolbox::Pid* position_joint_controller_;
   control_toolbox::Pid* velocity_joint_controller_;

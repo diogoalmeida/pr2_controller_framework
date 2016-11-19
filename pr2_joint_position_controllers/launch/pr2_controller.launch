@@ -1,5 +1,13 @@
 <launch>
   <!-- <node pkg="pr2_controller_manager" type="spawner" args="pr2_controller" name="pr2_controller_spawner" /> -->
-  <include file="$(find pr2_cartesian_controllers)/launch/pr2_cartesian_controllers.launch"/>
-  <rosparam command="load" file="$(find pr2_joint_position_controllers)/config/controller_config.yaml"/>
+  <arg name="tune" default="false"/>
+
+  <group unless="$(arg tune)">
+    <include file="$(find pr2_cartesian_controllers)/launch/pr2_cartesian_controllers.launch"/>
+    <rosparam command="load" file="$(find pr2_joint_position_controllers)/config/controller_config.yaml"/>
+  </group>
+
+  <group if="$(arg tune)">
+    <rosparam command="load" file="$(find pr2_joint_position_controllers)/config/tune_config.yaml"/>
+  </group>
 </launch>

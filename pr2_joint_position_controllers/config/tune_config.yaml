@@ -1,0 +1,17 @@
+tune_joint_controller:
+  type: pr2_joint_position_controllers/TuneJointController
+  action_name: tune_joint
+  feedback_rate: 100
+
+controller_gains:
+  position_gains:
+    p: 1
+    i: 0
+    d: 0
+    i_clamp: 10
+
+  velocity_gains:
+    p: 1
+    i: 0
+    d: 0
+    i_clamp: 10

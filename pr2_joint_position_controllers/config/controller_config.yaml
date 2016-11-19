@@ -189,8 +189,3 @@ move_joint_controller:
   feedback_rate: 100
   receive_position_reference: True
   control_timeout: 1
-
-tune_joint_controller:
-  type: pr2_joint_position_controllers/TuneJointController
-  action_name: tune_joint
-  feedback_rate: 100

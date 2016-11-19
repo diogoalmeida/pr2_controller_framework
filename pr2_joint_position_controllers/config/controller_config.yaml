@@ -132,19 +132,19 @@ common:
 
     l_upper_arm_roll_joint:
       p: 2
-      i: 10
+      i: 1
       d: 0
       i_clamp: 10
 
     l_shoulder_pan_joint:
       p: 1
-      i: 0.1
+      i: 1
       d: 0
       i_clamp: 10
 
     l_shoulder_lift_joint:
       p: 1
-      i: 0.1
+      i: 1
       d: 0
       i_clamp: 10
 

@@ -82,26 +82,26 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (!nh_.getParam("manipulation_controller/spring_constant", k_spring_))
+    if (!nh_.getParam("/manipulation_controller/spring_constant", k_spring_))
     {
       ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
       return false;
     }
 
     double k_1, k_2, k_3;
-    if (!nh_.getParam("manipulation_controller/gains/k_1", k_1))
+    if (!nh_.getParam("/manipulation_controller/gains/k_1", k_1))
     {
       ROS_ERROR("Missing k_1 (/manipulation_controller/gains/k_1)");
       return false;
     }
 
-    if (!nh_.getParam("manipulation_controller/gains/k_2", k_2))
+    if (!nh_.getParam("/manipulation_controller/gains/k_2", k_2))
     {
       ROS_ERROR("Missing k_2 (/manipulation_controller/gains/k_2)");
       return false;
     }
 
-    if (!nh_.getParam("manipulation_controller/gains/k_3", k_3))
+    if (!nh_.getParam("/manipulation_controller/gains/k_3", k_3))
     {
       ROS_ERROR("Missing k_3 (/manipulation_controller/gains/k_3)");
       return false;

@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
 <package>
 
-  <name>manipulation_client</name>
-  <version>0.0.1</version>
-  <description>Actionlib client for the manipulation controller.
-               Should set up the initial conditions for one manipulation
-               experiment.
+  <name>pr2_cartesian_clients</name>
+  <version>0.0.2</version>
+  <description>Package with actionlib clients for the pr2_cartesian_controllers.
   </description>
   <maintainer email="diogoa@kth.se">diogo</maintainer>
   <license>KTH</license>

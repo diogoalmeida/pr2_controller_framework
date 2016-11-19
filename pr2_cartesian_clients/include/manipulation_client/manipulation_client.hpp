@@ -20,8 +20,8 @@ namespace manipulation{
     ManipulationClient()
     {
       nh_ = ros::NodeHandle("~");
-      runExperiment();
     }
+    void runExperiment();
 
   private:
     // ros
@@ -41,16 +41,16 @@ namespace manipulation{
     double vision_timeout_;
     bool waitForTablePose(ros::Duration max_time);
     std::string surface_frame_name_;
+    geometry_msgs::PoseStamped getInitialEefPose();
 
     // Experimental setup
-    void runExperiment();
     std::vector<double> initial_pose_offset_;
     double initial_approach_angle_;
     geometry_msgs::PoseStamped surface_frame_pose_;
-    geometry_msgs::PoseStamped initial_eef_pose_;
     std::string base_link_name_, tool_frame_name_;
     std::string gravity_compensation_service_name_;
     int num_of_experiments_;
+    bool use_vision_, sim_mode_;
   };
   }
 #endif

@@ -1,0 +1,20 @@
+# Goal: triggers the controller.
+string joint
+float64 target_position
+float64 target_velocity
+float64 max_time
+float64 k_p
+float64 k_i
+float64 k_d
+float64 i_clamp
+---
+# Result:
+float64 time_elapsed
+float64 final_error
+---
+# Feedback
+string joint_name
+float64 commanded_effort # Values sent to the robot
+float64 position_error
+float64 position_reference
+float64 velocity_error

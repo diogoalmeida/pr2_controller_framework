@@ -20,6 +20,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 add_message_files(
   FILES
+	PIDGains.msg
 	PR2JointControllerFeedback.msg
 )
 

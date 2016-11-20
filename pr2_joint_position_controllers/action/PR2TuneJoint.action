@@ -3,10 +3,8 @@ string joint
 float64 target_position
 float64 target_velocity
 float64 max_time
-float64 k_p
-float64 k_i
-float64 k_d
-float64 i_clamp
+pr2_joint_position_controllers/PIDGains gains_position
+pr2_joint_position_controllers/PIDGains gains_velocity
 ---
 # Result:
 float64 time_elapsed
@@ -16,5 +14,6 @@ float64 final_error
 string joint_name
 float64 commanded_effort # Values sent to the robot
 float64 position_error
+float64 position
 float64 position_reference
 float64 velocity_error

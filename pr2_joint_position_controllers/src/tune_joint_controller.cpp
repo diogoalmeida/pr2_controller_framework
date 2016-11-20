@@ -72,9 +72,9 @@ void TuneJointController::goalCallback()
     max_time_ = ros::Duration(goal->max_time);
     start_time_ = robot_->getTime();
     position_joint_controller_ = new control_toolbox::Pid();
-    position_joint_controller_->init(ros::NodeHandle(n_, "/controller_gains/position_gains"));
+    position_joint_controller_->initPid(goal->gains_position.p, goal->gains_position.i, goal->gains_position.d, goal->gains_position.i_clamp, -goal->gains_position.i_clamp);
     velocity_joint_controller_ = new control_toolbox::Pid();
-    velocity_joint_controller_->init(ros::NodeHandle(n_, "/controller_gains/velocity_gains"));
+    velocity_joint_controller_->initPid(goal->gains_velocity.p, goal->gains_velocity.i, goal->gains_velocity.d, goal->gains_velocity.i_clamp, -goal->gains_velocity.i_clamp);
     ROS_INFO("%s action server started!", action_name_.c_str());
   }
 }
@@ -190,6 +190,8 @@ void TuneJointController::publishFeedback()
         feedback_.joint_name = joint_name_;
         feedback_.commanded_effort = joint_state->commanded_effort_;
         feedback_.position_error = joint_state->position_ - control_reference_.position[0];
+        feedback_.position_reference = control_reference_.position[0];
+        feedback_.position = joint_state->position_;
         feedback_.velocity_error = joint_state->velocity_ - control_reference_.velocity[0];
         action_server_->publishFeedback(feedback_);
       }

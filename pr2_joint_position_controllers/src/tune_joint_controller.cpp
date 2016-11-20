@@ -165,7 +165,7 @@ double TuneJointController::applyControlLoop(const pr2_mechanism_model::JointSta
   current_velocity = joint_state->velocity_;
   position_feedback = position_joint_controller_->computeCommand(position_error, dt);
   velocity_error = desired_velocity + position_feedback - current_velocity;
-  // modified_velocity_reference_ = desired_velocity + position_feedback;
+  modified_velocity_reference_ = desired_velocity + position_feedback;
 
   return velocity_joint_controller_->computeCommand(velocity_error, dt);
 }
@@ -192,7 +192,9 @@ void TuneJointController::publishFeedback()
         feedback_.position_error = joint_state->position_ - control_reference_.position[0];
         feedback_.position_reference = control_reference_.position[0];
         feedback_.position = joint_state->position_;
-        feedback_.velocity_error = joint_state->velocity_ - control_reference_.velocity[0];
+        feedback_.velocity = joint_state->velocity_;
+        feedback_.velocity_reference = modified_velocity_reference_;
+        feedback_.velocity_error = modified_velocity_reference_ - joint_state->velocity_;
         action_server_->publishFeedback(feedback_);
       }
       boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

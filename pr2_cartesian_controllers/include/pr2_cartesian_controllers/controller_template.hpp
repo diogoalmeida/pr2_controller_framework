@@ -26,6 +26,7 @@ class ControllerBase
 {
 public:
   ControllerBase(){}
+  virtual ~ControllerBase(){}
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt) = 0;
@@ -36,6 +37,7 @@ class ControllerTemplate : public ControllerBase
 {
 public:
   ControllerTemplate();
+  virtual ~ControllerTemplate();
 
 protected:
   // Robot related

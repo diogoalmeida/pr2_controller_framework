@@ -39,6 +39,7 @@ public:
     startActionlib();
     boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
+  virtual ~ManipulationController(){}
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

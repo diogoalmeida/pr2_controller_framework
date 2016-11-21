@@ -108,8 +108,11 @@ void TuneJointController::starting()
 void TuneJointController::stopping()
 {
   ROS_INFO("Joint controller stopping!");
-  feedback_thread_.interrupt();
-  feedback_thread_.join();
+  if(feedback_thread_.joinable())
+  {
+    feedback_thread_.interrupt();
+    feedback_thread_.join();
+  }
   if (position_joint_controller_)
   {
     delete position_joint_controller_;

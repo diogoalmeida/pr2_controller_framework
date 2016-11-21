@@ -37,7 +37,7 @@ class ControllerTemplate : public ControllerBase
 {
 public:
   ControllerTemplate();
-  virtual ~ControllerTemplate();
+  virtual ~ControllerTemplate(){}
 
 protected:
   // Robot related

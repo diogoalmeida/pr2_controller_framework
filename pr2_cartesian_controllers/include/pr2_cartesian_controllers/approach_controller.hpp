@@ -34,10 +34,11 @@ public:
       ros::shutdown();
       exit(0);
     }
-    
+
     startActionlib();
     boost::thread(boost::bind(&ApproachController::publishFeedback, this));
   };
+  virtual ~ApproachController(){}
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

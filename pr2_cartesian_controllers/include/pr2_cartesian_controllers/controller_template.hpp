@@ -37,7 +37,13 @@ class ControllerTemplate : public ControllerBase
 {
 public:
   ControllerTemplate();
-  virtual ~ControllerTemplate(){}
+  virtual ~ControllerTemplate()
+  {
+    delete fkpos_;
+    delete ikpos_;
+    delete ikvel_;
+    delete action_server_;
+  }
 
 protected:
   // Robot related

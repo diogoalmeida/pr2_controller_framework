@@ -43,7 +43,6 @@ namespace cartesian_controllers {
   */
   void MoveController::publishFeedback()
   {
-    ros::Rate feedback_rate(feedback_hz_);
     visualization_msgs::Marker reference_pose, current_pose;
     std_msgs::ColorRGBA object_color;
     Eigen::Vector3d r_1;
@@ -73,20 +72,28 @@ namespace cartesian_controllers {
     object_color.g = 1;
     current_pose.color = object_color;
 
+    ROS_INFO("FEEDBACK THREAD STARTED");
 
-    while(ros::ok())
+    try
     {
-      if (action_server_->isActive())
+      while(ros::ok())
       {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        fkpos_->JntToCart(joint_positions_, current_eef);
-        tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
-        tf::poseKDLToMsg(current_eef, current_pose.pose);
+        if (action_server_->isActive())
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          fkpos_->JntToCart(joint_positions_, current_eef);
+          tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
+          tf::poseKDLToMsg(current_eef, current_pose.pose);
 
-        target_pub_.publish(reference_pose);
-        current_pub_.publish(current_pose);
+          target_pub_.publish(reference_pose);
+          current_pub_.publish(current_pose);
+        }
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
-      feedback_rate.sleep();
+    }
+    catch(const boost::thread_interrupted &)
+    {
+      ROS_INFO("FEEDBACK THREAD DESTROYED");
     }
   }
 

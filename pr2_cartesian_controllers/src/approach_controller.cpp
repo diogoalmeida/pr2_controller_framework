@@ -31,20 +31,28 @@ namespace cartesian_controllers {
   */
   void ApproachController::publishFeedback()
   {
-    ros::Rate feedback_rate(feedback_hz_);
     feedback_.current_wrench.header.frame_id = base_link_;
 
-    while(ros::ok())
-    {
-      if (action_server_->isActive())
-      {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        feedback_.current_wrench.header.stamp = ros::Time::now();
-        tf::wrenchEigenToMsg(measured_wrench_, feedback_.current_wrench.wrench);
-        action_server_->publishFeedback(feedback_);
-      }
+    ROS_INFO("FEEDBACK THREAD STARTED");
 
-      feedback_rate.sleep();
+    try
+    {
+      while(ros::ok())
+      {
+        if (action_server_->isActive())
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          feedback_.current_wrench.header.stamp = ros::Time::now();
+          tf::wrenchEigenToMsg(measured_wrench_, feedback_.current_wrench.wrench);
+          action_server_->publishFeedback(feedback_);
+        }
+
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
+      }
+    }
+    catch(const boost::thread_interrupted &)
+    {
+      ROS_INFO("FEEDBACK THREAD DESTROYED");
     }
   }
 
@@ -76,7 +84,7 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
-    // TODO: This should be handled in the template class 
+    // TODO: This should be handled in the template class
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);

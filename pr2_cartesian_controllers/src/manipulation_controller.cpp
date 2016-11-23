@@ -34,7 +34,6 @@ namespace cartesian_controllers {
   */
   void ManipulationController::publishFeedback()
   {
-    ros::Rate feedback_rate(feedback_hz_);
     visualization_msgs::Marker object_pose;
     std_msgs::ColorRGBA object_color;
     Eigen::Vector3d r_1;
@@ -52,22 +51,31 @@ namespace cartesian_controllers {
     object_pose.lifetime = ros::Duration(0);
     object_pose.frame_locked = false; // not sure about this
 
-    while(ros::ok())
-    {
-      if (action_server_->isActive())
-      {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        r_1 = estimated_r_/estimated_r_.norm();
-        tf::poseEigenToMsg(end_effector_pose_, object_pose.pose);
-        // TODO: Needs to be checked
-        object_pose.scale.x = estimated_length_;
-        object_pose.scale.y = 0.02;
-        object_pose.scale.z = 0.02;
+    ROS_INFO("FEEDBACK THREAD STARTED");
 
-        feedback_.object_pose = object_pose;
-        action_server_->publishFeedback(feedback_);
+    try
+    {
+      while(ros::ok())
+      {
+        if (action_server_->isActive())
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          r_1 = estimated_r_/estimated_r_.norm();
+          tf::poseEigenToMsg(end_effector_pose_, object_pose.pose);
+          // TODO: Needs to be checked
+          object_pose.scale.x = estimated_length_;
+          object_pose.scale.y = 0.02;
+          object_pose.scale.z = 0.02;
+
+          feedback_.object_pose = object_pose;
+          action_server_->publishFeedback(feedback_);
+        }
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
-      feedback_rate.sleep();
+    }
+    catch(const boost::thread_interrupted &)
+    {
+      ROS_INFO("FEEDBACK THREAD DESTROYED");
     }
   }
 

@@ -8,10 +8,8 @@ namespace pr2_joint_controller {
 */
 bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
-  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   // copy robot pointer so we can access time
   robot_ = robot;
-  controller_is_loaded_ = false;
   pr2_mechanism_model::JointState *joint;
   ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
@@ -21,7 +19,11 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   last_active_joint_position_.clear();
   time_of_last_cycle_.clear();
 
+  ROS_INFO("Cleared vectors");
+
   cartesian_controller_ = initializeController();
+
+  ROS_INFO("Initialized cartesian controller");
 
   if (!n.getParam("feedback_rate", feedback_hz_))
   {
@@ -29,11 +31,15 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     feedback_hz_ = 10.0;
   }
 
+  ROS_INFO("Loaded the feedback rate");
+
   if (!n.getParam("/common/actuated_joint_names", joint_names_))
   {
     ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
     return false;
   }
+
+  ROS_INFO("Loaded joint names");
 
   if (joint_names_.size() == 0)
   {
@@ -93,7 +99,6 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 /// Controller startup in realtime
 void TemplateJointController::starting()
 {
-  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     position_joint_controllers_[i]->reset();
@@ -108,8 +113,6 @@ void TemplateJointController::starting()
 
 void TemplateJointController::stopping()
 {
-  boost::lock_guard<boost::mutex> guard(controller_mutex_);
-  controller_is_loaded_ = false;
   ROS_INFO("Joint controller stopping!");
   if(feedback_thread_.joinable())
   {
@@ -136,36 +139,32 @@ void TemplateJointController::stopping()
 /// Controller update loop in realtime
 void TemplateJointController::update()
 {
-  boost::lock_guard<boost::mutex> guard(controller_mutex_);
-  if(controller_is_loaded_)
+  ros::Duration dt;
+  pr2_mechanism_model::JointState *joint_state;
+  sensor_msgs::JointState current_state;
+
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
-    ros::Duration dt;
-    pr2_mechanism_model::JointState *joint_state;
-    sensor_msgs::JointState current_state;
+    joint_state = robot_->getJointState(joint_names_[i]);
+    current_state.name.push_back(joint_names_[i]);
+    current_state.position.push_back(joint_state->position_);
+    current_state.velocity.push_back(joint_state->velocity_);
+    current_state.effort.push_back(joint_state->measured_effort_);
+  }
 
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
-    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-    {
-      joint_state = robot_->getJointState(joint_names_[i]);
-      current_state.name.push_back(joint_names_[i]);
-      current_state.position.push_back(joint_state->position_);
-      current_state.velocity.push_back(joint_state->velocity_);
-      current_state.effort.push_back(joint_state->measured_effort_);
-    }
+  current_state.header.stamp = robot_->getTime();
+  dt = robot_->getTime() - time_of_last_manipulation_call_;
+  control_references_ = cartesian_controller_->updateControl(current_state, dt);
 
-    current_state.header.stamp = robot_->getTime();
-    dt = robot_->getTime() - time_of_last_manipulation_call_;
-    control_references_ = cartesian_controller_->updateControl(current_state, dt);
-
-    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-    {
-      joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
-      dt = robot_->getTime() - time_of_last_cycle_[i];
-      last_active_joint_position_[i] = joint_state->position_;
-      joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
-      joint_state->enforceLimits();
-      time_of_last_cycle_[i] = robot_->getTime();
-    }
+  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+  {
+    joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
+    dt = robot_->getTime() - time_of_last_cycle_[i];
+    last_active_joint_position_[i] = joint_state->position_;
+    joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
+    joint_state->enforceLimits();
+    time_of_last_cycle_[i] = robot_->getTime();
   }
 }
 
@@ -242,32 +241,28 @@ void TemplateJointController::publishFeedback()
 
   try
   {
-    while(controller_is_loaded_)
     {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      feedback_.joint_name.clear();
+      feedback_.commanded_effort.clear();
+      feedback_.position_error.clear();
+      feedback_.velocity_error.clear();
+      for (int i = 0; i < control_references_.name.size(); i++)
       {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        feedback_.joint_name.clear();
-        feedback_.commanded_effort.clear();
-        feedback_.position_error.clear();
-        feedback_.velocity_error.clear();
-        for (int i = 0; i < control_references_.name.size(); i++)
-        {
-          joint_state = robot_->getJointState(control_references_.name[i]);
-          feedback_.joint_name.push_back(control_references_.name[i]);
-          feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
-          feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
-          feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
+        joint_state = robot_->getJointState(control_references_.name[i]);
+        feedback_.joint_name.push_back(control_references_.name[i]);
+        feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
+        feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
+        feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
 
-          feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
-          feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
-          feedback_.effort_single =joint_state->commanded_effort_;
-          feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
-        }
+        feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
+        feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
+        feedback_.effort_single =joint_state->commanded_effort_;
+        feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
       }
-
-      feedback_pub_.publish(feedback_);
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
     }
+    feedback_pub_.publish(feedback_);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
   }
   catch(const boost::thread_interrupted &)
   {

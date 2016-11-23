@@ -8,6 +8,7 @@ namespace pr2_joint_controller {
 */
 bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
   // copy robot pointer so we can access time
   robot_ = robot;
   reference_active_ = false;
@@ -136,32 +137,35 @@ void TemplateJointController::stopping()
 /// Controller update loop in realtime
 void TemplateJointController::update()
 {
-  ros::Duration dt;
-  pr2_mechanism_model::JointState *joint_state;
-  sensor_msgs::JointState current_state;
-
-  boost::lock_guard<boost::mutex> guard(reference_mutex_);
-  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+  if(controller_is_loaded_)
   {
-    joint_state = robot_->getJointState(joint_names_[i]);
-    current_state.name.push_back(joint_names_[i]);
-    current_state.position.push_back(joint_state->position_);
-    current_state.velocity.push_back(joint_state->velocity_);
-    current_state.effort.push_back(joint_state->measured_effort_);
-  }
+    ros::Duration dt;
+    pr2_mechanism_model::JointState *joint_state;
+    sensor_msgs::JointState current_state;
 
-  current_state.header.stamp = robot_->getTime();
-  dt = robot_->getTime() - time_of_last_manipulation_call_;
-  control_references_ = cartesian_controller_->updateControl(current_state, dt);
+    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+    {
+      joint_state = robot_->getJointState(joint_names_[i]);
+      current_state.name.push_back(joint_names_[i]);
+      current_state.position.push_back(joint_state->position_);
+      current_state.velocity.push_back(joint_state->velocity_);
+      current_state.effort.push_back(joint_state->measured_effort_);
+    }
 
-  for (int i = 0; i < velocity_joint_controllers_.size(); i++)
-  {
-    joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
-    dt = robot_->getTime() - time_of_last_cycle_[i];
-    last_active_joint_position_[i] = joint_state->position_;
-    joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
-    joint_state->enforceLimits();
-    time_of_last_cycle_[i] = robot_->getTime();
+    current_state.header.stamp = robot_->getTime();
+    dt = robot_->getTime() - time_of_last_manipulation_call_;
+    control_references_ = cartesian_controller_->updateControl(current_state, dt);
+
+    for (int i = 0; i < velocity_joint_controllers_.size(); i++)
+    {
+      joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
+      dt = robot_->getTime() - time_of_last_cycle_[i];
+      last_active_joint_position_[i] = joint_state->position_;
+      joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
+      joint_state->enforceLimits();
+      time_of_last_cycle_[i] = robot_->getTime();
+    }
   }
 }
 

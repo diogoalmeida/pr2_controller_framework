@@ -8,7 +8,7 @@ namespace pr2_joint_controller {
 */
 bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
-  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   // copy robot pointer so we can access time
   robot_ = robot;
   controller_is_loaded_ = false;
@@ -93,7 +93,7 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 /// Controller startup in realtime
 void TemplateJointController::starting()
 {
-  controller_is_loaded_ = true;
+  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     position_joint_controllers_[i]->reset();
@@ -108,6 +108,7 @@ void TemplateJointController::starting()
 
 void TemplateJointController::stopping()
 {
+  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   controller_is_loaded_ = false;
   ROS_INFO("Joint controller stopping!");
   if(feedback_thread_.joinable())
@@ -135,6 +136,7 @@ void TemplateJointController::stopping()
 /// Controller update loop in realtime
 void TemplateJointController::update()
 {
+  boost::lock_guard<boost::mutex> guard(controller_mutex_);
   if(controller_is_loaded_)
   {
     ros::Duration dt;

@@ -32,7 +32,7 @@ private:
   double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt); // applies the nested control strategy
 
   // Reference mutex for preventing updating the reference halfway through a control cycle
-  boost::mutex reference_mutex_;
+  boost::mutex reference_mutex_, controller_mutex_;
 
   // Feedback elements
   ros::Publisher feedback_pub_;

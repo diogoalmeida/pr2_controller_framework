@@ -8,78 +8,91 @@ namespace pr2_joint_controller {
 */
 bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
-  // copy robot pointer so we can access time
-  robot_ = robot;
-  pr2_mechanism_model::JointState *joint;
-  ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
-
-  cartesian_controller_ = initializeController();
-
-  if (!n.getParam("feedback_rate", feedback_hz_))
+  try
   {
-    ROS_WARN("Joint controller feedback rate not set. Using defaul 10 Hz (%s/feedback_rate)", n.getNamespace().c_str());
-    feedback_hz_ = 10.0;
+    // copy robot pointer so we can access time
+    robot_ = robot;
+    pr2_mechanism_model::JointState *joint;
+    ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
+
+    cartesian_controller_ = initializeController();
+
+    if (!n.getParam("feedback_rate", feedback_hz_))
+    {
+      ROS_WARN("Joint controller feedback rate not set. Using defaul 10 Hz (%s/feedback_rate)", n.getNamespace().c_str());
+      feedback_hz_ = 10.0;
+    }
+
+    if (!n.getParam("/common/actuated_joint_names", joint_names_))
+    {
+      ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
+      return false;
+    }
+
+    if (joint_names_.size() == 0)
+    {
+      ROS_ERROR("Joint controller initialized with no joint names");
+      return false;
+    }
+
+    ROS_INFO("Loaded joint names:");
+    for(int i = 0; i < joint_names_.size(); i++) // initialize the position joint controllers. Expecting one set of PID gains per actuated joint
+    {
+      ROS_INFO("%s", joint_names_[i].c_str());
+      if(!n.hasParam("/common/position_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+      {
+        ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/position_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
+        return false;
+      }
+
+      // create a controller instance and give it a unique namespace for setting the controller gains
+      position_joint_controllers_.push_back(new control_toolbox::Pid());
+      modified_velocity_references_.push_back(0);
+      time_of_last_cycle_.push_back(robot_->getTime());
+      joint = robot_->getJointState(joint_names_[i]);
+
+      if (!joint)
+      {
+        ROS_ERROR("Joint %s does not exist in the robot mechanism model!", joint_names_[i].c_str());
+        return false;
+      }
+
+      last_active_joint_position_.push_back(joint->position_);
+      position_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/position_loop_gains/" + joint_names_[i]));
+    }
+
+    for(int i = 0; i < joint_names_.size(); i++) // initialize the velocity joint controllers. Expecting one set of PID gains per actuated joint
+    {
+      if(!n.hasParam("/common/velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
+      {
+        ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/velocity_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
+        return false;
+      }
+
+      // create a controller instance and give it a unique namespace for setting the controller gains
+      velocity_joint_controllers_.push_back(new control_toolbox::Pid());
+      time_of_last_cycle_.push_back(robot_->getTime());
+      velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/velocity_loop_gains/" + joint_names_[i]));
+    }
+
+    feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
+
+    time_of_last_reference_update_ = robot_->getTime();
+
+    ROS_INFO("%s has loaded successfully!", n.getNamespace().c_str());
+
+    return true;
   }
-
-  if (!n.getParam("/common/actuated_joint_names", joint_names_))
+  catch (const std::exception &exc)
   {
-    ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
+    ROS_ERROR("Exception thrown: %s", exc.what());
     return false;
   }
-
-  if (joint_names_.size() == 0)
+  catch (...)
   {
-    ROS_ERROR("Joint controller initialized with no joint names");
+    ROS_ERROR("Unknown exception!!");
     return false;
   }
-
-  ROS_INFO("Loaded joint names:");
-  for(int i = 0; i < joint_names_.size(); i++) // initialize the position joint controllers. Expecting one set of PID gains per actuated joint
-  {
-    ROS_INFO("%s", joint_names_[i].c_str());
-    if(!n.hasParam("/common/position_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
-    {
-      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/position_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
-      return false;
-    }
-
-    // create a controller instance and give it a unique namespace for setting the controller gains
-    position_joint_controllers_.push_back(new control_toolbox::Pid());
-    modified_velocity_references_.push_back(0);
-    time_of_last_cycle_.push_back(robot_->getTime());
-    joint = robot_->getJointState(joint_names_[i]);
-
-    if (!joint)
-    {
-      ROS_ERROR("Joint %s does not exist in the robot mechanism model!", joint_names_[i].c_str());
-      return false;
-    }
-
-    last_active_joint_position_.push_back(joint->position_);
-    position_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/position_loop_gains/" + joint_names_[i]));
-  }
-
-  for(int i = 0; i < joint_names_.size(); i++) // initialize the velocity joint controllers. Expecting one set of PID gains per actuated joint
-  {
-    if(!n.hasParam("/common/velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
-    {
-      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/velocity_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
-      return false;
-    }
-
-    // create a controller instance and give it a unique namespace for setting the controller gains
-    velocity_joint_controllers_.push_back(new control_toolbox::Pid());
-    time_of_last_cycle_.push_back(robot_->getTime());
-    velocity_joint_controllers_[i]->init(ros::NodeHandle(n, "/common/velocity_loop_gains/" + joint_names_[i]));
-  }
-
-  feedback_pub_ = n.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n.getNamespace() + "/control_feedback", 1);
-
-  time_of_last_reference_update_ = robot_->getTime();
-
-  ROS_INFO("%s has loaded successfully!", n.getNamespace().c_str());
-
-  return true;
 }
 
 /// Controller startup in realtime

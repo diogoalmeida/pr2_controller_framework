@@ -13,17 +13,7 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   pr2_mechanism_model::JointState *joint;
   ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
-  joint_names_.clear();
-  position_joint_controllers_.clear();
-  velocity_joint_controllers_.clear();
-  last_active_joint_position_.clear();
-  time_of_last_cycle_.clear();
-
-  ROS_INFO("Cleared vectors");
-
   cartesian_controller_ = initializeController();
-
-  ROS_INFO("Initialized cartesian controller");
 
   if (!n.getParam("feedback_rate", feedback_hz_))
   {
@@ -31,15 +21,11 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     feedback_hz_ = 10.0;
   }
 
-  ROS_INFO("Loaded the feedback rate");
-
   if (!n.getParam("/common/actuated_joint_names", joint_names_))
   {
     ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
     return false;
   }
-
-  ROS_INFO("Loaded joint names");
 
   if (joint_names_.size() == 0)
   {
@@ -120,18 +106,7 @@ void TemplateJointController::stopping()
     feedback_thread_.join();
   }
 
-  for(int i = 0; i < velocity_joint_controllers_.size(); i++)
-  {
-    delete position_joint_controllers_[i];
-    delete velocity_joint_controllers_[i];
-  }
-
-  position_joint_controllers_.clear();
-  velocity_joint_controllers_.clear();
-  last_active_joint_position_.clear();
-  time_of_last_cycle_.clear();
-
-  delete cartesian_controller_;
+  resetAllocableVariables();
 
   ROS_INFO("Joint controller stopped successfully!");
 }
@@ -166,6 +141,28 @@ void TemplateJointController::update()
     joint_state->enforceLimits();
     time_of_last_cycle_[i] = robot_->getTime();
   }
+}
+
+/*
+  Frees all the allocated memory and clears all the std vectors that are initialized
+  during the init() routine
+*/
+void TemplateJointController::resetAllocableVariables()
+{
+  for(int i = 0; i < velocity_joint_controllers_.size(); i++)
+  {
+    delete position_joint_controllers_[i];
+    delete velocity_joint_controllers_[i];
+  }
+
+  position_joint_controllers_.clear();
+  velocity_joint_controllers_.clear();
+  joint_names_.clear();
+  time_of_last_cycle_.clear();
+  last_active_joint_position_.clear();
+  modified_velocity_references_.clear();
+
+  delete cartesian_controller_;
 }
 
 /*

@@ -50,6 +50,7 @@ private:
   double getReferencePosition(std::string joint_name);
   double getReferenceVelocity(std::string joint_name);
   void publishFeedback();
+  void resetAllocableVariables();
 
   // Cartesian controller
   cartesian_controllers::ControllerBase *cartesian_controller_;

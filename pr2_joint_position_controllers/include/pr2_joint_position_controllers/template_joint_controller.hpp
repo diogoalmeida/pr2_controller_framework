@@ -30,7 +30,6 @@ private:
   std::vector<double> last_active_joint_position_; // Keeps the last recorded position of actuated joints while the controller is active
   std::vector<double> modified_velocity_references_; // Allows sending feedback of the true velocity control loop performance
   double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt); // applies the nested control strategy
-  bool receive_pos_reference_, reference_active_;
 
   // Reference mutex for preventing updating the reference halfway through a control cycle
   boost::mutex reference_mutex_;

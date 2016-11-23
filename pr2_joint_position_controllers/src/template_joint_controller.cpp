@@ -11,7 +11,6 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
   // copy robot pointer so we can access time
   robot_ = robot;
-  reference_active_ = false;
   controller_is_loaded_ = false;
   pr2_mechanism_model::JointState *joint;
   ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
@@ -105,7 +104,6 @@ void TemplateJointController::starting()
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
-  // feedback_thread_.detach();
 }
 
 void TemplateJointController::stopping()
@@ -263,15 +261,6 @@ void TemplateJointController::publishFeedback()
           feedback_.effort_single =joint_state->commanded_effort_;
           feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
         }
-      }
-
-      if (reference_active_)
-      {
-        feedback_.active = true;
-      }
-      else
-      {
-        feedback_.active = false;
       }
 
       feedback_pub_.publish(feedback_);

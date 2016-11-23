@@ -42,6 +42,8 @@ public:
     delete fkpos_;
     delete ikpos_;
     delete ikvel_;
+
+    action_server_->shutdown();
     delete action_server_;
   }
 

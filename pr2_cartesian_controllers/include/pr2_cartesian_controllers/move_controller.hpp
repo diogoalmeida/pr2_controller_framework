@@ -39,7 +39,7 @@ public:
     startActionlib();
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
-    boost::thread(boost::bind(&MoveController::publishFeedback, this));
+    feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));
   }
   virtual ~MoveController(){}
 

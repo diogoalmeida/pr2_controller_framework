@@ -37,7 +37,7 @@ public:
     }
 
     startActionlib();
-    boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
+    feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
   virtual ~ManipulationController(){}
 

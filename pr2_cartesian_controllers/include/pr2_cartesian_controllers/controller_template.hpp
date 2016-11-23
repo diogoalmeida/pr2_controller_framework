@@ -43,6 +43,12 @@ public:
     delete ikpos_;
     delete ikvel_;
 
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+
     action_server_->shutdown();
     delete action_server_;
   }
@@ -74,6 +80,7 @@ protected:
   virtual void preemptCB() = 0;
   void startActionlib();
 
+  boost::thread feedback_thread_;
   boost::mutex reference_mutex_;
 
   // ROS

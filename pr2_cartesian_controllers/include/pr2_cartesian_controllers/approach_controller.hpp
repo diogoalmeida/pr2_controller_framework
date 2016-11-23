@@ -36,7 +36,7 @@ public:
     }
 
     startActionlib();
-    boost::thread(boost::bind(&ApproachController::publishFeedback, this));
+    feedback_thread_ = boost::thread(boost::bind(&ApproachController::publishFeedback, this));
   };
   virtual ~ApproachController(){}
 

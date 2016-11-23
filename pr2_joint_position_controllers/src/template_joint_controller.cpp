@@ -15,6 +15,12 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   pr2_mechanism_model::JointState *joint;
   ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
+  joint_names_.clear();
+  position_joint_controllers_.clear();
+  velocity_joint_controllers_.clear();
+  last_active_joint_position_.clear();
+  time_of_last_cycle_.clear();
+
   cartesian_controller_ = initializeController();
 
   if (!n.getParam("feedback_rate", feedback_hz_))
@@ -119,6 +125,8 @@ void TemplateJointController::stopping()
 
   position_joint_controllers_.clear();
   velocity_joint_controllers_.clear();
+  last_active_joint_position_.clear();
+  time_of_last_cycle_.clear();
 
   delete cartesian_controller_;
 

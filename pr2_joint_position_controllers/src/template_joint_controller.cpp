@@ -311,39 +311,41 @@ void TemplateJointController::publishFeedback()
 {
   pr2_mechanism_model::JointState *joint_state;
 
-  ROS_INFO("FEEDBACK THREAD STARTED");
-
   try
   {
     while(ros::ok())
     {
+      if (verify_sanity(control_references_))
       {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        feedback_.joint_name.clear();
-        feedback_.commanded_effort.clear();
-        feedback_.position_error.clear();
-        feedback_.velocity_error.clear();
-        for (int i = 0; i < control_references_.name.size(); i++)
         {
-          joint_state = robot_->getJointState(control_references_.name[i]);
-          feedback_.joint_name.push_back(control_references_.name[i]);
-          feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
-          feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
-          feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          feedback_.joint_name.clear();
+          feedback_.commanded_effort.clear();
+          feedback_.position_error.clear();
+          feedback_.velocity_error.clear();
 
-          feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
-          feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
-          feedback_.effort_single =joint_state->commanded_effort_;
-          feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
+          for (int i = 0; i < control_references_.name.size(); i++)
+          {
+            joint_state = robot_->getJointState(control_references_.name[i]);
+            feedback_.joint_name.push_back(control_references_.name[i]);
+            feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
+            feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
+            feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
+
+            feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
+            feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
+            feedback_.effort_single =joint_state->commanded_effort_;
+            feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
+          }
         }
+        feedback_pub_.publish(feedback_);
       }
-      feedback_pub_.publish(feedback_);
       boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
     }
   }
   catch(const boost::thread_interrupted &)
   {
-    ROS_INFO("FEEDBACK THREAD DESTROYED");
+    return;
   }
 }
 } // namespace

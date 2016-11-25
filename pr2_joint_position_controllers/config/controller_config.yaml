@@ -59,7 +59,7 @@ common:
       i_clamp: 10
 
     l_shoulder_lift_joint:
-      p: 200
+      p: 10
       i: 0
       d: 0
       i_clamp: 10
@@ -143,10 +143,10 @@ common:
       i_clamp: 1
 
     l_shoulder_lift_joint:
-      p: 20
-      i: 1
+      p: 15
+      i: 15
       d: 0
-      i_clamp: 10
+      i_clamp: 7.5
 
     l_forearm_roll_joint:
       p: 20

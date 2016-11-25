@@ -17,4 +17,4 @@ approach_controller:
 
 move_controller:
   action_server_name: move_controller
-  max_allowed_error: 0.1
+  max_allowed_error: 0.01

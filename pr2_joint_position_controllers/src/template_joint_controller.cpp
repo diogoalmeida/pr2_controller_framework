@@ -331,6 +331,8 @@ void TemplateJointController::publishFeedback()
             feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
             feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
             feedback_.velocity_error.push_back(joint_state->velocity_ - control_references_.velocity[i]);
+            feedback_.position.push_back(joint_state->position_);
+            feedback_.velocity.push_back(joint_state->velocity_);
 
             feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
             feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);

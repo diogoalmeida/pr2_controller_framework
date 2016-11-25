@@ -51,8 +51,6 @@ namespace cartesian_controllers {
     object_pose.lifetime = ros::Duration(0);
     object_pose.frame_locked = false; // not sure about this
 
-    ROS_INFO("FEEDBACK THREAD STARTED");
-
     try
     {
       while(ros::ok())
@@ -75,7 +73,7 @@ namespace cartesian_controllers {
     }
     catch(const boost::thread_interrupted &)
     {
-      ROS_INFO("FEEDBACK THREAD DESTROYED");
+      return;
     }
   }
 

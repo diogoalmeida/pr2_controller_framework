@@ -72,8 +72,6 @@ namespace cartesian_controllers {
     object_color.g = 1;
     current_pose.color = object_color;
 
-    ROS_INFO("FEEDBACK THREAD STARTED");
-
     try
     {
       while(ros::ok())
@@ -93,7 +91,7 @@ namespace cartesian_controllers {
     }
     catch(const boost::thread_interrupted &)
     {
-      ROS_INFO("FEEDBACK THREAD DESTROYED");
+      return;
     }
   }
 

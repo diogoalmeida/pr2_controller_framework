@@ -33,8 +33,6 @@ namespace cartesian_controllers {
   {
     feedback_.current_wrench.header.frame_id = base_link_;
 
-    ROS_INFO("FEEDBACK THREAD STARTED");
-
     try
     {
       while(ros::ok())
@@ -52,7 +50,7 @@ namespace cartesian_controllers {
     }
     catch(const boost::thread_interrupted &)
     {
-      ROS_INFO("FEEDBACK THREAD DESTROYED");
+      return;
     }
   }
 

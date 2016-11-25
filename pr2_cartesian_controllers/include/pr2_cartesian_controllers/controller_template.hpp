@@ -49,6 +49,7 @@ public:
       feedback_thread_.join();
     }
 
+    action_server_->setAborted();
     action_server_->shutdown();
     delete action_server_;
   }

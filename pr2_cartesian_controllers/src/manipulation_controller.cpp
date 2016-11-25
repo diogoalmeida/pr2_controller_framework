@@ -8,6 +8,7 @@ namespace cartesian_controllers {
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
+    ROS_WARN("Manipulation controller preempted!");
   }
 
   /*

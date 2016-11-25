@@ -47,6 +47,12 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/move_controller/error_threshold", error_threshold_))
+    {
+      ROS_ERROR("Move controller requires an error threshold (/move_controller/error_threshold)");
+      return false;
+    }
+
     return true;
   }
 
@@ -135,6 +141,27 @@ namespace cartesian_controllers {
 
     control_output = current_state;
 
+    // 0 - Check success
+    int success = 0;
+    for (int i = 0; i < 7; i++)
+    {
+      if (std::abs(desired_joint_positions(i) - current_state.position[i]) > error_threshold_)
+      {
+        break;
+      }
+      else
+      {
+        success++;
+      }
+    }
+
+    if (success == 7)
+    {
+      ROS_INFO("Move joint controller executed successfully!");
+      action_server_->setSucceeded();
+      return lastState(current_state);
+    }
+
     // 1 - Compute position error
     std::vector<double> error;
     for (int i = 0; i < 7; i++)
@@ -161,6 +188,7 @@ namespace cartesian_controllers {
     {
       control_output.position[i] = joint_positions_(i);
       control_output.velocity[i] = velocity_gain_ * error[i];
+      control_output.effort[i] = 0;
     }
 
     return control_output;

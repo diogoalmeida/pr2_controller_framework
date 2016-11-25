@@ -8,6 +8,7 @@ namespace cartesian_controllers {
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
+    acquired_reference_position_ = false;
     ROS_WARN("Move controller preempted!");
   }
 
@@ -20,7 +21,7 @@ namespace cartesian_controllers {
     geometry_msgs::PoseStamped pose;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
+    acquired_reference_position_ = false;
     pose = goal->desired_pose;
     tf::poseMsgToKDL(pose.pose, pose_reference_);
   }
@@ -104,6 +105,7 @@ namespace cartesian_controllers {
 
           target_pub_.publish(reference_pose);
           current_pub_.publish(current_pose);
+          action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
@@ -121,7 +123,6 @@ namespace cartesian_controllers {
   sensor_msgs::JointState MoveController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::JntArray desired_joint_positions;
 
     if (!action_server_->isActive())
     {
@@ -133,12 +134,21 @@ namespace cartesian_controllers {
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
-    for (int i = 0; i < 7; i++)
-    {
-      joint_positions_(i) = current_state.position[i];
-    }
+    feedback_.joint_position_references.clear();
+    feedback_.joint_position_errors.clear();
+    feedback_.joint_velocity_references.clear();
+    feedback_.joint_velocity_errors.clear();
 
-    ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions);
+    if (!acquired_reference_position_)
+    {
+      for (int i = 0; i < 7; i++)
+      {
+        joint_positions_(i) = current_state.position[i];
+      }
+
+      ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_);
+      acquired_reference_position_ = true;
+    }
 
     control_output = current_state;
 
@@ -146,7 +156,7 @@ namespace cartesian_controllers {
     int success = 0;
     for (int i = 0; i < 7; i++)
     {
-      if (std::abs(desired_joint_positions(i) - current_state.position[i]) > error_threshold_)
+      if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > error_threshold_)
       {
         break;
       }
@@ -160,6 +170,7 @@ namespace cartesian_controllers {
     {
       ROS_INFO("Move joint controller executed successfully!");
       action_server_->setSucceeded();
+      acquired_reference_position_ = false;
       return lastState(current_state);
     }
 
@@ -167,9 +178,9 @@ namespace cartesian_controllers {
     std::vector<double> error;
     for (int i = 0; i < 7; i++)
     {
-      if (std::abs(desired_joint_positions(i) - current_state.position[i]) > max_allowed_error_)
+      if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
       {
-        if (desired_joint_positions(i) - current_state.position[i] > 0)
+        if (desired_joint_positions_(i) - current_state.position[i] > 0)
         {
           error.push_back(max_allowed_error_);
         }
@@ -180,8 +191,11 @@ namespace cartesian_controllers {
       }
       else
       {
-        error.push_back(desired_joint_positions(i) - current_state.position[i]);
+        error.push_back(desired_joint_positions_(i) - current_state.position[i]);
       }
+
+      feedback_.joint_position_references.push_back(desired_joint_positions_(i));
+      feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
     }
 
     // 2 - send commands
@@ -189,6 +203,8 @@ namespace cartesian_controllers {
     {
       control_output.velocity[i] = velocity_gain_ * error[i];
       control_output.position[i] = joint_positions_(i) + control_output.velocity[i]*dt.toSec();
+      feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
+      feedback_.joint_velocity_errors.push_back(current_state.velocity[i] - velocity_gain_ * error[i]);
       control_output.effort[i] = 0;
     }
 

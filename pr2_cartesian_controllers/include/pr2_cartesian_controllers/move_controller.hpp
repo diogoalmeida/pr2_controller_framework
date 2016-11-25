@@ -21,8 +21,10 @@ private:
 
   // Controller values
   KDL::Frame pose_reference_;
+  KDL::JntArray desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;
+  bool acquired_reference_position_;
 
   // ROS
   ros::Publisher target_pub_, current_pub_;
@@ -39,6 +41,7 @@ public:
     }
 
     startActionlib();
+    acquired_reference_position_ = false;
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
     feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));

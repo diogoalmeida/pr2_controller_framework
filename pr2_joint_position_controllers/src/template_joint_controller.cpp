@@ -196,6 +196,10 @@ bool TemplateJointController::verify_sanity(sensor_msgs::JointState &state)
         ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
       }
     }
+    else
+    {
+      state.position[i] = std::abs(state.position[i]);
+    }
 
     if (std::abs(state.velocity[i]) > limits->velocity)
     {

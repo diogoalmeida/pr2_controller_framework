@@ -324,7 +324,7 @@ void TemplateJointController::publishFeedback()
           feedback_.position_error.clear();
           feedback_.velocity_error.clear();
           feedback_.position.clear();
-          feedback.velocity.clear();
+          feedback_.velocity.clear();
 
           for (int i = 0; i < control_references_.name.size(); i++)
           {

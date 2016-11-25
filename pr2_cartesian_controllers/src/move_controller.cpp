@@ -41,6 +41,12 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/move_controller/velocity_gain", velocity_gain_))
+    {
+      ROS_ERROR("Move controller requires a velocity gain (/move_controller/velocity_gain)");
+      return false;
+    }
+
     return true;
   }
 
@@ -129,34 +135,32 @@ namespace cartesian_controllers {
 
     control_output = current_state;
 
-    // 1 - Check if the position error isn't bigger than a threshold
-    double max_actual_error = 0.0;
-    double error;
+    // 1 - Compute position error
+    std::vector<double> error;
     for (int i = 0; i < 7; i++)
     {
-      error = std::abs(desired_joint_positions(i) - current_state.position[i]);
-
-      if (error > max_allowed_error_)
+      if (std::abs(desired_joint_positions(i) - current_state.position[i]) > max_allowed_error_)
       {
-        if (error > max_actual_error)
+        if (desired_joint_positions(i) - current_state.position[i] > 0)
         {
-          max_actual_error = error;
+          error.push_back(max_allowed_error_);
         }
-      }
-    }
-
-    // 2 - If there is saturation, scale the commanded positions
-    for (int i = 0; i < 7; i++)
-    {
-      if (max_actual_error > 0.0)
-      {
-        ROS_WARN("Saturation!");
-        control_output.position[i] = desired_joint_positions(i)*max_allowed_error_ / max_actual_error;
+        else
+        {
+          error.push_back(-max_allowed_error_);
+        }
       }
       else
       {
-        control_output.position[i] = desired_joint_positions(i);
+        error.push_back(desired_joint_positions(i) - current_state.position[i]);
       }
+    }
+
+    // 2 - send commands
+    for (int i = 0; i < 7; i++)
+    {
+      control_output.position[i] = joint_positions_(i);
+      control_output.velocity[i] = velocity_gain_ * error[i];
     }
 
     return control_output;

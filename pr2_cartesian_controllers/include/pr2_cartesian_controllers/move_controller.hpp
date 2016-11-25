@@ -21,6 +21,7 @@ private:
 
   // Controller values
   KDL::Frame pose_reference_;
+  double velocity_gain_;
   double max_allowed_error_; // saturate joint error to this value, to prevent an initial jerky motion
 
   // ROS

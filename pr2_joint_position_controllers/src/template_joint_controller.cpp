@@ -145,6 +145,8 @@ void TemplateJointController::update()
   dt = robot_->getTime() - time_of_last_manipulation_call_;
   control_references_ = cartesian_controller_->updateControl(current_state, dt);
 
+  verify_sanity(control_references_);
+
   for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
@@ -154,6 +156,61 @@ void TemplateJointController::update()
     joint_state->enforceLimits();
     time_of_last_cycle_[i] = robot_->getTime();
   }
+}
+
+/*
+  Verifies if the given joint state obeys all the joint limits, and modifies it
+  if not.
+*/
+bool TemplateJointController::verify_sanity(sensor_msgs::JointState &state)
+{
+  pr2_mechanism_model::JointState *joint_state;
+  boost::shared_ptr<const urdf::JointLimits> limits;
+  bool hit_limit = false;
+
+  for (int i = 0; i < state.name.size(); i++)
+  {
+    joint_state = robot_->getJointState(state.name[i]);
+
+    if (!joint_state)
+    {
+      ROS_WARN("Tried to verify sanity to an inexistent joint");
+      continue;
+    }
+
+    limits = joint_state->joint_->limits;
+
+    if (state.position[i] > limits->upper)
+    {
+      state.position[i] = limits->upper;
+      hit_limit = true;
+      ROS_WARN("Joint %s has a commanded position <%.2f> above the upper limit <%.2f>", state.name[i].c_str(), state.position[i], limits->upper);
+    }
+
+    if (state.position[i] < limits->lower)
+    {
+      state.position[i] = limits->lower;
+      hit_limit = true;
+      ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
+    }
+
+    if (std::abs(state.velocity[i]) > limits->velocity)
+    {
+      if (state.velocity[i] < 0)
+      {
+        state.velocity[i] = -limits->velocity;
+      }
+      else
+      {
+        state.velocity[i] = limits->velocity;
+      }
+
+      hit_limit = true;
+      ROS_WARN("Joint %s has a commanded velocity <%.2f> of higher magnitude than the limit <%.2f>", state.name[i].c_str(), state.velocity[i], limits->velocity);
+    }
+  }
+
+  return hit_limit;
 }
 
 /*

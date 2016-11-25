@@ -180,18 +180,21 @@ bool TemplateJointController::verify_sanity(sensor_msgs::JointState &state)
 
     limits = joint_state->joint_->limits;
 
-    if (state.position[i] > limits->upper)
+    if (limits->upper != limits->lower) // it these limits are equal, joint can rotate freely
     {
-      state.position[i] = limits->upper;
-      hit_limit = true;
-      ROS_WARN("Joint %s has a commanded position <%.2f> above the upper limit <%.2f>", state.name[i].c_str(), state.position[i], limits->upper);
-    }
+      if (state.position[i] > limits->upper)
+      {
+        state.position[i] = limits->upper;
+        hit_limit = true;
+        ROS_WARN("Joint %s has a commanded position <%.2f> above the upper limit <%.2f>", state.name[i].c_str(), state.position[i], limits->upper);
+      }
 
-    if (state.position[i] < limits->lower)
-    {
-      state.position[i] = limits->lower;
-      hit_limit = true;
-      ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
+      if (state.position[i] < limits->lower)
+      {
+        state.position[i] = limits->lower;
+        hit_limit = true;
+        ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
+      }
     }
 
     if (std::abs(state.velocity[i]) > limits->velocity)

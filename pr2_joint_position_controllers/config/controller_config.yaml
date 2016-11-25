@@ -71,10 +71,10 @@ common:
       i_clamp: 10
 
     l_elbow_flex_joint:
-      p: 100
+      p: 15
       i: 0
       d: 0
-      i_clamp: 10
+      i_clamp: 0
 
     l_wrist_flex_joint:
       p: 10

@@ -204,7 +204,7 @@ namespace cartesian_controllers {
       control_output.velocity[i] = velocity_gain_ * error[i];
       control_output.position[i] = joint_positions_(i) + control_output.velocity[i]*dt.toSec();
       feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
-      feedback_.joint_velocity_errors.push_back(current_state.velocity[i] - velocity_gain_ * error[i]);
+      feedback_.joint_velocity_errors.push_back(velocity_gain_ * error[i] - current_state.velocity[i]);
       control_output.effort[i] = 0;
     }
 

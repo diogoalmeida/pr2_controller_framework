@@ -51,7 +51,7 @@ private:
   double getReferenceVelocity(std::string joint_name);
   void publishFeedback();
   void resetAllocableVariables();
-  bool verify_sanity(sensor_msgs::JointState &state);
+  bool verifySanity(sensor_msgs::JointState &state);
 
   // Cartesian controller
   cartesian_controllers::ControllerBase *cartesian_controller_;

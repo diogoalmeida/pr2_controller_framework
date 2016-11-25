@@ -145,7 +145,7 @@ void TemplateJointController::update()
   dt = robot_->getTime() - time_of_last_manipulation_call_;
   control_references_ = cartesian_controller_->updateControl(current_state, dt);
 
-  verify_sanity(control_references_);
+  verifySanity(control_references_);
 
   for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
@@ -162,7 +162,7 @@ void TemplateJointController::update()
   Verifies if the given joint state obeys all the joint limits, and modifies it
   if not.
 */
-bool TemplateJointController::verify_sanity(sensor_msgs::JointState &state)
+bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
 {
   pr2_mechanism_model::JointState *joint_state;
   boost::shared_ptr<const urdf::JointLimits> limits;
@@ -217,7 +217,7 @@ bool TemplateJointController::verify_sanity(sensor_msgs::JointState &state)
     }
   }
 
-  return hit_limit;
+  return !hit_limit;
 }
 
 /*
@@ -315,7 +315,7 @@ void TemplateJointController::publishFeedback()
   {
     while(ros::ok())
     {
-      if (verify_sanity(control_references_))
+      if (verifySanity(control_references_))
       {
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);

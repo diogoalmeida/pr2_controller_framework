@@ -35,6 +35,12 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/move_controller/max_allowed_error", max_allowed_error_))
+    {
+      ROS_ERROR("Move controller requires a maximum value for the joint error (/move_controller/max_allowed_error)");
+      return false;
+    }
+
     return true;
   }
 
@@ -123,9 +129,34 @@ namespace cartesian_controllers {
 
     control_output = current_state;
 
+    // 1 - Check if the position error isn't bigger than a threshold
+    double max_actual_error = 0.0;
+    double error;
     for (int i = 0; i < 7; i++)
     {
-      control_output.position[i] = desired_joint_positions(i);
+      error = std::abs(desired_joint_positions(i) - current_state.position[i]);
+
+      if (error > max_allowed_error_)
+      {
+        if (error > max_actual_error)
+        {
+          max_actual_error = error;
+        }
+      }
+    }
+
+    // 2 - If there is saturation, scale the commanded positions
+    for (int i = 0; i < 7; i++)
+    {
+      if (max_actual_error > 0.0)
+      {
+        ROS_WARN("Saturation!");
+        control_output.position[i] = desired_joint_positions(i)*max_allowed_error_ / max_actual_error;
+      }
+      else
+      {
+        control_output.position[i] = desired_joint_positions(i);
+      }
     }
 
     return control_output;

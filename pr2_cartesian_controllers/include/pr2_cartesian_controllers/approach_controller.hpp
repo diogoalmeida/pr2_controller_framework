@@ -38,7 +38,11 @@ public:
     startActionlib();
     feedback_thread_ = boost::thread(boost::bind(&ApproachController::publishFeedback, this));
   };
-  virtual ~ApproachController(){}
+  virtual ~ApproachController()
+  {
+    action_server_->shutdown();
+    delete action_server_;
+  }
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

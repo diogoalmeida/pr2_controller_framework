@@ -43,7 +43,11 @@ public:
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
     feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));
   }
-  virtual ~MoveController(){}
+  virtual ~MoveController()
+  {
+    action_server_->shutdown();
+    delete action_server_;
+  }
 
   // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);

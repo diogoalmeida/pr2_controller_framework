@@ -186,8 +186,8 @@ namespace cartesian_controllers {
     // 2 - send commands
     for (int i = 0; i < 7; i++)
     {
-      control_output.position[i] = joint_positions_(i);
       control_output.velocity[i] = velocity_gain_ * error[i];
+      control_output.position[i] = joint_positions_(i) + control_output.velocity[i]*dt.toSec();
       control_output.effort[i] = 0;
     }
 

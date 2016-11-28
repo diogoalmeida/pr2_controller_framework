@@ -18,6 +18,6 @@ approach_controller:
 
 move_controller:
   action_server_name: move_controller
-  max_allowed_error: 0.01
-  velocity_gain: 0.01
-  error_threshold: 0.05
+  max_allowed_error: 0.5
+  velocity_gain: 1.0
+  error_threshold: 0.03

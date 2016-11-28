@@ -151,6 +151,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
 
   vector_in.vector = msg->wrench.torque;
   vector_in.header = msg->header;
+  vector_in.header.stamp = ros::Time(0); // To enable transform with the latest ft data available
 
   try
   {

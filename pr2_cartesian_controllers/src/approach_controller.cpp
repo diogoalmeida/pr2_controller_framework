@@ -14,6 +14,12 @@ namespace cartesian_controllers {
     twist = goal->approach_command;
     tf::twistMsgToKDL(twist.twist, velocity_reference_);
 
+    feedback_.velocity_reference.clear();
+    for (int i = 0; i < 6; i++)
+    {
+      feedback_.velocity_reference.push_back(velocity_reference_(i));
+    }
+
     force_threshold_ = goal->contact_force;
     ROS_INFO("Approach controller server received a goal!");
   }
@@ -105,10 +111,12 @@ namespace cartesian_controllers {
     ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 
     control_output = current_state;
+    feedback_.commanded_velocities.clear();
 
     for (int i = 0; i < 7; i++)
     {
       control_output.velocity[i] = commanded_joint_velocities(i);
+      feedback_.commanded_velocities.push_back(commanded_joint_velocities(i));
       control_output.position[i] = current_state.position[i] + commanded_joint_velocities(i)*dt.toSec();
     }
 

@@ -115,6 +115,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   has_state_ = false;
 
   // Subscribe to force and torque measurements
+  measured_wrench_ << 0, 0, 0, 0, 0, 0;
   ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ControllerTemplate::forceTorqueCB, this);
 }
 

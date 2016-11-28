@@ -3,7 +3,7 @@ common:
   end_effector_link_name: l_gripper_tool_frame
   wdls_epsilon: 0.01
   feedback_rate: 50
-  force_torque_topic: /ft
+  force_torque_topic: /ft_sensor/ft_compensated
 
 manipulation_controller:
   action_server_name: dexterous_manipulation

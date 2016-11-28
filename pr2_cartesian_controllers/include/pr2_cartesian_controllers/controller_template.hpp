@@ -208,6 +208,12 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
     return false;
   }
 
+  if (!nh_.getParam("/common/force_torque_topic", ft_topic_name_))
+  {
+    ROS_ERROR("Missing force torque topic name (/common/force_torque_topic)");
+    return false;
+  }
+
   if(!model_.initParam("/robot_description")){
       ROS_ERROR("ERROR getting robot description (/robot_description)");
       return false;

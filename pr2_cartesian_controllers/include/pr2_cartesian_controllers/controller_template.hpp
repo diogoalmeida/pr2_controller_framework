@@ -151,14 +151,21 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
 
   vector_in.vector = msg->wrench.torque;
   vector_in.header = msg->header;
-  listener_.transformVector(base_link_, vector_in, vector_out);
-  transformed_wrench.torque = vector_in.vector;
 
-  vector_in.vector = msg->wrench.force;
-  listener_.transformVector(base_link_, vector_in, vector_out);
-  transformed_wrench.force = vector_in.vector;
+  try
+  {
+    listener_.transformVector(base_link_, vector_in, vector_out);
+    transformed_wrench.torque = vector_in.vector;
+    vector_in.vector = msg->wrench.force;
+    listener_.transformVector(base_link_, vector_in, vector_out);
+    transformed_wrench.force = vector_in.vector;
 
-  tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
+    tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+  }
 }
 
 /*

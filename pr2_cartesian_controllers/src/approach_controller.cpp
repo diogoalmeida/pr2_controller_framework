@@ -117,7 +117,7 @@ namespace cartesian_controllers {
     {
       control_output.velocity[i] = commanded_joint_velocities(i);
       feedback_.commanded_velocities.push_back(commanded_joint_velocities(i));
-      control_output.position[i] = current_state.position[i] + commanded_joint_velocities(i)*dt.toSec();
+      control_output.position[i] = current_state.position[i];
     }
 
     return control_output;

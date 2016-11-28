@@ -205,6 +205,7 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < 7; i++)
     {
+      control_output.position[i] = joint_positions_(i);
       control_output.velocity[i] = commanded_joint_velocities(i);
     }
 

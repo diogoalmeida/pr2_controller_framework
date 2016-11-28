@@ -7,7 +7,7 @@ common:
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
-  spring_constant: 2
+  spring_constant: 10
   gains:
     k_1: 1
     k_2: 1

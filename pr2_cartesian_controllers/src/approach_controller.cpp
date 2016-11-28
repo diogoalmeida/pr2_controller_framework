@@ -15,6 +15,7 @@ namespace cartesian_controllers {
     tf::twistMsgToKDL(twist.twist, velocity_reference_);
 
     force_threshold_ = goal->contact_force;
+    ROS_INFO("Approach controller server received a goal!");
   }
 
   /*
@@ -91,6 +92,8 @@ namespace cartesian_controllers {
     if (measured_wrench_.block<3,1>(0,0).norm() > force_threshold_)
     {
       action_server_->setSucceeded(result_, "contact force achieved");
+      ROS_INFO("Approach controller action server succeeded! Measured wrench:");
+      std::cout << measured_wrench_ << std::endl;
       return current_state;
     }
 

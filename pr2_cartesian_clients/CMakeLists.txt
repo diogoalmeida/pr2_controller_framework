@@ -12,6 +12,7 @@ catkin REQUIRED COMPONENTS
   tf
   eigen_conversions
   pr2_cartesian_controllers
+	pr2_mechanism_msgs
 	message_generation
 )
 

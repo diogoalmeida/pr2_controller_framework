@@ -2,16 +2,24 @@ vision:
   surface_frame_name: id_0
 
 initialization:
-  initial_pose_offset: [0.0, 0.0, 0.15] # w.r.t the surface_frame_name
-  initial_approach_angle: 0.62831853071 # in radians
-  manipulation_action_name: /gazebo/dexterous_manipulation
-  approach_action_name: /gazebo/approach_controller
-  move_action_name: /gazebo/move_controller
-  gravity_compensation_service_name: /ft/compensated
+  initial_pose_offset: [0.2, 0.0, 0.15] # w.r.t the surface_frame_name
+  initial_approach_angle: 0 # in radians
+  actionlib_server_names:
+    manipulation_action_name: /realtime_loop/dexterous_manipulation
+    approach_action_name: /realtime_loop/approach_controller
+    move_action_name: /realtime_loop/move_controller
+    client_action_name: manipulation_client
+  controller_names:
+    move_controller: move_joint_controller
+    approach_controller: approach_joint_controller
+    manipulation_controller: manipulation_joint_controller
+  gravity_compensation_service_name: /gravity_compensation/calibrate_bias
+  server_timeout: 2
 
 experiment:
+  feedback_rate: 1
   tool_frame_name: l_gripper_tool_frame
   base_link_name: torso_lift_link
   num_of_experiments: 1
-  use_vision: false
-  sim_mode: true
+  use_vision: true
+  sim_mode: false

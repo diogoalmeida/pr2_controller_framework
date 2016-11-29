@@ -19,4 +19,5 @@
   <depend>eigen_conversions</depend>
   <depend>message_generation</depend>
   <depend>pr2_cartesian_controllers</depend>
+  <depend>pr2_mechanism_msgs</depend>
 </package>

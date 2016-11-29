@@ -12,6 +12,9 @@
 #include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
+#include <pr2_mechanism_msgs/LoadController.h>
+#include <pr2_mechanism_msgs/UnloadController.h>
+#include <pr2_mechanism_msgs/SwitchController.h>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>
 
@@ -32,8 +35,17 @@ namespace manipulation{
     // ros
     ros::NodeHandle nh_;
     ros::ServiceClient gravity_compensation_client_;
+    ros::ServiceClient load_controllers_client_;
+    ros::ServiceClient unload_controllers_client_;
+    ros::ServiceClient switch_controllers_client_;
     tf::TransformListener listener_;
+    std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
     bool loadParams();
+    bool loadControllers();
+    bool loadController(std::string controller_name);
+    bool unloadControllers();
+    bool unloadController(std::string controller_name);
+    bool switchToController(std::string controller_name);
 
     // actionlib
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
@@ -51,7 +63,7 @@ namespace manipulation{
     double vision_timeout_;
     bool waitForTablePose(ros::Duration max_time);
     std::string surface_frame_name_;
-    geometry_msgs::PoseStamped getInitialEefPose();
+    bool getInitialEefPose(geometry_msgs::PoseStamped & pose);
 
     // Experimental setup
     std::vector<double> initial_pose_offset_;

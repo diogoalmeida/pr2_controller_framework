@@ -77,7 +77,7 @@ namespace cartesian_controllers {
     reference_pose.header.stamp = ros::Time::now();
     reference_pose.ns = "move_controller";
     reference_pose.id = 1;
-    reference_pose.type = reference_pose.SPHERE;
+    reference_pose.type = reference_pose.ARROW;
     reference_pose.action = reference_pose.ADD;
     reference_pose.color = object_color;
     reference_pose.lifetime = ros::Duration(0);

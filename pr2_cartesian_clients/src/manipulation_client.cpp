@@ -533,8 +533,9 @@ bool ManipulationClient::getInitialEefPose(geometry_msgs::PoseStamped & pose)
   std::cout << initial_offset << std::endl;
 
   // Compose the transform
-  desired_initial_pose.translate(initial_offset);
-  desired_initial_pose.prerotate(initial_orientation);
+  desired_initial_pose = Eigen::Translation3d(initial_offset) * initial_orientation;
+  // desired_initial_pose.rotate(initial_orientation);
+  // desired_initial_pose.translate(initial_offset);
 
   ROS_INFO("Transform:");
   std::cout << desired_initial_pose.translation() << std::endl;

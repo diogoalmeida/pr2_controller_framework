@@ -83,8 +83,8 @@ namespace cartesian_controllers {
     reference_pose.lifetime = ros::Duration(0);
     reference_pose.frame_locked = false; // not sure about this
     reference_pose.scale.x = 0.1;
-    reference_pose.scale.y = 0.1;
-    reference_pose.scale.z = 0.1;
+    reference_pose.scale.y = 0.01;
+    reference_pose.scale.z = 0.01;
 
     current_pose = reference_pose;
     current_pose.id = 2;

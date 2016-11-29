@@ -523,7 +523,7 @@ bool ManipulationClient::getInitialEefPose(geometry_msgs::PoseStamped & pose)
 
   ROS_INFO("Getting initial orientation");
   // Define the intended orientation of the end-effector in the surface frame
-  Eigen::AngleAxisd initial_orientation(initial_approach_angle_, Eigen::Vector3d::UnitZ()); // need to check axis
+  Eigen::AngleAxisd initial_orientation(initial_approach_angle_, Eigen::Vector3d::UnitY()); // need to check axis
 
   // Set the intended offset
   Eigen::Vector3d initial_offset;

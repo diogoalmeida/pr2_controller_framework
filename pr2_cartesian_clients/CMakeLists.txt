@@ -16,19 +16,20 @@ catkin REQUIRED COMPONENTS
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # add_message_files(
 #   FILES
 # )
 
-# add_action_files(
-# 	DIRECTORY action
-# 	FILES ManipulationController.action
-# )
+add_action_files(
+	DIRECTORY action
+	FILES Manipulation.action
+)
 
-# generate_messages(
-#   DEPENDENCIES std_msgs sensor_msgs actionlib_msgs
-# )
+generate_messages(
+  DEPENDENCIES std_msgs actionlib_msgs
+)
 
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers

@@ -15,14 +15,7 @@ ManipulationClient::ManipulationClient()
   load_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::LoadController>("/pr2_controller_manager/load_controller");
   unload_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::UnloadController>("/pr2_controller_manager/unload_controller");
   switch_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::SwitchController>("/pr2_controller_manager/switch_controller");
-
-  if (!loadControllers())
-  {
-    unloadControllers();
-    ROS_ERROR("Failed to load the PR2 controllers required for the experiment");
-    ros::shutdown();
-    return;
-  }
+  list_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::ListControllers>("/pr2_controller_manager/list_controllers");
 
   action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_clients::ManipulationAction>(nh_, cartesian_client_action_name_, false);
   action_server_->registerGoalCallback(boost::bind(&ManipulationClient::goalCB, this));
@@ -73,7 +66,21 @@ bool ManipulationClient::loadControllers()
 */
 bool ManipulationClient::loadController(std::string controller_name)
 {
+  pr2_mechanism_msgs::ListControllers list_srv;
   pr2_mechanism_msgs::LoadController load_srv;
+
+  if (!list_controllers_client_.call(list_srv))
+  {
+    ROS_ERROR("Error calling the list controllers server!");
+    return false;
+  }
+  else
+  {
+    if (stringInVector(controller_name, list_srv.response.controllers))
+    {
+      return true;
+    }
+  }
 
   load_srv.request.name = controller_name;
   if(!load_controllers_client_.call(load_srv))
@@ -122,7 +129,26 @@ bool ManipulationClient::unloadControllers()
 */
 bool ManipulationClient::unloadController(std::string controller_name)
 {
+  pr2_mechanism_msgs::ListControllers list_srv;
   pr2_mechanism_msgs::UnloadController unload_srv;
+
+  if (!list_controllers_client_.call(list_srv))
+  {
+    ROS_ERROR("Error calling the list controllers server!");
+    return false;
+  }
+  else
+  {
+    if (!stringInVector(controller_name, list_srv.response.controllers))
+    {
+      return true;
+    }
+  }
+
+  if (controllerIsRunning(controller_name, list_srv))
+  {
+    stopController(controller_name);
+  }
 
   unload_srv.request.name = controller_name;
   if(!unload_controllers_client_.call(unload_srv))
@@ -145,6 +171,52 @@ bool ManipulationClient::unloadController(std::string controller_name)
   }
 }
 
+/*
+  Stops the requested controller
+*/
+bool ManipulationClient::stopController(std::string controller_name)
+{
+  pr2_mechanism_msgs::ListControllers list_srv;
+  pr2_mechanism_msgs::SwitchController switch_srv;
+
+  if (!list_controllers_client_.call(list_srv))
+  {
+    ROS_ERROR("Error calling the list controllers server!");
+    return false;
+  }
+  else
+  {
+    if (!stringInVector(controller_name, list_srv.response.controllers))
+    {
+      ROS_ERROR("Tried to stop the unloaded controller %s!", controller_name.c_str());
+      return false;
+    }
+  }
+
+  if (controllerIsRunning(controller_name, list_srv))
+  {
+    switch_srv.request.stop_controllers.push_back("r_arm_controller");
+  }
+
+  if(!switch_controllers_client_.call(switch_srv))
+  {
+    ROS_ERROR("Error calling the switch controller server!");
+    return false;
+  }
+  else
+  {
+    if(switch_srv.response.ok)
+    {
+      ROS_INFO("Successfully stopped controller %s", controller_name.c_str());
+      return true;
+    }
+    else
+    {
+      ROS_ERROR("Failed in stopping the controller %s!", controller_name.c_str());
+      return false;
+    }
+  }
+}
 
 /*
   Starts the given controller, and stops all the other controllers relevant to the
@@ -152,25 +224,56 @@ bool ManipulationClient::unloadController(std::string controller_name)
 */
 bool ManipulationClient::switchToController(std::string controller_name)
 {
+  pr2_mechanism_msgs::ListControllers list_srv;
   pr2_mechanism_msgs::SwitchController switch_srv;
 
+  if (!list_controllers_client_.call(list_srv))
+  {
+    ROS_ERROR("Error calling the list controllers server!");
+    return false;
+  }
+  else
+  {
+    if (!stringInVector(controller_name, list_srv.response.controllers))
+    {
+      ROS_ERROR("Tried to switch to unloaded controller %s!", controller_name.c_str());
+      return false;
+    }
+  }
+
   switch_srv.request.start_controllers.push_back(controller_name);
-  switch_srv.request.stop_controllers.push_back("r_arm_controller");
-  switch_srv.request.stop_controllers.push_back("l_arm_controller");
+
+  if (controllerIsRunning("r_arm_controller", list_srv))
+  {
+    switch_srv.request.stop_controllers.push_back("r_arm_controller");
+  }
+  if (controllerIsRunning("l_arm_controller", list_srv))
+  {
+    switch_srv.request.stop_controllers.push_back("l_arm_controller");
+  }
 
   if (controller_name != move_controller_name_)
   {
-    switch_srv.request.stop_controllers.push_back(move_controller_name_);
+    if (controllerIsRunning(move_controller_name_, list_srv))
+    {
+      switch_srv.request.stop_controllers.push_back(move_controller_name_);
+    }
   }
 
   if (controller_name != approach_controller_name_)
   {
-    switch_srv.request.stop_controllers.push_back(approach_controller_name_);
+    if (controllerIsRunning(approach_controller_name_, list_srv))
+    {
+      switch_srv.request.stop_controllers.push_back(approach_controller_name_);
+    }
   }
 
   if (controller_name != manipulation_controller_name_)
   {
-    switch_srv.request.stop_controllers.push_back(manipulation_controller_name_);
+    if (controllerIsRunning(manipulation_controller_name_, list_srv))
+    {
+      switch_srv.request.stop_controllers.push_back(manipulation_controller_name_);
+    }
   }
 
   if(!switch_controllers_client_.call(switch_srv))
@@ -192,6 +295,26 @@ bool ManipulationClient::switchToController(std::string controller_name)
     }
   }
 }
+
+/*
+  Returns true if the controller is running in the PR2 realtime loop
+*/
+bool ManipulationClient::controllerIsRunning(std::string controller_name, const pr2_mechanism_msgs::ListControllers &msg)
+{
+  for (int i = 0; i < msg.response.controllers.size(); i++)
+  {
+    if (msg.response.controllers[i] == controller_name)
+    {
+      if (msg.response.state[i] == "running")
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 
 /*
   Makes sure the action clients cancel the goals and are properly deleted
@@ -404,33 +527,6 @@ void ManipulationClient::goalCB()
     approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
     move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
 
-    ROS_INFO("%s client waiting for server", manipulation_action_name_.c_str());
-    if(!manipulation_action_client_->waitForServer(ros::Duration(server_timeout_)))
-    {
-      ROS_ERROR("%s was not found. Aborting", manipulation_action_name_.c_str());
-      action_server_->setAborted();
-      destroyActionClients();
-      return;
-    }
-
-    ROS_INFO("%s client waiting for server", approach_action_name_.c_str());
-    if(!approach_action_client_->waitForServer(ros::Duration(server_timeout_)))
-    {
-      ROS_ERROR("%s was not found. Aborting", approach_action_name_.c_str());
-      action_server_->setAborted();
-      destroyActionClients();
-      return;
-    }
-
-    ROS_INFO("%s client waiting for server", move_action_name_.c_str());
-    if(!move_action_client_->waitForServer(ros::Duration(server_timeout_)))
-    {
-      ROS_ERROR("%s was not found. Aborting", move_action_name_.c_str());
-      action_server_->setAborted();
-      destroyActionClients();
-      return;
-    }
-
     if(use_vision_)
     {
       ROS_INFO("Cartesian client waiting for table pose");
@@ -504,6 +600,23 @@ void ManipulationClient::runExperiment()
         }
         move_goal.desired_pose = initial_eef_pose;
 
+        if (!loadController(move_controller_name_))
+        {
+          ROS_ERROR("Failed to load the controller %s", move_action_name_.c_str());
+          action_server_->setAborted();
+          destroyActionClients();
+          break;
+        }
+
+        ROS_INFO("%s client waiting for server", move_action_name_.c_str());
+        if(!move_action_client_->waitForServer(ros::Duration(server_timeout_)))
+        {
+          ROS_ERROR("%s was not found. Aborting", move_action_name_.c_str());
+          action_server_->setAborted();
+          destroyActionClients();
+          break;
+        }
+
         switchToController(move_controller_name_);
         move_action_client_->sendGoal(move_goal);
         init = ros::Time::now();
@@ -532,21 +645,94 @@ void ManipulationClient::runExperiment()
             move_action_client_->cancelAllGoals();
           }
 
+          unloadController(move_controller_name_);
+
           {
             boost::lock_guard<boost::mutex> guard(reference_mutex_);
             current_action_ = approach_action_name_;
           }
+
+          if (!loadController(approach_controller_name_))
+          {
+            ROS_ERROR("Failed to load the controller %s", approach_action_name_.c_str());
+            action_server_->setAborted();
+            destroyActionClients();
+            break;
+          }
+
+          ROS_INFO("%s client waiting for server", approach_action_name_.c_str());
+          if(!approach_action_client_->waitForServer(ros::Duration(server_timeout_)))
+          {
+            ROS_ERROR("%s was not found. Aborting", approach_action_name_.c_str());
+            action_server_->setAborted();
+            destroyActionClients();
+            break;
+          }
+
+          switchToController(approach_controller_name_);
+
           // Do a guarded approach in the -z direction of the table frame
+          approach_goal.approach_command.twist.linear.z = -0.01;
+          approach_goal.contact_force = 10;
+
+          approach_action_client_->sendGoal(approach_goal);
+          init = ros::Time::now();
+          curr = ros::Time::now();
+          while ((curr - init).toSec() < approach_action_time_limit_)
+          {
+            if (!approach_action_client_) // got preempted
+            {
+              break;
+            }
+
+            if (approach_action_client_->getState().isDone())
+            {
+              break;
+            }
+            ros::spinOnce();
+            boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
+            curr = ros::Time::now();
+          }
+
 
           // Get ground truth of the contact point
 
           // Determine desired final pose
 
+          if (approach_action_client_)
           {
-            boost::lock_guard<boost::mutex> guard(reference_mutex_);
-            current_action_ = manipulation_action_name_;
+            if (!approach_action_client_->getState().isDone())
+            {
+              ROS_WARN("Move client did not finish in the alloted time. Preempting...");
+              approach_action_client_->cancelAllGoals();
+            }
+
+            unloadController(approach_controller_name_);
+            {
+              boost::lock_guard<boost::mutex> guard(reference_mutex_);
+              current_action_ = manipulation_action_name_;
+            }
+
+            if (!loadController(manipulation_controller_name_))
+            {
+              ROS_ERROR("Failed to load the controller %s", manipulation_action_name_.c_str());
+              action_server_->setAborted();
+              destroyActionClients();
+              break;
+            }
+
+            ROS_INFO("%s client waiting for server", manipulation_action_name_.c_str());
+            if(!manipulation_action_client_->waitForServer(ros::Duration(server_timeout_)))
+            {
+              ROS_ERROR("%s was not found. Aborting", manipulation_action_name_.c_str());
+              action_server_->setAborted();
+              destroyActionClients();
+              break;
+            }
+
+            switchToController(manipulation_controller_name_);
+            // Initialize experiment.
           }
-          // Initialize experiment.
         }
       }
     }
@@ -641,6 +827,14 @@ bool ManipulationClient::waitForTablePose(ros::Duration max_time)
 
   listener_.transformPose(base_link_name_, surface_frame_pose_, surface_frame_pose_);
   return true;
+}
+
+/*
+  Returns true if the given string is in the given vector
+*/
+bool stringInVector(std::string s, std::vector<std::string> v)
+{
+  return std::find(v.begin(), v.end(), s) != v.end();
 }
 
 }

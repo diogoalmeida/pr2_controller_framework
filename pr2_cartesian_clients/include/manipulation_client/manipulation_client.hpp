@@ -15,6 +15,7 @@
 #include <pr2_mechanism_msgs/LoadController.h>
 #include <pr2_mechanism_msgs/UnloadController.h>
 #include <pr2_mechanism_msgs/SwitchController.h>
+#include <pr2_mechanism_msgs/ListControllers.h>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>
 
@@ -38,6 +39,7 @@ namespace manipulation{
     ros::ServiceClient load_controllers_client_;
     ros::ServiceClient unload_controllers_client_;
     ros::ServiceClient switch_controllers_client_;
+    ros::ServiceClient list_controllers_client_;
     tf::TransformListener listener_;
     std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
     bool loadParams();
@@ -46,6 +48,8 @@ namespace manipulation{
     bool unloadControllers();
     bool unloadController(std::string controller_name);
     bool switchToController(std::string controller_name);
+    bool stopController(std::string controller_name);
+    bool controllerIsRunning(std::string controller_name, const pr2_mechanism_msgs::ListControllers &msg);
 
     // actionlib
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
@@ -78,5 +82,7 @@ namespace manipulation{
     // others
     void destroyActionClients();
   };
+
+  bool stringInVector(std::string s, std::vector<std::string> v);
   }
 #endif

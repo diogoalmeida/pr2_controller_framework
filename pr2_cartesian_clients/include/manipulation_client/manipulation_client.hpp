@@ -54,6 +54,7 @@ namespace manipulation{
     actionlib::SimpleActionServer<pr2_cartesian_clients::ManipulationAction> *action_server_; // Allows user-triggered preemption
     std::string move_action_name_, manipulation_action_name_, approach_action_name_, cartesian_client_action_name_, current_action_;
     double server_timeout_, feedback_hz_;
+    double move_action_time_limit_, approach_action_time_limit_, manipulation_action_time_limit_;
     pr2_cartesian_clients::ManipulationFeedback feedback_;
     void publishFeedback();
     void goalCB();

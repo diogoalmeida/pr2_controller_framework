@@ -297,6 +297,24 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("initialization/controller_timeouts/move_timeout", move_action_time_limit_))
+  {
+    ROS_ERROR("No move timeout defined (initialization/controller_timeouts/move_timeout)");
+    return false;
+  }
+
+  if(!nh_.getParam("initialization/controller_timeouts/approach_timeout", approach_action_time_limit_))
+  {
+    ROS_ERROR("No move timeout defined (initialization/controller_timeouts/approach_timeout)");
+    return false;
+  }
+
+  if(!nh_.getParam("initialization/controller_timeouts/manipulation_timeout", manipulation_action_time_limit_))
+  {
+    ROS_ERROR("No move timeout defined (initialization/controller_timeouts/manipulation_timeout)");
+    return false;
+  }
+
   if(!nh_.getParam("experiment/feedback_rate", feedback_hz_))
   {
     ROS_ERROR("No feedback frequency defined (initialization/feedback_rate)");
@@ -453,6 +471,7 @@ void ManipulationClient::goalCB()
 */
 void ManipulationClient::runExperiment()
 {
+  ros::Time init, curr;
   action_server_->start();
   ROS_INFO("Started the manipulation client action server: %s", cartesian_client_action_name_.c_str());
   while (ros::ok())
@@ -487,23 +506,48 @@ void ManipulationClient::runExperiment()
 
         switchToController(move_controller_name_);
         move_action_client_->sendGoal(move_goal);
-        move_action_client_->waitForResult();
-
+        init = ros::Time::now();
+        curr = ros::Time::now();
+        while ((curr - init).toSec() < move_action_time_limit_)
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = approach_action_name_;
+          if (!move_action_client_) // got preempted
+          {
+            break;
+          }
+
+          if (move_action_client_->getState().isDone())
+          {
+            break;
+          }
+          ros::spinOnce();
+          boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
+          curr = ros::Time::now();
         }
-        // Do a guarded approach in the -z direction of the table frame
 
-        // Get ground truth of the contact point
-
-        // Determine desired final pose
-
+        if (move_action_client_)
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = manipulation_action_name_;
+          if (!move_action_client_->getState().isDone())
+          {
+            ROS_WARN("Move client did not finish in the alloted time. Preempting...");
+            move_action_client_->cancelAllGoals();
+          }
+
+          {
+            boost::lock_guard<boost::mutex> guard(reference_mutex_);
+            current_action_ = approach_action_name_;
+          }
+          // Do a guarded approach in the -z direction of the table frame
+
+          // Get ground truth of the contact point
+
+          // Determine desired final pose
+
+          {
+            boost::lock_guard<boost::mutex> guard(reference_mutex_);
+            current_action_ = manipulation_action_name_;
+          }
+          // Initialize experiment.
         }
-        // Initialize experiment.
       }
     }
     ros::spinOnce();

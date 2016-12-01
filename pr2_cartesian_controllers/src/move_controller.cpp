@@ -139,14 +139,15 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
+    for (int i = 0; i < 7; i++)
+    {
+      joint_positions_(i) = current_state.position[i];
+    }
+
     if (!acquired_reference_position_)
     {
-      for (int i = 0; i < 7; i++)
-      {
-        joint_positions_(i) = current_state.position[i];
-      }
-
       ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_);
+      ikpos_limits_->CartToJnt(desired_joint_positions_, pose_reference_, desired_joint_positions_); // use the output of a solver that doesn't consider joint limits as an input to the one that does
       acquired_reference_position_ = true;
     }
 

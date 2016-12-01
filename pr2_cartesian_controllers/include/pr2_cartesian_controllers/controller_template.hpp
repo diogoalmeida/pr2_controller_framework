@@ -125,11 +125,14 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
       continue;
     }
 
+    ROS_INFO("Getting joint limits for joint %s", kdl_joint.getName().c_str());
     urdf_joint = model_.getJoint(kdl_joint.getName());
     q_min(j) = urdf_joint->limits->lower;
     q_max(j) = urdf_joint->limits->upper;
     j++;
   }
+
+  ROS_INFO("j: %d", j);
 
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);

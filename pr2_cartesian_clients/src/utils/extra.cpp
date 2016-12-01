@@ -2,7 +2,7 @@
 
 namespace pr2_cartesian_clients{
   /*
-  Returns true if the given string is in the given vector
+    Returns true if the given string is in the given vector
   */
   bool stringInVector(std::string s, std::vector<std::string> v)
   {

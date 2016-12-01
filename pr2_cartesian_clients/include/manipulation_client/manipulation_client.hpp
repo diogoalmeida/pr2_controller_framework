@@ -13,9 +13,11 @@
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
 #include <utils/ExclusiveControllerRunner.hpp>
+#include <utils/extra.hpp>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>
 
+using namespace pr2_cartesian_clients;
 namespace manipulation{
 
   class ManipulationClient

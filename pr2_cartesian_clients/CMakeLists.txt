@@ -46,5 +46,5 @@ include_directories(
 add_library(exclusive_controller_runner src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
 target_link_libraries(exclusive_controller_runner ${catkin_LIBRARIES})
 
-add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
-target_link_libraries(manipulation_client ${catkin_LIBRARIES})
+add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/extra.cpp)
+target_link_libraries(manipulation_client exclusive_controller_runner ${catkin_LIBRARIES})

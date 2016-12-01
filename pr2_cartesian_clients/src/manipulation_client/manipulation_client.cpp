@@ -1,5 +1,6 @@
 #include <manipulation_client/manipulation_client.hpp>
 
+using namespace pr2_cartesian_clients;
 namespace manipulation{
 
 ManipulationClient::ManipulationClient()
@@ -12,13 +13,12 @@ ManipulationClient::ManipulationClient()
   }
 
   gravity_compensation_client_ = nh_.serviceClient<std_srvs::Empty>(gravity_compensation_service_name_);
-
+  manipulation_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction>(manipulation_action_name_, true);
+  approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
+  move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
   action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_clients::ManipulationAction>(nh_, cartesian_client_action_name_, false);
   action_server_->registerGoalCallback(boost::bind(&ManipulationClient::goalCB, this));
   action_server_->registerPreemptCallback(boost::bind(&ManipulationClient::preemptCB, this));
-  manipulation_action_client_ = nullptr;
-  approach_action_client_ = nullptr;
-  move_action_client_ = nullptr;
   feedback_thread_ = boost::thread(&ManipulationClient::publishFeedback, this);
 }
 
@@ -225,8 +225,8 @@ void ManipulationClient::publishFeedback()
 */
 void ManipulationClient::preemptCB()
 {
-  ROS_WARN("The manipulation client was preempted! Preempting action servers...");
-  destroyActionClients();
+  ROS_WARN("The manipulation client was preempted!");
+  action_server_->setPreempted();
   current_action_.clear();
 }
 
@@ -241,9 +241,6 @@ void ManipulationClient::goalCB()
   if (!action_server_->isPreemptRequested())
   {
     ROS_INFO("%s received a new goal!", cartesian_client_action_name_.c_str());
-    manipulation_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction>(manipulation_action_name_, true);
-    approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
-    move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
 
     if(use_vision_)
     {
@@ -252,7 +249,6 @@ void ManipulationClient::goalCB()
       {
         ROS_ERROR("Could not find table frame. Aborting");
         action_server_->setAborted();
-        destroyActionClients();
         return;
       }
     }
@@ -266,7 +262,6 @@ void ManipulationClient::goalCB()
       {
         ROS_ERROR("Error calling the gravity compensation server!");
         action_server_->setAborted();
-        destroyActionClients();
         return;
       }
     }
@@ -285,7 +280,10 @@ void ManipulationClient::goalCB()
 */
 void ManipulationClient::runExperiment()
 {
+  geometry_msgs::PoseStamped initial_eef_pose;
   ros::Time init, curr;
+  bool got_eef_pose = false;
+
   action_server_->start();
   ROS_INFO("Started the manipulation client action server: %s", cartesian_client_action_name_.c_str());
   while (ros::ok())
@@ -294,14 +292,16 @@ void ManipulationClient::runExperiment()
     {
       // At this point I have knowledge of the arm that I want to move (tool frame)
       // and I can compute the desired initial pose of the end-effector
-      geometry_msgs::PoseStamped initial_eef_pose;
-
-      if(!getInitialEefPose(initial_eef_pose))
+      if (!got_eef_pose)
       {
-        ROS_ERROR("Failed to get surface frame pose!");
-        destroyActionClients();
-        action_server_->setAborted();
-        continue;
+
+        if(!getInitialEefPose(initial_eef_pose))
+        {
+          ROS_ERROR("Failed to get surface frame pose!");
+          action_server_->setAborted();
+          continue;
+        }
+        got_eef_pose = true;
       }
 
       pr2_cartesian_controllers::MoveGoal move_goal;
@@ -322,130 +322,55 @@ void ManipulationClient::runExperiment()
         {
           ROS_ERROR("Failed to run the controller %s", move_action_name_.c_str());
           action_server_->setAborted();
-          destroyActionClients();
           break;
         }
 
-        ROS_INFO("%s client waiting for server", move_action_name_.c_str());
-        if(!move_action_client_->waitForServer(ros::Duration(server_timeout_)))
+
+        if (monitorActionGoal<pr2_cartesian_controllers::MoveAction,
+                              pr2_cartesian_controllers::MoveGoal,
+                              pr2_cartesian_clients::ManipulationAction>
+                                (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_))
         {
-          ROS_ERROR("%s was not found. Aborting", move_action_name_.c_str());
-          action_server_->setAborted();
-          destroyActionClients();
-          break;
-        }
-
-        move_action_client_->sendGoal(move_goal);
-        init = ros::Time::now();
-        curr = ros::Time::now();
-        while ((curr - init).toSec() < move_action_time_limit_)
-        {
-          if (!move_action_client_) // got preempted
-          {
-            break;
-          }
-
-          if (move_action_client_->getState().isDone())
-          {
-            break;
-          }
-          ros::spinOnce();
-          boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
-          curr = ros::Time::now();
-        }
-
-        if (move_action_client_)
-        {
-          if (!move_action_client_->getState().isDone())
-          {
-            ROS_WARN("Move client did not finish in the alloted time. Preempting...");
-            move_action_client_->cancelAllGoals();
-          }
-
+          ROS_INFO("Move action succeeded!");
           {
             boost::lock_guard<boost::mutex> guard(reference_mutex_);
             current_action_ = approach_action_name_;
           }
-
           if (!controller_runner_.runController(approach_controller_name_))
           {
             ROS_ERROR("Failed to run the controller %s", approach_action_name_.c_str());
             action_server_->setAborted();
-            destroyActionClients();
             break;
           }
 
-          ROS_INFO("%s client waiting for server", approach_action_name_.c_str());
-          if(!approach_action_client_->waitForServer(ros::Duration(server_timeout_)))
-          {
-            ROS_ERROR("%s was not found. Aborting", approach_action_name_.c_str());
-            action_server_->setAborted();
-            destroyActionClients();
-            break;
-          }
-
-          // Do a guarded approach in the -z direction of the table frame
           approach_goal.approach_command.twist.linear.z = -0.01;
           approach_goal.contact_force = 10;
 
-          approach_action_client_->sendGoal(approach_goal);
-          init = ros::Time::now();
-          curr = ros::Time::now();
-          while ((curr - init).toSec() < approach_action_time_limit_)
+          if (monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
+                                pr2_cartesian_controllers::GuardedApproachGoal,
+                                pr2_cartesian_clients::ManipulationAction>
+                                  (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_))
           {
-            if (!approach_action_client_) // got preempted
-            {
-              break;
-            }
-
-            if (approach_action_client_->getState().isDone())
-            {
-              break;
-            }
-            ros::spinOnce();
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
-            curr = ros::Time::now();
-          }
-
-
-          // Get ground truth of the contact point
-
-          // Determine desired final pose
-
-          if (approach_action_client_)
-          {
-            if (!approach_action_client_->getState().isDone())
-            {
-              ROS_WARN("Move client did not finish in the alloted time. Preempting...");
-              approach_action_client_->cancelAllGoals();
-            }
-
+            ROS_INFO("Approach action succeeded!");
             {
               boost::lock_guard<boost::mutex> guard(reference_mutex_);
               current_action_ = manipulation_action_name_;
             }
-
             if (!controller_runner_.runController(manipulation_controller_name_))
             {
               ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());
               action_server_->setAborted();
-              destroyActionClients();
               break;
             }
-
-            ROS_INFO("%s client waiting for server", manipulation_action_name_.c_str());
-            if(!manipulation_action_client_->waitForServer(ros::Duration(server_timeout_)))
-            {
-              ROS_ERROR("%s was not found. Aborting", manipulation_action_name_.c_str());
-              action_server_->setAborted();
-              destroyActionClients();
-              break;
-            }
-            // Initialize experiment.
           }
         }
       }
     }
+    else
+    {
+      got_eef_pose = false;
+    }
+
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
   }

@@ -40,7 +40,12 @@ namespace pr2_cartesian_clients{
 
       if (client->getState().isDone())
       {
-        return true;
+        if (client->getState() == client->getState().SUCCEEDED)
+        {
+          return true;
+        }
+
+        return false;
       }
       ros::spinOnce();
       boost::this_thread::sleep(boost::posix_time::milliseconds(50));

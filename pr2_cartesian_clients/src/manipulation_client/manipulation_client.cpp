@@ -322,47 +322,54 @@ void ManipulationClient::runExperiment()
         {
           ROS_ERROR("Failed to run the controller %s", move_action_name_.c_str());
           action_server_->setAborted();
-          break;
+          continue;
         }
 
 
-        if (monitorActionGoal<pr2_cartesian_controllers::MoveAction,
+        if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
                               pr2_cartesian_controllers::MoveGoal,
                               pr2_cartesian_clients::ManipulationAction>
                                 (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_))
         {
-          ROS_INFO("Move action succeeded!");
-          {
-            boost::lock_guard<boost::mutex> guard(reference_mutex_);
-            current_action_ = approach_action_name_;
-          }
-          if (!controller_runner_.runController(approach_controller_name_))
-          {
-            ROS_ERROR("Failed to run the controller %s", approach_action_name_.c_str());
-            action_server_->setAborted();
-            break;
-          }
+          ROS_ERROR("Error in the move action. Aborting.");
+          action_server_->setAborted();
+          continue;
+        }
+        ROS_INFO("Move action succeeded!");
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          current_action_ = approach_action_name_;
+        }
+        if (!controller_runner_.runController(approach_controller_name_))
+        {
+          ROS_ERROR("Failed to run the controller %s", approach_action_name_.c_str());
+          action_server_->setAborted();
+          continue;
+        }
 
-          approach_goal.approach_command.twist.linear.z = -0.01;
-          approach_goal.contact_force = 10;
+        approach_goal.approach_command.twist.linear.z = -0.01;
+        approach_goal.contact_force = 10;
 
-          if (monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
-                                pr2_cartesian_controllers::GuardedApproachGoal,
-                                pr2_cartesian_clients::ManipulationAction>
-                                  (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_))
-          {
-            ROS_INFO("Approach action succeeded!");
-            {
-              boost::lock_guard<boost::mutex> guard(reference_mutex_);
-              current_action_ = manipulation_action_name_;
-            }
-            if (!controller_runner_.runController(manipulation_controller_name_))
-            {
-              ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());
-              action_server_->setAborted();
-              break;
-            }
-          }
+        if (!monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
+                              pr2_cartesian_controllers::GuardedApproachGoal,
+                              pr2_cartesian_clients::ManipulationAction>
+                                (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_))
+        {
+          ROS_ERROR("Error in the approach action. Aborting.");
+          action_server_->setAborted();
+          continue;
+        }
+
+        ROS_INFO("Approach action succeeded!");
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          current_action_ = manipulation_action_name_;
+        }
+        if (!controller_runner_.runController(manipulation_controller_name_))
+        {
+          ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());
+          action_server_->setAborted();
+          continue;
         }
       }
     }

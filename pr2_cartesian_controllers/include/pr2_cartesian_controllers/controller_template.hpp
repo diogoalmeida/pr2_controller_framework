@@ -10,7 +10,7 @@
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_conversions/kdl_msg.h>
 #include <kdl/chainiksolvervel_wdls.hpp>
-#include <kdl/chainiksolverpos_lma.hpp>
+#include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl_parser/kdl_parser.hpp>
@@ -55,7 +55,7 @@ protected:
   sensor_msgs::JointState robot_state;
   KDL::JntArray joint_positions_;
   KDL::ChainIkSolverVel_wdls *ikvel_;
-  KDL::ChainIkSolverPos_LMA *ikpos_;
+  KDL::ChainIkSolverPos_NR_JL *ikpos_;
   KDL::ChainFkSolverPos_recursive *fkpos_;
   KDL::Chain chain_;
   KDL::Tree tree_;
@@ -106,12 +106,34 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   }
 
   // Initialize KDL variables
+  KDL::JntArray q_min(7); // minimum limits of each joint
+  KDL::JntArray q_max(7); // maximum limits of each joint
+
   joint_positions_.resize(7);
   kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
   tree_.getChain(base_link_, end_effector_link_, chain_);
+
+  KDL::Joint kdl_joint;
+  boost::shared_ptr<const urdf::Joint> urdf_joint;
+  int j = 0;
+  for (int i = 0; i < chain_.getNrOfSegments(); i++) // get joint limits
+  {
+    kdl_joint = chain_.getSegment(i).getJoint();
+
+    if (kdl_joint.getTypeName() == "None")
+    {
+      continue;
+    }
+
+    urdf_joint = model_.getJoint(kdl_joint.getName());
+    q_min(j) = urdf_joint->limits->lower;
+    q_max(j) = urdf_joint->limits->upper;
+    j++;
+  }
+
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-  ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
   ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
+  ikpos_ = new KDL::ChainIkSolverPos_NR_JL(chain_, q_min, q_max, *fkpos_, *ikvel_);
   has_state_ = false;
 
   // Subscribe to force and torque measurements

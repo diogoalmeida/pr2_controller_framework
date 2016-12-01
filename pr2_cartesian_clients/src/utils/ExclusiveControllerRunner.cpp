@@ -120,8 +120,22 @@ namespace pr2_cartesian_clients {
       }
     }
 
-    switch_srv.request.start_controllers.push_back(controller_name);
     switch_srv.request.strictness = switch_srv.request.BEST_EFFORT;
+
+    if (!switch_controllers_client_.call(switch_srv))
+    {
+      ROS_ERROR("Error calling the switch controllers server!");
+      return false;
+    }
+
+    if (!switch_srv.response.ok)
+    {
+      ROS_ERROR("Failed to switch to controller %s!", controller_name.c_str());
+      return false;
+    }
+
+    switch_srv.request.stop_controllers.clear();
+    switch_srv.request.start_controllers.push_back(controller_name);
 
     if (!switch_controllers_client_.call(switch_srv))
     {

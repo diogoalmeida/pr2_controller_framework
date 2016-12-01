@@ -10,7 +10,7 @@
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_conversions/kdl_msg.h>
 #include <kdl/chainiksolvervel_wdls.hpp>
-#include <kdl/chainiksolverpos_lma.hpp>
+#include <kdl/chainiksolverpos_nr.hpp>
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
@@ -57,7 +57,7 @@ protected:
   KDL::JntArray joint_positions_;
   KDL::ChainIkSolverVel_wdls *ikvel_;
   KDL::ChainIkSolverPos_NR_JL *ikpos_limits_;
-  KDL::ChainIkSolverPos_LMA *ikpos_;
+  KDL::ChainIkSolverPos_NR *ikpos_;
   KDL::ChainFkSolverPos_recursive *fkpos_;
   KDL::Chain chain_;
   KDL::Tree tree_;
@@ -139,7 +139,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
   ikpos_limits_ = new KDL::ChainIkSolverPos_NR_JL(chain_, q_min, q_max, *fkpos_, *ikvel_, 100, 0.001);
-  ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
+  ikpos_ = new KDL::ChainIkSolverPos_NR(chain_, *fkpos_, *ikvel_, 100, 0.001);
   has_state_ = false;
 
   // Subscribe to force and torque measurements

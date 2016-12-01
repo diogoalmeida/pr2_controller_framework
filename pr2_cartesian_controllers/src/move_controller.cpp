@@ -146,8 +146,7 @@ namespace cartesian_controllers {
 
     if (!acquired_reference_position_)
     {
-      ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_);
-      if(ikpos_limits_->CartToJnt(desired_joint_positions_, pose_reference_, desired_joint_positions_) < 0) // initialize with output of LMA method
+      if(ikpos_limits_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_) < 0)
       {
         ROS_ERROR("IK solver did not converge");
         action_server_->setAborted();

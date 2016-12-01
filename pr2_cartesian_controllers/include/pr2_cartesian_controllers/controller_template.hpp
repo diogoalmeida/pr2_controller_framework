@@ -138,7 +138,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
 
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
-  ikpos_limits_ = new KDL::ChainIkSolverPos_NR_JL(chain_, q_min, q_max, *fkpos_, *ikvel_, 100, 0.01);
+  ikpos_limits_ = new KDL::ChainIkSolverPos_NR_JL(chain_, q_min, q_max, *fkpos_, *ikvel_, 100, 0.001);
   ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
   has_state_ = false;
 

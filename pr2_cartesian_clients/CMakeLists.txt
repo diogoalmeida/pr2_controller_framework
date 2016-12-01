@@ -35,7 +35,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers
   INCLUDE_DIRS include
-  LIBRARIES
+  LIBRARIES exclusive_controller_runner
 )
 
 include_directories(
@@ -43,5 +43,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(manipulation_client src/manipulation_client.cpp)
+add_library(exclusive_controller_runner src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
+target_link_libraries(exclusive_controller_runner ${catkin_LIBRARIES})
+
+add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
 target_link_libraries(manipulation_client ${catkin_LIBRARIES})

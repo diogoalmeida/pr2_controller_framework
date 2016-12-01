@@ -12,10 +12,7 @@
 #include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
-#include <pr2_mechanism_msgs/LoadController.h>
-#include <pr2_mechanism_msgs/UnloadController.h>
-#include <pr2_mechanism_msgs/SwitchController.h>
-#include <pr2_mechanism_msgs/ListControllers.h>
+#include <utils/ExclusiveControllerRunner.hpp>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>
 
@@ -36,20 +33,9 @@ namespace manipulation{
     // ros
     ros::NodeHandle nh_;
     ros::ServiceClient gravity_compensation_client_;
-    ros::ServiceClient load_controllers_client_;
-    ros::ServiceClient unload_controllers_client_;
-    ros::ServiceClient switch_controllers_client_;
-    ros::ServiceClient list_controllers_client_;
     tf::TransformListener listener_;
     std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
     bool loadParams();
-    bool loadControllers();
-    bool loadController(std::string controller_name);
-    bool unloadControllers();
-    bool unloadController(std::string controller_name);
-    bool switchToController(std::string controller_name);
-    bool stopController(std::string controller_name);
-    bool controllerIsRunning(std::string controller_name, const pr2_mechanism_msgs::ListControllers &msg);
 
     // actionlib
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
@@ -78,11 +64,10 @@ namespace manipulation{
     std::string gravity_compensation_service_name_;
     int num_of_experiments_;
     bool use_vision_, sim_mode_;
+    pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 
     // others
     void destroyActionClients();
   };
-
-  bool stringInVector(std::string s, std::vector<std::string> v);
   }
 #endif

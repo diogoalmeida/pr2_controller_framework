@@ -147,9 +147,9 @@ namespace cartesian_controllers {
     if (!acquired_reference_position_)
     {
       ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_);
-      ikpos_limits_->CartToJnt(desired_joint_positions_, pose_reference_, desired_joint_positions_); // use the output of a solver that doesn't consider joint limits as an input to the one that does
       acquired_reference_position_ = true;
     }
+    ikpos_limits_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_); // use the output of a solver that doesn't consider joint limits as an input to the one that does
 
     control_output = current_state;
 

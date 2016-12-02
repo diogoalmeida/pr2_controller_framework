@@ -20,6 +20,8 @@ private:
   // PR2 state class
   pr2_mechanism_model::RobotState *robot_;
 
+  ros::NodeHandle n_;
+
   // Control elements
   sensor_msgs::JointState control_references_;
   std::vector<control_toolbox::Pid*> position_joint_controllers_;
@@ -51,6 +53,7 @@ private:
   double getReferenceVelocity(std::string joint_name);
   void publishFeedback();
   void resetAllocableVariables();
+  bool allocateVariables();
   bool verifySanity(sensor_msgs::JointState &state);
 
   // Cartesian controller

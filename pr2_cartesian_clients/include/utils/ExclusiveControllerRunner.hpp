@@ -19,6 +19,7 @@ namespace pr2_cartesian_clients{
     ~ExclusiveControllerRunner();
 
     bool runController(std::string controller_name);
+    bool unloadAll();
 
   private:
     ros::NodeHandle nh_;
@@ -29,6 +30,7 @@ namespace pr2_cartesian_clients{
     ros::ServiceClient list_controllers_client_;
 
     bool loadController(std::string controller_name);
+    bool unloadController(std::string controller_name);
     bool startController(std::string controller_name);
     bool controllerIsRunning(std::string controller_name);
     bool controllerIsLoaded(std::string controller_name);

@@ -180,4 +180,86 @@ namespace pr2_cartesian_clients {
       return false;
     }
   }
+
+  /*
+    Unloads all controllers in the pr2
+  */
+  bool ExclusiveControllerRunner::unloadAll()
+  {
+    pr2_mechanism_msgs::ListControllers list_srv;
+    pr2_mechanism_msgs::SwitchController switch_srv;
+
+    if (!list_controllers_client_.call(list_srv))
+    {
+      ROS_ERROR("Error calling the list controllers server!");
+      return false;
+    }
+
+    for (int i = 0; i < list_srv.response.controllers.size(); i++)
+    {
+      if (list_srv.response.state[i] == "running")
+      {
+        switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+      }
+    }
+
+    switch_srv.request.strictness = switch_srv.request.BEST_EFFORT;
+
+    if (!switch_controllers_client_.call(switch_srv))
+    {
+      ROS_ERROR("Error calling the switch controllers server!");
+      return false;
+    }
+
+    if (!switch_srv.response.ok)
+    {
+      ROS_ERROR("Failed to stop controllers!");
+      return false;
+    }
+
+    for (int i = 0; i < list_srv.response.controllers.size(); i++)
+    {
+      if (!unloadController(list_srv.response.controllers[i]))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /*
+    Unloads the given controller from the PR2
+  */
+  bool ExclusiveControllerRunner::unloadController(std::string controller_name)
+  {
+    pr2_mechanism_msgs::UnloadController unload_srv;
+
+    if (controllerIsRunning(controller_name))
+    {
+      ROS_ERROR("Tried to unload controller %s, which is still running", controller_name.c_str());
+      return false;
+    }
+
+    if (!controllerIsLoaded(controller_name))
+    {
+      return true;
+    }
+
+    unload_srv.request.name = controller_name;
+
+    if (!unload_controllers_client_.call(unload_srv))
+    {
+      ROS_ERROR("Error calling the unload controllers server!");
+      return false;
+    }
+
+    if (!unload_srv.response.ok)
+    {
+      ROS_ERROR("Failed to unload controller %s!", controller_name.c_str());
+      return false;
+    }
+
+    return true;
+  }
 }

@@ -16,25 +16,41 @@ namespace cartesian_controllers {
   */
   void MoveController::goalCB()
   {
-    boost::shared_ptr<const pr2_cartesian_controllers::MoveGoal> goal = action_server_->acceptNewGoal();
+    ROS_INFO("Move controller got a goal!");
     geometry_msgs::PoseStamped pose;
     KDL::JntArray temp_desired_joint_positions;
 
-    getDesiredJointPositions(pose, temp_desired_joint_positions);
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      finished_acquiring_goal_ = false;
+    }
+
+    boost::shared_ptr<const pr2_cartesian_controllers::MoveGoal> goal = action_server_->acceptNewGoal();
     pose = goal->desired_pose;
-    tf::poseMsgToKDL(pose.pose, pose_reference_);
-    desired_joint_positions_ = temp_desired_joint_positions;
+
+    if(!getDesiredJointPositions(pose, temp_desired_joint_positions))
+    {
+      action_server_->setAborted();
+      return;
+    }
+
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      tf::poseMsgToKDL(pose.pose, pose_reference_);
+      desired_joint_positions_ = temp_desired_joint_positions;
+      finished_acquiring_goal_ = true;
+    }
   }
 
   /*
     Uses the pr2 inverse kinematics service to get the desired joint positions for the given pose.
     Should not be used in the realtime loop.
   */
-  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions)
+  bool MoveController::getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions)
   {
-    ros::ServiceClient ik_client;
     moveit_msgs::GetPositionIK ik_srv;
+    moveit_msgs::GetKinematicSolverInfo::Request info_request;
+    moveit_msgs::GetKinematicSolverInfo::Response info_response;
 
     if (!ros::service::waitForService(ik_service_name_, ros::Duration(2.0)))
     {
@@ -42,14 +58,40 @@ namespace cartesian_controllers {
       return false;
     }
 
-    ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_);
+    if (!ros::service::waitForService(ik_info_service_name_, ros::Duration(2.0)))
+    {
+      ROS_ERROR("Could not connect to service %s", ik_info_service_name_.c_str());
+      return false;
+    }
+
+    ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_);
+    ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_);
+
+    if (!info_client.call(info_request, info_response))
+    {
+      ROS_ERROR("Error calling service %s", ik_info_service_name_.c_str());
+      return false;
+    }
+
     ik_srv.request.ik_request.ik_link_name = end_effector_link_;
     ik_srv.request.ik_request.pose_stamped = pose;
-    ik_srv.request.ik_request.robot_state.joint_state = last_state_;
+    ik_srv.request.ik_request.robot_state.joint_state.name = info_response.kinematic_solver_info.joint_names;
+    ik_srv.request.ik_request.timeout = ros::Duration(5.0);
+
+    for(unsigned int i = 0; i < info_response.kinematic_solver_info.joint_names.size(); i++)
+    {
+      ik_srv.request.ik_request.robot_state.joint_state.position.push_back((info_response.kinematic_solver_info.limits[i].min_position + info_response.kinematic_solver_info.limits[i].max_position)/2.0);
+    }
 
     if (!ik_client.call(ik_srv))
     {
-      ROS_ERROR("Error calling service %s", ik_service_name_.c_str());
+      ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_.c_str(), ik_srv.response.error_code.val);
+      return false;
+    }
+
+    if (ik_srv.response.error_code.val != ik_srv.response.error_code.SUCCESS)
+    {
+      ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_.c_str(), ik_srv.response.error_code.val);
       return false;
     }
 
@@ -95,6 +137,12 @@ namespace cartesian_controllers {
     if (!nh_.getParam("/move_controller/ik_service_name", ik_service_name_))
     {
       ROS_ERROR("Move controller requires the ik service name (/move_controller/ik_service_name)");
+      return false;
+    }
+
+    if (!nh_.getParam("/move_controller/ik_info_service_name", ik_info_service_name_))
+    {
+      ROS_ERROR("Move controller requires the ik info service name (/move_controller/ik_info_service_name)");
       return false;
     }
 
@@ -167,14 +215,13 @@ namespace cartesian_controllers {
   {
     sensor_msgs::JointState control_output;
 
-    if (!action_server_->isActive())
+    if (!action_server_->isActive() || !finished_acquiring_goal_)
     {
       return lastState(current_state);
     }
 
     // TODO: This should be handled in the template class
     has_state_ = false;
-
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
     feedback_.joint_position_references.clear();

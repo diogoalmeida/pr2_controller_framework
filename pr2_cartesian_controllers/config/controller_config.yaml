@@ -1,6 +1,6 @@
 common:
   base_link_name: torso_lift_link
-  end_effector_link_name: l_gripper_tool_frame
+  end_effector_link_name: l_wrist_roll_link
   wdls_epsilon: 0.01
   feedback_rate: 50
   force_torque_topic: /ft_sensor/ft_compensated
@@ -18,7 +18,8 @@ approach_controller:
 
 move_controller:
   action_server_name: move_controller
-  max_allowed_error: 0.5
+  max_allowed_error: 0.01
   velocity_gain: 1.0
   error_threshold: 0.1
   ik_service_name: /pr2_left_arm_kinematics/get_ik
+  ik_info_service_name: /pr2_left_arm_kinematics/get_ik_solver_info

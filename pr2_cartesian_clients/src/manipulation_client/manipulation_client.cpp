@@ -180,6 +180,18 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("experiment/approach_velocity", approach_velocity_))
+  {
+    ROS_ERROR("Need to set approach_velocity (experiment/approach_velocity)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/approach_force", approach_force_))
+  {
+    ROS_ERROR("Need to set approach_force (experiment/approach_force)");
+    return false;
+  }
+
   if(!nh_.getParam("initialization/gravity_compensation_service_name", gravity_compensation_service_name_))
   {
     ROS_ERROR("No number gravity compensation service name defined (initialization/gravity_compensation_service_name)");
@@ -347,8 +359,8 @@ void ManipulationClient::runExperiment()
           continue;
         }
 
-        approach_goal.approach_command.twist.linear.z = -0.01;
-        approach_goal.contact_force = 10;
+        approach_goal.approach_command.twist.linear.z = approach_velocity_;
+        approach_goal.contact_force = approach_force_;
 
         if (!monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
                               pr2_cartesian_controllers::GuardedApproachGoal,

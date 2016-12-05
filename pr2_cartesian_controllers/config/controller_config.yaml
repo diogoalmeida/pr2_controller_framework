@@ -20,6 +20,6 @@ move_controller:
   action_server_name: move_controller
   max_allowed_error: 0.5
   velocity_gain: 1.0
-  error_threshold: 0.01
+  error_threshold: 0.05
   ik_service_name: /pr2_left_arm_kinematics/get_ik
   ik_info_service_name: /pr2_left_arm_kinematics/get_ik_solver_info

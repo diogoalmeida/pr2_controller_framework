@@ -84,6 +84,7 @@ namespace cartesian_controllers {
   {
     sensor_msgs::JointState control_output;
     KDL::JntArray commanded_joint_velocities;
+    Eigen::Vector3d approach_direction;
 
     if (!action_server_->isActive())
     {
@@ -94,8 +95,10 @@ namespace cartesian_controllers {
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
+    approach_direction = approach_direction/approach_direction.norm();
 
-    if (measured_wrench_.block<3,1>(0,0).norm() > force_threshold_)
+    if (measured_wrench_.block<3,1>(0,0).dot(approach_direction) > force_threshold_)
     {
       action_server_->setSucceeded(result_, "contact force achieved");
       ROS_INFO("Approach controller action server succeeded! Measured wrench:");

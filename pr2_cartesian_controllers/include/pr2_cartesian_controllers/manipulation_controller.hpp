@@ -41,6 +41,12 @@ public:
   }
   virtual ~ManipulationController()
   {
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+    
     action_server_->shutdown();
     delete action_server_;
   }

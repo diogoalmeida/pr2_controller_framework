@@ -21,4 +21,4 @@ move_controller:
   max_allowed_error: 0.5
   velocity_gain: 1.0
   error_threshold: 0.1
-  arm: left
+  ik_service_name: /pr2_left_arm_kinematics/get_ik

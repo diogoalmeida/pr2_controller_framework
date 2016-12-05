@@ -249,6 +249,10 @@ bool TemplateJointController::allocateVariables()
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/velocity_loop_gains/" + joint_names_[i]));
   }
 
+  feedback_pub_ = n_.advertise<pr2_joint_position_controllers::PR2JointControllerFeedback>(n_.getNamespace() + "/control_feedback", 1);
+  time_of_last_reference_update_ = robot_->getTime();
+  ROS_INFO("%s has loaded successfully!", n_.getNamespace().c_str());
+
   return true;
 }
 

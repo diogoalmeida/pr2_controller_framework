@@ -120,9 +120,9 @@ namespace cartesian_controllers {
     fkpos_->JntToCart(joint_positions_, current_pose);
     rot_diff = initial_pose_.M*current_pose.M.Inverse();
     rot_diff.GetEulerZYX(alpha, beta, gamma);
-    velocity_reference_.rot.z(0.1*alpha);
-    velocity_reference_.rot.y(0.1*beta);
-    velocity_reference_.rot.z(0.1*gamma);
+    velocity_reference_.rot.z(-0.1*alpha);
+    velocity_reference_.rot.y(-0.1*beta);
+    velocity_reference_.rot.z(-0.1*gamma);
 
     ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 

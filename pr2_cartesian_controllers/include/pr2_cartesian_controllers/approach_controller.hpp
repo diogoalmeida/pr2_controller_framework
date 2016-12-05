@@ -23,6 +23,7 @@ private:
   // Controller values
   double force_threshold_;
   KDL::Twist velocity_reference_;
+  KDL::Frame initial_pose_;
 
 public:
   ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,
@@ -45,7 +46,7 @@ public:
       feedback_thread_.interrupt();
       feedback_thread_.join();
     }
-    
+
     action_server_->shutdown();
     delete action_server_;
   }

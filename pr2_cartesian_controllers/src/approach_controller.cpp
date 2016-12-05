@@ -20,6 +20,8 @@ namespace cartesian_controllers {
       feedback_.velocity_reference.push_back(velocity_reference_(i));
     }
 
+    fkpos_->JntToCart(joint_positions_, initial_pose_);
+
     force_threshold_ = goal->contact_force;
     ROS_INFO("Approach controller server received a goal!");
   }
@@ -85,6 +87,9 @@ namespace cartesian_controllers {
     sensor_msgs::JointState control_output;
     KDL::JntArray commanded_joint_velocities;
     Eigen::Vector3d approach_direction;
+    KDL::Frame current_pose;
+    KDL::Rotation rot_diff;
+    double alpha, beta, gamma;
 
     if (!action_server_->isActive())
     {
@@ -98,6 +103,7 @@ namespace cartesian_controllers {
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
     approach_direction = approach_direction/approach_direction.norm();
 
+
     if (measured_wrench_.block<3,1>(0,0).dot(approach_direction) > force_threshold_)
     {
       action_server_->setSucceeded(result_, "contact force achieved");
@@ -110,6 +116,13 @@ namespace cartesian_controllers {
     {
       joint_positions_(i) = current_state.position[i];
     }
+
+    fkpos_->JntToCart(joint_positions_, current_pose);
+    rot_diff = initial_pose_.M*current_pose.M.Inverse();
+    rot_diff.GetEulerZYX(alpha, beta, gamma);
+    velocity_reference_.rot.z(-alpha);
+    velocity_reference_.rot.y(-beta);
+    velocity_reference_.rot.z(-gamma);
 
     ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 

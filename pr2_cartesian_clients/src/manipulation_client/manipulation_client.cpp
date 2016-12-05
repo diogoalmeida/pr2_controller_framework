@@ -239,6 +239,7 @@ void ManipulationClient::preemptCB()
 {
   ROS_WARN("The manipulation client was preempted!");
   action_server_->setPreempted();
+  controller_runner_.unloadAll();
   current_action_.clear();
 }
 
@@ -302,11 +303,11 @@ void ManipulationClient::runExperiment()
   {
     if (action_server_->isActive())
     {
+      controller_runner_.unloadAll();
       // At this point I have knowledge of the arm that I want to move (tool frame)
       // and I can compute the desired initial pose of the end-effector
       if (!got_eef_pose)
       {
-
         if(!getInitialEefPose(initial_eef_pose))
         {
           ROS_ERROR("Failed to get surface frame pose!");

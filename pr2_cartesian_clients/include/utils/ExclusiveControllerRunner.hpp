@@ -6,6 +6,7 @@
 #include <pr2_mechanism_msgs/UnloadController.h>
 #include <pr2_mechanism_msgs/SwitchController.h>
 #include <pr2_mechanism_msgs/ListControllers.h>
+#include <pr2_mechanism_msgs/ListControllerTypes.h>
 #include <utils/extra.hpp>
 
 namespace pr2_cartesian_clients{
@@ -20,6 +21,7 @@ namespace pr2_cartesian_clients{
 
     bool runController(std::string controller_name);
     bool unloadAll();
+    bool addException(std::string controller_name);
 
   private:
     ros::NodeHandle nh_;
@@ -28,6 +30,9 @@ namespace pr2_cartesian_clients{
     ros::ServiceClient unload_controllers_client_;
     ros::ServiceClient switch_controllers_client_;
     ros::ServiceClient list_controllers_client_;
+    ros::ServiceClient list_controller_types_client_;
+
+    std::vector<std::string> exception_list_;
 
     bool loadController(std::string controller_name);
     bool unloadController(std::string controller_name);
@@ -35,5 +40,8 @@ namespace pr2_cartesian_clients{
     bool controllerIsRunning(std::string controller_name);
     bool controllerIsLoaded(std::string controller_name);
   };
+
+  template <class T>
+  bool isInVector(T item, std::vector<T> v);
 }
 #endif

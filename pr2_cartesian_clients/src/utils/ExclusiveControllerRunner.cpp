@@ -9,6 +9,7 @@ namespace pr2_cartesian_clients {
     unload_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::UnloadController>("/pr2_controller_manager/unload_controller");
     switch_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::SwitchController>("/pr2_controller_manager/switch_controller");
     list_controllers_client_ = nh_.serviceClient<pr2_mechanism_msgs::ListControllers>("/pr2_controller_manager/list_controllers");
+    list_controller_types_client_ = nh_.serviceClient<pr2_mechanism_msgs::ListControllerTypes>("/pr2_controller_manager/list_controller_types");
   }
 
   ExclusiveControllerRunner::~ExclusiveControllerRunner() {}
@@ -106,7 +107,7 @@ namespace pr2_cartesian_clients {
     {
       if (list_srv.response.controllers[i] != controller_name)
       {
-        if (list_srv.response.state[i] == "running")
+        if (list_srv.response.state[i] == "running" && !isInVector<std::string>(list_srv.response.state[i], exception_list_))
         {
           switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
         }
@@ -197,7 +198,7 @@ namespace pr2_cartesian_clients {
 
     for (int i = 0; i < list_srv.response.controllers.size(); i++)
     {
-      if (list_srv.response.state[i] == "running")
+      if (list_srv.response.state[i] == "running" && !isInVector<std::string>(list_srv.response.state[i], exception_list_))
       {
         switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
       }
@@ -219,9 +220,12 @@ namespace pr2_cartesian_clients {
 
     for (int i = 0; i < list_srv.response.controllers.size(); i++)
     {
-      if (!unloadController(list_srv.response.controllers[i]))
+      if (!isInVector<std::string>(list_srv.response.state[i], exception_list_))
       {
-        return false;
+        if (!unloadController(list_srv.response.controllers[i]))
+        {
+          return false;
+        }
       }
     }
 
@@ -261,5 +265,38 @@ namespace pr2_cartesian_clients {
     }
 
     return true;
+  }
+
+  /*
+    Adds a controller name to the exception list. These controllers will never be
+    stopped or unloaded automatically and need to be explicitly chosen to be so.
+  */
+  bool ExclusiveControllerRunner::addException(std::string controller_name)
+  {
+    pr2_mechanism_msgs::ListControllerTypes list_types_srv;
+
+    if (!list_controller_types_client_.call(list_types_srv))
+    {
+      ROS_ERROR("Failed to call the list controller types service");
+      return false;
+    }
+
+    if (isInVector<std::string>(controller_name, list_types_srv.response.types))
+    {
+      exception_list_.push_back(controller_name);
+      return true;
+    }
+
+    ROS_ERROR("Tried to add controller %s as an exception, but it is not a recognized controller type", controller_name.c_str());
+    return false;
+  }
+
+  /*
+    Checks if an item is in the vector
+  */
+  template <class T>
+  bool isInVector(T item, std::vector<T> v)
+  {
+    return std::find(v.begin(), v.end(), item) != v.end();
   }
 }

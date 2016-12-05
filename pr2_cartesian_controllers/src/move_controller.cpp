@@ -8,7 +8,6 @@ namespace cartesian_controllers {
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
-    acquired_reference_position_ = false;
     ROS_WARN("Move controller preempted!");
   }
 
@@ -19,11 +18,49 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::MoveGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose;
+    KDL::JntArray temp_desired_joint_positions;
 
+    getDesiredJointPositions(pose, temp_desired_joint_positions);
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-    acquired_reference_position_ = false;
     pose = goal->desired_pose;
     tf::poseMsgToKDL(pose.pose, pose_reference_);
+    desired_joint_positions_ = temp_desired_joint_positions;
+  }
+
+  /*
+    Uses the pr2 inverse kinematics service to get the desired joint positions for the given pose.
+    Should not be used in the realtime loop.
+  */
+  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions)
+  {
+    ros::ServiceClient ik_client;
+    moveit_msgs::GetPositionIK ik_srv;
+
+    if (!ros::service::waitForService(ik_service_name_, ros::Duration(2.0)))
+    {
+      ROS_ERROR("Could not connect to service %s", ik_service_name_.c_str());
+      return false;
+    }
+
+    ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_);
+    ik_srv.request.ik_request.ik_link_name = end_effector_link_;
+    ik_srv.request.ik_request.pose_stamped = pose;
+    ik_srv.request.ik_request.robot_state.joint_state = last_state_;
+
+    if (!ik_client.call(ik_srv))
+    {
+      ROS_ERROR("Error calling service %s", ik_service_name_.c_str());
+      return false;
+    }
+
+    joint_positions.resize(ik_srv.response.solution.joint_state.position.size());
+
+    for (int i = 0; i < ik_srv.response.solution.joint_state.position.size(); i++)
+    {
+      joint_positions(i) = ik_srv.response.solution.joint_state.position[i];
+    }
+
+    return true;
   }
 
   /*
@@ -52,6 +89,12 @@ namespace cartesian_controllers {
     if (!nh_.getParam("/move_controller/error_threshold", error_threshold_))
     {
       ROS_ERROR("Move controller requires an error threshold (/move_controller/error_threshold)");
+      return false;
+    }
+
+    if (!nh_.getParam("/move_controller/ik_service_name", ik_service_name_))
+    {
+      ROS_ERROR("Move controller requires the ik service name (/move_controller/ik_service_name)");
       return false;
     }
 
@@ -144,12 +187,6 @@ namespace cartesian_controllers {
       joint_positions_(i) = current_state.position[i];
     }
 
-    if (!acquired_reference_position_)
-    {
-      ikpos_->CartToJnt(joint_positions_, pose_reference_, desired_joint_positions_);
-      acquired_reference_position_ = true;
-    }
-
     control_output = current_state;
 
     // 0 - Check success
@@ -170,7 +207,6 @@ namespace cartesian_controllers {
     {
       ROS_INFO("Move joint controller executed successfully!");
       action_server_->setSucceeded();
-      acquired_reference_position_ = false;
       return lastState(current_state);
     }
 

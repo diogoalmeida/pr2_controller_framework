@@ -8,7 +8,8 @@ catkin REQUIRED COMPONENTS
 	geometry_msgs
   visualization_msgs
 	sensor_msgs
-	actionlib_msgs
+  actionlib_msgs
+	moveit_msgs
 	actionlib
 	kdl_parser
   kdl_conversions
@@ -27,7 +28,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs
+  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs moveit_msgs
   INCLUDE_DIRS include
   LIBRARIES manipulation_controller approach_controller move_controller
 )

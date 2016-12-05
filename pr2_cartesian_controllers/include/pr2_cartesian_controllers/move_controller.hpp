@@ -5,6 +5,7 @@
 #include <pr2_cartesian_controllers/controller_template.hpp>
 #include <geometry_msgs/TwistStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <moveit_msgs/GetPositionIK.h>
 
 namespace cartesian_controllers{
 
@@ -18,13 +19,14 @@ private:
   virtual void preemptCB();
   virtual bool loadParams();
   void publishFeedback();
+  bool getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions);
 
   // Controller values
   KDL::Frame pose_reference_;
   KDL::JntArray desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;
-  bool acquired_reference_position_;
+  std::string ik_service_name_;
 
   // ROS
   ros::Publisher target_pub_, current_pub_;
@@ -41,7 +43,6 @@ public:
     }
 
     startActionlib();
-    acquired_reference_position_ = false;
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
     feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));

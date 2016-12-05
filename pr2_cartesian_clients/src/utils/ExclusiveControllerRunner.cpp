@@ -107,9 +107,13 @@ namespace pr2_cartesian_clients {
     {
       if (list_srv.response.controllers[i] != controller_name)
       {
-        if (list_srv.response.state[i] == "running" && !isInVector<std::string>(list_srv.response.state[i], exception_list_))
+        if (list_srv.response.state[i] == "running")
         {
-          switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+          if (!isInVector(list_srv.response.controllers[i], exception_list_))
+          {
+            ROS_INFO("Requesting stop: %s", list_srv.response.controllers[i].c_str());
+            switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+          }
         }
       }
       else
@@ -198,9 +202,12 @@ namespace pr2_cartesian_clients {
 
     for (int i = 0; i < list_srv.response.controllers.size(); i++)
     {
-      if (list_srv.response.state[i] == "running" && !isInVector<std::string>(list_srv.response.state[i], exception_list_))
+      if (list_srv.response.state[i] == "running")
       {
-        switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+        if (!isInVector(list_srv.response.controllers[i], exception_list_))
+        {
+          switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+        }
       }
     }
 
@@ -220,7 +227,7 @@ namespace pr2_cartesian_clients {
 
     for (int i = 0; i < list_srv.response.controllers.size(); i++)
     {
-      if (!isInVector<std::string>(list_srv.response.state[i], exception_list_))
+      if (!isInVector(list_srv.response.controllers[i], exception_list_))
       {
         if (!unloadController(list_srv.response.controllers[i]))
         {
@@ -273,29 +280,15 @@ namespace pr2_cartesian_clients {
   */
   bool ExclusiveControllerRunner::addException(std::string controller_name)
   {
-    pr2_mechanism_msgs::ListControllerTypes list_types_srv;
+    exception_list_.push_back(controller_name);
 
-    if (!list_controller_types_client_.call(list_types_srv))
-    {
-      ROS_ERROR("Failed to call the list controller types service");
-      return false;
-    }
-
-    if (isInVector<std::string>(controller_name, list_types_srv.response.types))
-    {
-      exception_list_.push_back(controller_name);
-      return true;
-    }
-
-    ROS_ERROR("Tried to add controller %s as an exception, but it is not a recognized controller type", controller_name.c_str());
-    return false;
+    return true;
   }
 
   /*
     Checks if an item is in the vector
   */
-  template <class T>
-  bool isInVector(T item, std::vector<T> v)
+  bool isInVector(std::string item, std::vector<std::string> v)
   {
     return std::find(v.begin(), v.end(), item) != v.end();
   }

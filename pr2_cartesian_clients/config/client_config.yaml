@@ -19,6 +19,7 @@ initialization:
     manipulation_timeout: 20
   gravity_compensation_service_name: /gravity_compensation/calibrate_bias
   server_timeout: 2
+  exclude_controller_names: [l_gripper_controller]
 
 experiment:
   feedback_rate: 1

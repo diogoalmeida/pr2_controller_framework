@@ -204,6 +204,16 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  std::vector<std::string> exclusion_list;
+  if (nh_.getParam("initialization/exclude_controller_names", exclusion_list))
+  {
+    for (int i = 0; i < exclusion_list.size(); i++)
+    {
+      ROS_INFO("Adding exclusion: %s", exclusion_list[i].c_str());
+      controller_runner_.addException(exclusion_list[i]);
+    }
+  }
+
   return true;
 }
 

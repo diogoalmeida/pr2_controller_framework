@@ -41,7 +41,6 @@ namespace pr2_cartesian_clients{
     bool controllerIsLoaded(std::string controller_name);
   };
 
-  template <class T>
-  bool isInVector(T item, std::vector<T> v);
+  bool isInVector(std::string item, std::vector<std::string> v);
 }
 #endif

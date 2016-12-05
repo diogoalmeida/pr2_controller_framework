@@ -275,19 +275,6 @@ void ManipulationClient::goalCB()
         return;
       }
     }
-
-    if(!sim_mode_)
-    {
-      // Zero the ft sensor readings
-      std_srvs::Empty srv;
-
-      if(!gravity_compensation_client_.call(srv))
-      {
-        ROS_ERROR("Error calling the gravity compensation server!");
-        action_server_->setAborted();
-        return;
-      }
-    }
   }
   else
   {
@@ -332,6 +319,7 @@ void ManipulationClient::runExperiment()
       pr2_cartesian_controllers::ManipulationControllerGoal manipulation_goal;
 
       ROS_INFO("Starting experiment!");
+
       //while(experiment_conditions)
       {
         // Send experiment arm to right initial pose
@@ -359,6 +347,20 @@ void ManipulationClient::runExperiment()
           continue;
         }
         ROS_INFO("Move action succeeded!");
+
+        if(!sim_mode_)
+        {
+          // Zero the ft sensor readings
+          std_srvs::Empty srv;
+
+          if(!gravity_compensation_client_.call(srv))
+          {
+            ROS_ERROR("Error calling the gravity compensation server!");
+            action_server_->setAborted();
+            return;
+          }
+        }
+        
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = approach_action_name_;

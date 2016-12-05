@@ -1,3 +1,5 @@
 <launch>
+  <include file="$(find pr2_arm_kinematics)/launch/pr2_ik_larm_node.launch.launch"/>
+  <include file="$(find pr2_arm_kinematics)/launch/pr2_ik_rarm_node.launch.launch"/>
   <rosparam command="load" file="$(find pr2_cartesian_controllers)/config/controller_config.yaml"/>
 </launch>

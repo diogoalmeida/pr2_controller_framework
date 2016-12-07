@@ -20,8 +20,6 @@ namespace cartesian_controllers {
       feedback_.velocity_reference.push_back(velocity_reference_(i));
     }
 
-    fkpos_->JntToCart(joint_positions_, initial_pose_);
-
     force_threshold_ = goal->contact_force;
     loadParams();
     ROS_INFO("Approach controller server received a goal!");
@@ -34,6 +32,7 @@ namespace cartesian_controllers {
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
+    has_initial_ = false;
     ROS_WARN("Approach controller preempted!");
   }
 
@@ -109,6 +108,12 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
+    if (!has_initial_)
+    {
+      fkpos_->JntToCart(joint_positions_, initial_pose_);
+      has_initial_ = true;
+    }
+
     // TODO: This should be handled in the template class
     has_state_ = false;
 
@@ -120,8 +125,7 @@ namespace cartesian_controllers {
     if (measured_wrench_.block<3,1>(0,0).dot(approach_direction) > force_threshold_)
     {
       action_server_->setSucceeded(result_, "contact force achieved");
-      ROS_INFO("Approach controller action server succeeded! Measured wrench:");
-      std::cout << measured_wrench_ << std::endl;
+      has_initial_ = false;
       return current_state;
     }
 

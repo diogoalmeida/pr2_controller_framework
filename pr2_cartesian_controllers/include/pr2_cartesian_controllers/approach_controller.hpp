@@ -25,6 +25,7 @@ private:
   KDL::Twist velocity_reference_;
   KDL::Frame initial_pose_;
   std::vector<double> rot_gains_;
+  bool has_initial_;
 
 public:
   ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,
@@ -37,6 +38,7 @@ public:
       exit(0);
     }
 
+    has_initial_ = false; // used to set the initial pose for one approach action run
     startActionlib();
     feedback_thread_ = boost::thread(boost::bind(&ApproachController::publishFeedback, this));
   };

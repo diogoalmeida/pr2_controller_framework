@@ -83,7 +83,7 @@ namespace cartesian_controllers {
 
     if (rot_gains_.size() != 3)
     {
-      ROS_ERROR("The rotational gains vector must have length 3! (Has length %d)", rot_gains_.size());
+      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains_.size());
       return false;
     }
 
@@ -133,7 +133,7 @@ namespace cartesian_controllers {
       has_initial_ = false;
       return current_state;
     }
-    
+
     fkpos_->JntToCart(joint_positions_, current_pose);
     twist_error = KDL::diff(current_pose, initial_pose_);
 

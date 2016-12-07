@@ -20,6 +20,12 @@ namespace cartesian_controllers {
     geometry_msgs::PoseStamped pose;
     KDL::JntArray temp_desired_joint_positions;
 
+    // It will take time to acquire the new joint positions, and I will have
+    // accepted the goal already. This is a limitation of the goal callback
+    // method. Since getting the desired joint positions require a service call,
+    // it should be safer to not lock the reference mutex during the call, but
+    // then I must make sure that the update control method doesn't use the
+    // desired joint positions until they are set properly.
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
       finished_acquiring_goal_ = false;

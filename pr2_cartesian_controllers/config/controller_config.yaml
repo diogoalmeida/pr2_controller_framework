@@ -12,6 +12,7 @@ manipulation_controller:
     k_1: 1
     k_2: 1
     k_3: 1
+  rotational_gains: [0, 0, 0]
 
 approach_controller:
   action_server_name: approach_controller

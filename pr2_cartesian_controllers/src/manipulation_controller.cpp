@@ -8,6 +8,7 @@ namespace cartesian_controllers {
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
+    has_initial_ = false;
     ROS_WARN("Manipulation controller preempted!");
   }
 
@@ -118,6 +119,19 @@ namespace cartesian_controllers {
     control_gains_ << k_1, 0  , 0  ,
                       0  , k_2, 0  ,
                       0  , 0  , k_3;
+
+    if (!nh_.getParam("/manipulation_controller/rotational_gains", rot_gains_))
+    {
+      ROS_ERROR("Missing vector with rotational gains (/manipulation_controller/rotational_gains)");
+      return false;
+    }
+
+    if (rot_gains_.size() != 3)
+    {
+      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains_.size());
+      return false;
+    }
+
     return true;
   }
 
@@ -144,8 +158,8 @@ namespace cartesian_controllers {
   {
     sensor_msgs::JointState control_output;
     KDL::Frame end_effector_kdl;
-    KDL::JntArray commanded_joint_velocities;
-    KDL::Twist input_twist;
+    KDL::JntArray commanded_joint_velocities, correction_joint_velocities;
+    KDL::Twist input_twist, twist_error;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands;
     double x_e, y_e, theta_e, x_d, y_d, theta_d;
     Eigen::Matrix3d inv_g;
@@ -164,6 +178,13 @@ namespace cartesian_controllers {
     {
       joint_positions_(i) = current_state.position[i];
     }
+
+    if (!has_initial_)
+    {
+      fkpos_->JntToCart(joint_positions_, initial_pose_);
+      has_initial_ = true;
+    }
+
     fkpos_->JntToCart(joint_positions_, end_effector_kdl);
     tf::transformKDLToEigen(end_effector_kdl, end_effector_pose_);
 
@@ -202,12 +223,15 @@ namespace cartesian_controllers {
 
     ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
 
+    twist_error = KDL::diff(end_effector_kdl, initial_pose_); // to maintain the movement on the initial planar direction
+    ikvel_->CartToJnt(joint_positions_, twist_error, correction_joint_velocities);
+
     control_output = current_state;
 
     for (int i = 0; i < 7; i++)
     {
       control_output.position[i] = joint_positions_(i);
-      control_output.velocity[i] = commanded_joint_velocities(i);
+      control_output.velocity[i] = commanded_joint_velocities(i) + correction_joint_velocities(i);
     }
 
     return control_output;

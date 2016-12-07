@@ -23,6 +23,9 @@ private:
   Eigen::Affine3d surface_frame_, goal_pose_, end_effector_pose_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
+  std::vector<double> rot_gains_;
+  KDL::Frame initial_pose_;
+  bool has_initial_;
   void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
 
 public:
@@ -36,6 +39,7 @@ public:
       exit(0);
     }
 
+    has_initial_ = false; // used to set the initial pose for one approach action run
     startActionlib();
     feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
@@ -46,7 +50,7 @@ public:
       feedback_thread_.interrupt();
       feedback_thread_.join();
     }
-    
+
     action_server_->shutdown();
     delete action_server_;
   }

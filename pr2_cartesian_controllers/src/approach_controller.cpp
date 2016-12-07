@@ -23,6 +23,7 @@ namespace cartesian_controllers {
     fkpos_->JntToCart(joint_positions_, initial_pose_);
 
     force_threshold_ = goal->contact_force;
+    loadParams();
     ROS_INFO("Approach controller server received a goal!");
   }
 

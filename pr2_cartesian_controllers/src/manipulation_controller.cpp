@@ -28,6 +28,7 @@ namespace cartesian_controllers {
     pose_in = goal->goal_pose;
     listener_.transformPose(base_link_, pose_in, pose_out);
     tf::poseMsgToEigen(pose_out.pose, goal_pose_);
+    loadParams();
   }
 
   /*

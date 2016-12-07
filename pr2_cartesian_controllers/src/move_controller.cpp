@@ -40,6 +40,7 @@ namespace cartesian_controllers {
       desired_joint_positions_ = temp_desired_joint_positions;
       finished_acquiring_goal_ = true;
     }
+    loadParams();
   }
 
   /*

@@ -140,16 +140,18 @@ namespace cartesian_controllers {
     velocity_reference_(3) = rot_gains_[0]*twist_error(3);
     velocity_reference_(4) = rot_gains_[1]*twist_error(4);
     velocity_reference_(5) = rot_gains_[2]*twist_error(5);
+    feedback_.commanded_twist.header.stamp = ros::Time::now();
+    feedback_.error_twist.header.stamp = ros::Time::now();
+    tf::twistKDLToMsg(velocity_reference_, feedback_.commanded_twist.twist);
+    tf::twistKDLToMsg(twist_error, feedback_.error_twist.twist);
 
     ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 
     control_output = current_state;
-    feedback_.commanded_velocities.clear();
 
     for (int i = 0; i < 7; i++)
     {
       control_output.velocity[i] = commanded_joint_velocities(i);
-      feedback_.commanded_velocities.push_back(commanded_joint_velocities(i));
       control_output.position[i] = current_state.position[i];
     }
 

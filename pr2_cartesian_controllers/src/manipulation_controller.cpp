@@ -68,7 +68,7 @@ namespace cartesian_controllers {
           object_pose.scale.y = 0.02;
           object_pose.scale.z = 0.02;
 
-          feedback_.object_pose = object_pose;
+          current_pub_.publish(object_pose);
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
@@ -207,10 +207,12 @@ namespace cartesian_controllers {
     x_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
     y_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
     theta_d = goal_aa.angle();
+    feedback_.desired_orientation = theta_d;
 
     x_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
     y_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
-    theta_d = end_effector_aa.angle();
+    theta_e = end_effector_aa.angle();
+    feedback_.estimated_orientation = theta_e;
 
     errors <<  x_d - x_e,
                y_d - y_e,

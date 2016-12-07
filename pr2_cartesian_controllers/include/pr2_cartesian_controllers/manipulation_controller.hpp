@@ -28,6 +28,9 @@ private:
   bool has_initial_;
   void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
 
+  // For markers
+  ros::Publisher target_pub_, current_pub_;
+
 public:
   ManipulationController() : ControllerTemplate<pr2_cartesian_controllers::ManipulationControllerAction,
                                                 pr2_cartesian_controllers::ManipulationControllerFeedback,
@@ -41,6 +44,8 @@ public:
 
     has_initial_ = false; // used to set the initial pose for one approach action run
     startActionlib();
+    target_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_target", 1);
+    current_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_estimated", 1);
     feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
   virtual ~ManipulationController()

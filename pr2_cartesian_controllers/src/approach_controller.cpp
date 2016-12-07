@@ -108,6 +108,11 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
+    for (int i = 0; i < 7; i++)
+    {
+      joint_positions_(i) = current_state.position[i];
+    }
+
     if (!has_initial_)
     {
       fkpos_->JntToCart(joint_positions_, initial_pose_);
@@ -128,12 +133,7 @@ namespace cartesian_controllers {
       has_initial_ = false;
       return current_state;
     }
-
-    for (int i = 0; i < 7; i++)
-    {
-      joint_positions_(i) = current_state.position[i];
-    }
-
+    
     fkpos_->JntToCart(joint_positions_, current_pose);
     twist_error = KDL::diff(current_pose, initial_pose_);
 

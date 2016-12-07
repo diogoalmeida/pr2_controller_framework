@@ -15,6 +15,7 @@ manipulation_controller:
 
 approach_controller:
   action_server_name: approach_controller
+  rotational_gains: [0.1, 0.1, 0.1]
 
 move_controller:
   action_server_name: move_controller

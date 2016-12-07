@@ -75,6 +75,18 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/approach_controller/rotational_gains", rot_gains_))
+    {
+      ROS_ERROR("Missing vector with rotational gains (/approach_controller/rotational_gains)");
+      return false;
+    }
+
+    if (rot_gains_.size() != 3)
+    {
+      ROS_ERROR("The rotational gains vector must have length 3! (Has length %d)", rot_gains_.size());
+      return false;
+    }
+
     return true;
   }
 
@@ -88,7 +100,7 @@ namespace cartesian_controllers {
     KDL::JntArray commanded_joint_velocities;
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
-    KDL::Rotation rot_diff;
+    KDL::Twist twist_error;
     double alpha, beta, gamma;
 
     if (!action_server_->isActive())
@@ -118,11 +130,15 @@ namespace cartesian_controllers {
     }
 
     fkpos_->JntToCart(joint_positions_, current_pose);
-    rot_diff = initial_pose_.M*current_pose.M.Inverse();
-    rot_diff.GetEulerZYX(alpha, beta, gamma);
-    velocity_reference_.rot.z(-0.1*alpha);
-    velocity_reference_.rot.y(-0.1*beta);
-    velocity_reference_.rot.z(-0.1*gamma);
+    twist_error = KDL::diff(current_pose, initial_pose_);
+
+    // Update the commanded rotational velocities based on the
+    // angular error between the current frame and the initial one.
+    // We want to keep the same orientation from start to finish.
+    // TODO: Make method
+    velocity_reference_(3) = rot_gains_[0]*twist_error(3);
+    velocity_reference_(4) = rot_gains_[1]*twist_error(4);
+    velocity_reference_(5) = rot_gains_[2]*twist_error(5);
 
     ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
 

@@ -24,6 +24,7 @@ private:
   double force_threshold_;
   KDL::Twist velocity_reference_;
   KDL::Frame initial_pose_;
+  std::vector<double> rot_gains_;
 
 public:
   ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,

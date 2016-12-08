@@ -391,13 +391,23 @@ void ManipulationClient::runExperiment()
           current_action_ = manipulation_action_name_;
         }
 
+        if (!controller_runner_.runController(manipulation_controller_name_))
+        {
+          ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());
+          action_server_->setAborted();
+          continue;
+        }
+
         manipulation_goal.surface_frame = surface_frame_pose_;
         manipulation_goal.goal_pose = surface_frame_pose_;
         manipulation_goal.goal_pose.pose.position.x = surface_frame_pose_.pose.position.x += 0.2;
 
-        if (!controller_runner_.runController(manipulation_controller_name_))
+        if (!monitorActionGoal<pr2_cartesian_controllers::ManipulationControllerAction,
+                              pr2_cartesian_controllers::ManipulationControllerGoal,
+                              pr2_cartesian_clients::ManipulationAction>
+                                (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_))
         {
-          ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());
+          ROS_ERROR("Error in the manipulation action. Aborting.");
           action_server_->setAborted();
           continue;
         }

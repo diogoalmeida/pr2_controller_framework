@@ -46,6 +46,8 @@ namespace cartesian_controllers {
       ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
       action_server_->setAborted();
     }
+
+    ROS_INFO("Manipulation controller server received a goal!");
   }
 
   /*
@@ -168,11 +170,11 @@ namespace cartesian_controllers {
     Eigen::Vector3d force, torque;
 
     // Estimate the grasped object pose. Current: direct computation
-    force = measured_wrench_.block<1,3>(0,0);
-    torque = measured_wrench_.block<1,3>(3,0);
-    estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<1,3>(0,1))); // TODO: Check indeces
+    force = measured_wrench_.block<3,1>(0,0);
+    torque = measured_wrench_.block<3,1>(3,0);
+    estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<3,1>(0,1))); // TODO: Check indeces
     estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
-    estimated_r_ = (end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+    estimated_r_ = (end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
   }
 
   /*
@@ -213,11 +215,9 @@ namespace cartesian_controllers {
     fkpos_->JntToCart(joint_positions_, end_effector_kdl);
     tf::transformKDLToEigen(end_effector_kdl, end_effector_pose_);
 
-
-    // TODO: Get the proper vectors
-    rotation_axis = end_effector_pose_.matrix().block<1,3>(0,2);
-    surface_normal = surface_frame_.matrix().block<1,3>(0,2);
-    surface_tangent = surface_frame_.matrix().block<1,3>(0,1);
+    rotation_axis = surface_frame_.matrix().block<3,1>(0,1);
+    surface_normal = surface_frame_.matrix().block<3,1>(0,2);
+    surface_tangent = surface_frame_.matrix().block<3,1>(0,0);
 
     estimatePose(rotation_axis, surface_tangent, surface_normal, dt);
 
@@ -229,13 +229,13 @@ namespace cartesian_controllers {
 
     Eigen::AngleAxisd goal_aa(goal_pose_.rotation()), end_effector_aa(end_effector_pose_.rotation());
 
-    x_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
-    y_d = goal_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
+    x_d = goal_pose_.matrix().block<3,1>(0,3).dot(surface_tangent);
+    y_d = goal_pose_.matrix().block<3,1>(0,3).dot(surface_normal);
     theta_d = goal_aa.angle();
     feedback_.desired_orientation = theta_d;
 
-    x_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_tangent);
-    y_e = end_effector_pose_.matrix().block<1,3>(0,3).dot(surface_normal);
+    x_e = end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_tangent);
+    y_e = end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_normal);
     theta_e = end_effector_aa.angle();
     feedback_.estimated_orientation = theta_e;
 

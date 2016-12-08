@@ -360,7 +360,7 @@ void ManipulationClient::runExperiment()
             return;
           }
         }
-        
+
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = approach_action_name_;
@@ -390,6 +390,11 @@ void ManipulationClient::runExperiment()
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = manipulation_action_name_;
         }
+
+        manipulation_goal.surface_frame = surface_frame_pose_;
+        manipulation_goal.goal_pose = surface_frame_pose_;
+        manipulation_goal.goal_pose.pose.position.x = surface_frame_pose_.pose.position.x += 0.2;
+
         if (!controller_runner_.runController(manipulation_controller_name_))
         {
           ROS_ERROR("Failed to run the controller %s", manipulation_action_name_.c_str());

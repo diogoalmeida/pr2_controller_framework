@@ -39,7 +39,9 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   }
 }
 
-/// Controller startup in realtime
+/*
+  Controller startup in realtime
+*/
 void TemplateJointController::starting()
 {
   if (velocity_joint_controllers_.size() == 0)
@@ -73,7 +75,9 @@ void TemplateJointController::stopping()
   ROS_INFO("Joint controller stopped successfully!");
 }
 
-/// Controller update loop in realtime
+/*
+  Controller update loop in realtime
+*/
 void TemplateJointController::update()
 {
   ros::Duration dt;

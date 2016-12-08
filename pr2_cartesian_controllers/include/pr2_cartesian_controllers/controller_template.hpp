@@ -60,7 +60,7 @@ protected:
   KDL::Chain chain_;
   KDL::Tree tree_;
   urdf::Model model_;
-  std::string end_effector_link_, base_link_, ft_topic_name_;
+  std::string end_effector_link_, base_link_, ft_topic_name_, ft_frame_id_;
   double eps_; // weighted damped least squares epsilon
   double feedback_hz_;
   bool has_state_;
@@ -140,7 +140,8 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 }
 
 /*
-  Update current force and torque values.
+  Update current force and torque values, and transform them to the
+  desired ft frame id.
 */
 template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
@@ -155,10 +156,10 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
 
   try
   {
-    listener_.transformVector(base_link_, vector_in, vector_out);
+    listener_.transformVector(ft_frame_id_, vector_in, vector_out);
     transformed_wrench.torque = vector_in.vector;
     vector_in.vector = msg->wrench.force;
-    listener_.transformVector(base_link_, vector_in, vector_out);
+    listener_.transformVector(ft_frame_id_, vector_in, vector_out);
     transformed_wrench.force = vector_in.vector;
 
     tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
@@ -202,6 +203,12 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
   if (!nh_.getParam("/common/base_link_name", base_link_))
   {
     ROS_ERROR("Missing base link name (/common/base_link_name)");
+    return false;
+  }
+
+  if (!nh_.getParam("/common/force_torque_frame", ft_frame_id_)) // this is the frame where we want to transform the force/torque data
+  {
+    ROS_ERROR("Missing force torque frame name (/common/force_torque_frame)");
     return false;
   }
 

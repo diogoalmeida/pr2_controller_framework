@@ -82,6 +82,8 @@ namespace cartesian_controllers {
           r_1 = estimated_r_/estimated_r_.norm();
           tf::poseEigenToMsg(end_effector_pose_, object_pose.pose);
           // TODO: Needs to be checked
+          object_pose.header.stamp = ros::Time::now();
+          object_pose.header.frame_id = end_effector_link_;
           object_pose.scale.x = estimated_length_;
           object_pose.scale.y = 0.02;
           object_pose.scale.z = 0.02;

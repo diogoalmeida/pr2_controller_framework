@@ -251,7 +251,9 @@ namespace cartesian_controllers {
     ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
 
     twist_error = KDL::diff(end_effector_kdl, initial_pose_); // to maintain the movement on the initial planar direction
-
+    twist_error[0] *= rot_gains_.vector.x;
+    twist_error[1] *= rot_gains_.vector.y;
+    twist_error[2] *= rot_gains_.vector.z;
 
     ikvel_->CartToJnt(joint_positions_, twist_error, correction_joint_velocities);
 

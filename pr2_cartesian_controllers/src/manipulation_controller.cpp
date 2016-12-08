@@ -19,17 +19,33 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose_in, pose_out;
+    std::string surface_frame_name;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
     pose_in = goal->surface_frame;
-    listener_.transformPose(base_link_, pose_in, pose_out);
-    tf::poseMsgToEigen(pose_out.pose, surface_frame_);
 
-    pose_in = goal->goal_pose;
-    listener_.transformPose(base_link_, pose_in, pose_out);
-    tf::poseMsgToEigen(pose_out.pose, goal_pose_);
-    loadParams();
+    if (!loadParams())
+    {
+      action_server_->setAborted();
+    }
+
+    rot_gains_.header.frame_id = pose_in.header.frame_id;
+    try
+    {
+      listener_.transformVector(base_link_, rot_gains_, rot_gains_);
+      listener_.transformPose(base_link_, pose_in, pose_out);
+      tf::poseMsgToEigen(pose_out.pose, surface_frame_);
+
+      pose_in = goal->goal_pose;
+      listener_.transformPose(base_link_, pose_in, pose_out);
+      tf::poseMsgToEigen(pose_out.pose, goal_pose_);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+      action_server_->setAborted();
+    }
   }
 
   /*
@@ -120,17 +136,26 @@ namespace cartesian_controllers {
                       0  , k_2, 0  ,
                       0  , 0  , k_3;
 
-    if (!nh_.getParam("/manipulation_controller/rotational_gains", rot_gains_))
+    std::vector<double> rot_gains;
+    if (!nh_.getParam("/manipulation_controller/rotational_gains", rot_gains))
     {
       ROS_ERROR("Missing vector with rotational gains (/manipulation_controller/rotational_gains)");
       return false;
     }
 
-    if (rot_gains_.size() != 3)
+    if (rot_gains.size() != 3)
     {
-      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains_.size());
+      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains.size());
       return false;
     }
+
+    // convert to geometry msg. These gains are assumed to represent gains along
+    // the surface frame (which is the frame of the goal pose) x, y and z axis, respectively
+    rot_gains_.header.frame_id = base_link_; // temp
+    rot_gains_.header.stamp = ros::Time::now();
+    rot_gains_.vector.x = rot_gains[0];
+    rot_gains_.vector.y = rot_gains[1];
+    rot_gains_.vector.z = rot_gains[2];
 
     return true;
   }
@@ -226,6 +251,8 @@ namespace cartesian_controllers {
     ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
 
     twist_error = KDL::diff(end_effector_kdl, initial_pose_); // to maintain the movement on the initial planar direction
+
+
     ikvel_->CartToJnt(joint_positions_, twist_error, correction_joint_velocities);
 
     control_output = current_state;

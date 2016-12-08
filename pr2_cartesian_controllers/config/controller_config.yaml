@@ -13,11 +13,11 @@ manipulation_controller:
     k_1: 1
     k_2: 1
     k_3: 1
-  rotational_gains: [0, 0, 0]
+  rotational_gains: [5, 0, 5] # These should be IN THE SURFACE FRAME
 
 approach_controller:
   action_server_name: approach_controller
-  rotational_gains: [1, 1, 1]
+  rotational_gains: [5, 5, 5]
 
 move_controller:
   action_server_name: move_controller

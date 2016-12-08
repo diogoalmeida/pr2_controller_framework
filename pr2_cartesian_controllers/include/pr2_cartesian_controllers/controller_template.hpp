@@ -146,28 +146,32 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
-  geometry_msgs::Vector3Stamped vector_in, vector_out;
-  geometry_msgs::Wrench transformed_wrench;
-  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  KDL::Wrench wrench_kdl;
+  KDL::Vector from_sensor_frame_to_ft_frame;
+  geometry_msgs::Vector3Stamped from_sensor_frame_to_desired_point;
 
-  vector_in.vector = msg->wrench.torque;
-  vector_in.header = msg->header;
-  vector_in.header.stamp = ros::Time(0); // To enable transform with the latest ft data available
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  tf::wrenchMsgToKDL(msg->wrench, wrench_kdl);
+
+  from_sensor_frame_to_desired_point.header.frame_id = ft_frame_id_;
+  from_sensor_frame_to_desired_point.header.stamp = ros::Time(0); // To enable transform with the latest ft data available
+  from_sensor_frame_to_desired_point.vector.x = 0;
+  from_sensor_frame_to_desired_point.vector.y = 0;
+  from_sensor_frame_to_desired_point.vector.z = 0;
 
   try
   {
-    listener_.transformVector(ft_frame_id_, vector_in, vector_out);
-    transformed_wrench.torque = vector_in.vector;
-    vector_in.vector = msg->wrench.force;
-    listener_.transformVector(ft_frame_id_, vector_in, vector_out);
-    transformed_wrench.force = vector_in.vector;
-
-    tf::wrenchMsgToEigen(transformed_wrench, measured_wrench_);
+    // obtain a vector from the wrench frame id to the desired ft frame
+    listener_.transformVector(msg->header.frame_id, from_sensor_frame_to_desired_point, from_sensor_frame_to_desired_point);
   }
   catch (tf::TransformException ex)
   {
     ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
   }
+
+  tf::vectorMsgToKDL(from_sensor_frame_to_desired_point.vector, from_sensor_frame_to_ft_frame);
+  wrench_kdl = wrench_kdl.RefPoint(from_sensor_frame_to_ft_frame);
+  tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_);
 }
 
 /*

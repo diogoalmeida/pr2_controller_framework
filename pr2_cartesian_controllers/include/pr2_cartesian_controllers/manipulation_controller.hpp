@@ -19,13 +19,13 @@ private:
   virtual bool loadParams();
 
   // Controller values
-  double k_spring_, estimated_length_, estimated_orientation_;
+  double k_spring_, estimated_length_, estimated_orientation_, hardcoded_length_;
   Eigen::Affine3d surface_frame_, goal_pose_, end_effector_pose_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
   geometry_msgs::Vector3Stamped rot_gains_;
   KDL::Frame initial_pose_;
-  bool has_initial_;
+  bool has_initial_, estimate_length_;
   void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
 
   // For markers

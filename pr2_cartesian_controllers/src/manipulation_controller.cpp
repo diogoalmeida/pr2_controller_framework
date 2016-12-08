@@ -84,9 +84,17 @@ namespace cartesian_controllers {
           // TODO: Needs to be checked
           object_pose.header.stamp = ros::Time::now();
           object_pose.header.frame_id = end_effector_link_;
-          object_pose.scale.x = estimated_length_;
+          object_pose.scale.x = 0.02;
           object_pose.scale.y = 0.02;
-          object_pose.scale.z = 0.02;
+
+          if (!estimate_length_)
+          {
+            object_pose.scale.z = hardcoded_length_;
+          }
+          else
+          {
+            object_pose.scale.z = estimated_length_;
+          }
 
           current_pub_.publish(object_pose);
           action_server_->publishFeedback(feedback_);
@@ -115,6 +123,21 @@ namespace cartesian_controllers {
     {
       ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
       return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/estimate_length", estimate_length_))
+    {
+      ROS_ERROR("Missing estimate length (/manipulation_controller/estimate_length)");
+      return false;
+    }
+
+    if (!estimate_length_)
+    {
+      if (!nh_.getParam("/manipulation_controller/hardcoded_length", hardcoded_length_))
+      {
+        ROS_ERROR("Missing hardcoded length (/manipulation_controller/hardcoded_length)");
+        return false;
+      }
     }
 
     double k_1, k_2, k_3;
@@ -175,8 +198,15 @@ namespace cartesian_controllers {
     force = measured_wrench_.block<3,1>(0,0);
     torque = measured_wrench_.block<3,1>(3,0);
     estimated_orientation_ = torque.dot(rotation_axis)/k_spring_ + std::acos(surface_tangent.dot(end_effector_pose_.matrix().block<3,1>(0,1))); // TODO: Check indeces
-    estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
-    estimated_r_ = (end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+    if (!estimate_length_)
+    {
+      estimated_r_ = (end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_tangent) - hardcoded_length_*std::cos(estimated_orientation_))*surface_tangent;
+    }
+    else
+    {
+      estimated_length_ = torque.dot(rotation_axis)/force.dot(surface_normal);
+      estimated_r_ = (end_effector_pose_.matrix().block<3,1>(0,3).dot(surface_tangent) - estimated_length_*std::cos(estimated_orientation_))*surface_tangent;
+    }
   }
 
   /*
@@ -224,9 +254,18 @@ namespace cartesian_controllers {
     estimatePose(rotation_axis, surface_tangent, surface_normal, dt);
 
     // Compute the cartesian twist to command the end-effector. Current: straightly compensate for the kinematics
-    inv_g << 1, -estimated_length_*std::sin(estimated_orientation_), 0                           ,
-             0, -estimated_length_*std::cos(estimated_orientation_), 0                           ,
-             0, -1                                                 , -estimated_length_/k_spring_;
+    if (!estimate_length_)
+    {
+      inv_g << 1, -hardcoded_length_*std::sin(estimated_orientation_), 0                  ,
+      0, -hardcoded_length_*std::cos(estimated_orientation_), 0                           ,
+      0, -1                                                 , -hardcoded_length_/k_spring_;
+    }
+    else
+    {
+      inv_g << 1, -estimated_length_*std::sin(estimated_orientation_), 0                           ,
+      0, -estimated_length_*std::cos(estimated_orientation_), 0                           ,
+      0, -1                                                 , -estimated_length_/k_spring_;
+    }
 
 
     Eigen::AngleAxisd goal_aa(goal_pose_.rotation()), end_effector_aa(end_effector_pose_.rotation());

@@ -20,7 +20,7 @@ private:
   virtual bool loadParams();
 
   // Controller values
-  double k_spring_, estimated_length_, estimated_orientation_, hardcoded_length_;
+  double k_spring_, estimated_length_, estimated_orientation_, hardcoded_length_, initial_angle_offset_;
   Eigen::Affine3d surface_frame_, goal_pose_, grasp_point_pose_, end_effector_pose_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
@@ -29,7 +29,7 @@ private:
   bool has_initial_, estimate_length_;
   void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
   Eigen::Matrix3d computeInvG(double length, double angle);
-  Eigen::Matrix3d computeSkewSymmetric(Eigen::Vector3d v);
+  Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
   std::string grasp_point_frame_name_;
 
   // For markers

@@ -89,6 +89,7 @@ protected:
   virtual bool loadParams() = 0;
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
   Eigen::Matrix<double, 6, 1> measured_wrench_;
+  double force_d_;
 };
 
 // Implementing the template class in its header file saves some headaches

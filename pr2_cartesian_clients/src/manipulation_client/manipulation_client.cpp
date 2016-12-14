@@ -399,16 +399,39 @@ void ManipulationClient::runExperiment()
         }
 
         manipulation_goal.surface_frame = surface_frame_pose_;
+
+        Eigen::Affine3d surface_pose_eigen;
+        Eigen::Vector3d rotation_axis = -Eigen::Vector3d::UnitY();
+
+        tf::poseMsgToEigen(surface_frame_pose_.pose, surface_pose_eigen);
+
+        surface_pose_eigen = surface_pose_eigen*Eigen::AngleAxisd(0.5, rotation_axis);
+
         manipulation_goal.goal_pose = surface_frame_pose_;
-        manipulation_goal.goal_pose.pose.position.x = surface_frame_pose_.pose.position.x += 0.2;
+        tf::poseEigenToMsg(surface_pose_eigen, manipulation_goal.goal_pose.pose);
+
+        manipulation_goal.goal_pose.header.stamp = ros::Time(0);
+        manipulation_goal.goal_pose.pose.position.x += 0.15;
+
+        try
+        {
+          listener_.transformPose(base_link_name_, manipulation_goal.goal_pose, manipulation_goal.goal_pose);
+        }
+        catch(tf::TransformException &e)
+        {
+          ROS_ERROR("Error transforming the goal pose into the base frame: %s", e.what());
+          action_server_->setAborted();
+          continue;
+        }
+
+        manipulation_goal.goal_pose.header.stamp = ros::Time(0);
 
         if (!monitorActionGoal<pr2_cartesian_controllers::ManipulationControllerAction,
                               pr2_cartesian_controllers::ManipulationControllerGoal,
                               pr2_cartesian_clients::ManipulationAction>
                                 (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_))
         {
-          ROS_ERROR("Error in the manipulation action. Aborting.");
-          action_server_->setAborted();
+          ROS_ERROR("Error in the manipulation action.");
           continue;
         }
       }
@@ -507,7 +530,6 @@ bool ManipulationClient::waitForTablePose(ros::Duration max_time)
   surface_frame_pose_.pose.orientation.z = 0;
   surface_frame_pose_.pose.orientation.w = 1;
 
-  listener_.transformPose(base_link_name_, surface_frame_pose_, surface_frame_pose_);
   return true;
 }
 }

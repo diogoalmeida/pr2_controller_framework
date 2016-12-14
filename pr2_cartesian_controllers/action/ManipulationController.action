@@ -5,5 +5,18 @@ geometry_msgs/PoseStamped goal_pose
 # Result:
 ---
 # Feedback: information that may be used to debug the controller
-float64 desired_orientation
-float64 estimated_orientation
+float64 x_c
+float64 theta_c
+float64 f_c
+float64 torque_c
+float64 error_x
+float64 error_theta
+float64 error_force
+float64 spring_angle
+float64 eef_angle
+float64 commanded_x
+float64 commanded_y
+float64 commanded_rot
+geometry_msgs/Point f_e
+geometry_msgs/Point tau_e
+geometry_msgs/Twist commanded_twist

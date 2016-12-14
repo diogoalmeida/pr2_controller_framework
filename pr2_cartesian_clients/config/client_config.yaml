@@ -2,8 +2,8 @@ vision:
   surface_frame_name: id_0
 
 initialization:
-  initial_pose_offset: [0.3, 0.0, 0.35] # w.r.t the surface_frame_name
-  initial_approach_angle: 1.8 # in radians
+  initial_pose_offset: [0.4, 0.0, 0.3] # w.r.t the surface_frame_name
+  initial_approach_angle: 2.20 # in radians
   actionlib_server_names:
     manipulation_action_name: /realtime_loop/dexterous_manipulation
     approach_action_name: /realtime_loop/approach_controller
@@ -16,7 +16,7 @@ initialization:
   controller_timeouts:
     move_timeout: 30
     approach_timeout: 20
-    manipulation_timeout: 200
+    manipulation_timeout: 2000
   gravity_compensation_service_name: /gravity_compensation/calibrate_bias
   server_timeout: 2
   exclude_controller_names: [l_gripper_controller]
@@ -28,5 +28,5 @@ experiment:
   num_of_experiments: 1
   use_vision: true
   sim_mode: false
-  approach_velocity: -0.025
-  approach_force: 2
+  approach_velocity: -0.03
+  approach_force: 2.0

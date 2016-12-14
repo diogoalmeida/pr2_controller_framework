@@ -3,6 +3,7 @@
 
 #include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
+#include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
 
 namespace cartesian_controllers{
@@ -20,16 +21,20 @@ private:
 
   // Controller values
   double k_spring_, estimated_length_, estimated_orientation_, hardcoded_length_;
-  Eigen::Affine3d surface_frame_, goal_pose_, end_effector_pose_;
+  Eigen::Affine3d surface_frame_, goal_pose_, grasp_point_pose_, end_effector_pose_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
   geometry_msgs::Vector3Stamped rot_gains_;
-  KDL::Frame initial_pose_;
+  KDL::Frame initial_pose_, end_effector_to_grasp_point_;
   bool has_initial_, estimate_length_;
   void estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt);
+  Eigen::Matrix3d computeInvG(double length, double angle);
+  Eigen::Matrix3d computeSkewSymmetric(Eigen::Vector3d v);
+  std::string grasp_point_frame_name_;
 
   // For markers
-  ros::Publisher target_pub_, current_pub_;
+  ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_;
+  tf::TransformBroadcaster broadcaster_;
 
 public:
   ManipulationController() : ControllerTemplate<pr2_cartesian_controllers::ManipulationControllerAction,
@@ -46,6 +51,7 @@ public:
     startActionlib();
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_estimated", 1);
+    eef_to_grasp_pub_ = nh_.advertise<visualization_msgs::Marker>("eef_to_grasp_pose", 1);
     feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
   virtual ~ManipulationController()

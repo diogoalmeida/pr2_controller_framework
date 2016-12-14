@@ -33,6 +33,7 @@ private:
   std::string grasp_point_frame_name_;
 
   // For markers
+  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
   ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_;
   tf::TransformBroadcaster broadcaster_;
 

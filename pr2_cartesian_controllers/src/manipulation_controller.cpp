@@ -54,13 +54,7 @@ namespace cartesian_controllers {
       // get the relationship between kinematic chain end-effector and
       // tool-tip (grasping point)
       pose_in.header.frame_id = ft_frame_id_;
-      pose_in.header.stamp = ros::Time(0);
-      pose_in.pose.position.x = 0;
-      pose_in.pose.position.y = 0;
-      pose_in.pose.position.z = 0;
-      pose_in.pose.orientation.x = 0;
-      pose_in.pose.orientation.y = 0;
-      pose_in.pose.orientation.z = 0;
+      pose_in.header.stamp = ros::Time(0); // get latest available
       pose_in.pose.orientation.w = 1;
       listener_.transformPose(end_effector_link_, pose_in, pose_out);
       tf::poseMsgToKDL(pose_out.pose, end_effector_to_grasp_point_);
@@ -81,7 +75,6 @@ namespace cartesian_controllers {
   {
     visualization_msgs::Marker object_pose, desired_pose, eef_to_grasp_marker;
     std_msgs::ColorRGBA object_color;
-    geometry_msgs::Point initial, end;
     geometry_msgs::Pose grasp_pose_geo;
     Eigen::Vector3d r_1, goal_r;
     tf::Transform transform;
@@ -103,7 +96,6 @@ namespace cartesian_controllers {
     object_pose.scale.x = 0.02;
     desired_pose = object_pose;
     desired_pose.id = 2;
-    object_pose.type = object_pose.LINE_STRIP;
     desired_pose.color.r = 0;
     desired_pose.color.g = 1;
     eef_to_grasp_marker = desired_pose;
@@ -118,35 +110,25 @@ namespace cartesian_controllers {
       {
         if (action_server_->isActive())
         {
-          object_pose.points.clear();
-          desired_pose.points.clear();
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           r_1 = estimated_r_;
 
-          tf::pointEigenToMsg(goal_pose_.translation(), initial);
-          desired_pose.points.push_back(initial);
-          tf::pointEigenToMsg(goal_pose_.translation() + hardcoded_length_*goal_pose_.rotation().block<3,1>(0,0), end);
-          desired_pose.points.push_back(end);
+          getMarkerPoints(goal_pose_.translation(), goal_pose_.translation() + hardcoded_length_*goal_pose_.rotation().block<3,1>(0,0), desired_pose);
+          getMarkerPoints(grasp_point_pose_.translation(), grasp_point_pose_.translation() + r_1, object_pose);
 
-          tf::pointEigenToMsg(grasp_point_pose_.translation(), initial);
-          tf::pointEigenToMsg(grasp_point_pose_.translation() + r_1, end);
           object_pose.header.stamp = ros::Time::now();
-          object_pose.points.push_back(initial);
-          object_pose.points.push_back(end);
 
           tf::poseEigenToMsg(grasp_point_pose_, grasp_pose_geo);
-          transform.setOrigin(tf::Vector3(grasp_point_pose_.translation()[0], grasp_point_pose_.translation()[1], grasp_point_pose_.translation()[2]));
+          transform.setOrigin(tf::Vector3(grasp_pose_geo.position.x, grasp_pose_geo.position.y, grasp_pose_geo.position.z));
           transform.setRotation(tf::Quaternion (grasp_pose_geo.orientation.x, grasp_pose_geo.orientation.y, grasp_pose_geo.orientation.z, grasp_pose_geo.orientation.w));
           broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), base_link_, "computed_grasp_point"));
 
-          tf::pointEigenToMsg(end_effector_pose_.translation(), initial);
-          tf::pointEigenToMsg(grasp_point_pose_.translation(), end);
-          eef_to_grasp_marker.points.push_back(initial);
-          eef_to_grasp_marker.points.push_back(end);
+          getMarkerPoints(end_effector_pose_.translation(), grasp_point_pose_.translation(), eef_to_grasp_marker);
 
           current_pub_.publish(object_pose);
           target_pub_.publish(desired_pose);
           eef_to_grasp_pub_.publish(eef_to_grasp_marker);
+
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
@@ -156,6 +138,20 @@ namespace cartesian_controllers {
     {
       return;
     }
+  }
+
+  /*
+    Fills a marker with the given initial and end point. Clears existing points.
+  */
+  void ManipulationController::getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker)
+  {
+    geometry_msgs::Point point;
+
+    marker.points.clear();
+    tf::pointEigenToMsg(initial_point, point);
+    marker.points.push_back(point);
+    tf::pointEigenToMsg(final_point, point);
+    marker.points.push_back(point);
   }
 
   /*

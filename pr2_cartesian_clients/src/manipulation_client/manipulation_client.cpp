@@ -410,6 +410,10 @@ void ManipulationClient::runExperiment()
         manipulation_goal.goal_pose = surface_frame_pose_;
         tf::poseEigenToMsg(surface_pose_eigen, manipulation_goal.goal_pose.pose);
 
+        manipulation_goal.is_debug = false;
+        manipulation_goal.use_debug_eef_to_grasp = false;
+        manipulation_goal.use_surface_rotation_axis = true;
+        manipulation_goal.desired_contact_force = 1;
         manipulation_goal.goal_pose.header.stamp = ros::Time(0);
         manipulation_goal.goal_pose.pose.position.x += 0.15;
 

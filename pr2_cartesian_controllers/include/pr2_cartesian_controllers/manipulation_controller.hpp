@@ -32,6 +32,11 @@ private:
   Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
   std::string grasp_point_frame_name_;
 
+  // Debug parameters
+  bool debug_twist_, use_debug_eef_to_grasp_, surface_rotation_axis_;
+  Eigen::Vector3d debug_eef_to_grasp_eig_;
+  double debug_x_, debug_y_, debug_rot_;
+
   // For markers
   void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
   ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_;

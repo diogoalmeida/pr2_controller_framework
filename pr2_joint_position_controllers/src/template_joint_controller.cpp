@@ -97,6 +97,7 @@ void TemplateJointController::update()
   current_state.header.stamp = robot_->getTime();
   dt = robot_->getTime() - time_of_last_manipulation_call_;
   control_references_ = cartesian_controller_->updateControl(current_state, dt);
+  time_of_last_manipulation_call_ = robot_->getTime();
 
   verifySanity(control_references_);
 

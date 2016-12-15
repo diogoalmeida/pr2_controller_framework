@@ -6,6 +6,7 @@
 #include <boost/thread.hpp>
 #include <urdf/model.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_conversions/kdl_msg.h>
@@ -83,6 +84,7 @@ protected:
   // ROS
   ros::NodeHandle nh_;
   ros::Subscriber ft_sub_;
+  ros::Publisher ft_pub_;
   tf::TransformListener listener_;
 
   bool loadGenericParams();
@@ -90,6 +92,9 @@ protected:
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
   Eigen::Matrix<double, 6, 1> measured_wrench_;
   double force_d_;
+
+private:
+  tf::TransformBroadcaster broadcaster_;
 };
 
 // Implementing the template class in its header file saves some headaches
@@ -118,6 +123,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   // Subscribe to force and torque measurements
   measured_wrench_ << 0, 0, 0, 0, 0, 0;
   ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ControllerTemplate::forceTorqueCB, this);
+  ft_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name_ + "/converted", 1);
 }
 
 /*
@@ -148,31 +154,42 @@ template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
   KDL::Wrench wrench_kdl;
-  KDL::Vector from_sensor_frame_to_ft_frame;
-  geometry_msgs::Vector3Stamped from_sensor_frame_to_desired_point;
+  KDL::Frame sensor_to_grasp_frame_kdl, sensor_frame_kdl, desired_kdl;
+  geometry_msgs::PoseStamped sensor_to_grasp_frame, sensor_frame, desired;
+  geometry_msgs::WrenchStamped converted_wrench;
+  tf::Transform converted_wrench_frame;
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
   tf::wrenchMsgToKDL(msg->wrench, wrench_kdl);
 
-  from_sensor_frame_to_desired_point.header.frame_id = ft_frame_id_;
-  from_sensor_frame_to_desired_point.header.stamp = ros::Time(0); // To enable transform with the latest ft data available
-  from_sensor_frame_to_desired_point.vector.x = 0;
-  from_sensor_frame_to_desired_point.vector.y = 0;
-  from_sensor_frame_to_desired_point.vector.z = 0;
+  converted_wrench = *msg;
+  sensor_to_grasp_frame.header.frame_id = msg->header.frame_id;
+  sensor_to_grasp_frame.header.stamp = ros::Time(0); // To enable transform with the latest ft data available
+  sensor_to_grasp_frame.pose.position.x = 0;
+  sensor_to_grasp_frame.pose.position.y = 0;
+  sensor_to_grasp_frame.pose.position.z = 0;
+  sensor_to_grasp_frame.pose.orientation.x = 0;
+  sensor_to_grasp_frame.pose.orientation.y = 0;
+  sensor_to_grasp_frame.pose.orientation.z = 0;
+  sensor_to_grasp_frame.pose.orientation.w = 1;
+  converted_wrench.header.frame_id = ft_frame_id_;
 
   try
   {
     // obtain a vector from the wrench frame id to the desired ft frame
-    listener_.transformVector(msg->header.frame_id, from_sensor_frame_to_desired_point, from_sensor_frame_to_desired_point);
+    listener_.transformPose(ft_frame_id_, sensor_to_grasp_frame, sensor_to_grasp_frame);
+    // listener_.transformPose(base_link_, sensor_frame, sensor_frame);
   }
   catch (tf::TransformException ex)
   {
     ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
   }
 
-  tf::vectorMsgToKDL(from_sensor_frame_to_desired_point.vector, from_sensor_frame_to_ft_frame);
-  wrench_kdl = wrench_kdl.RefPoint(from_sensor_frame_to_ft_frame);
+  tf::poseMsgToKDL(sensor_to_grasp_frame.pose, sensor_to_grasp_frame_kdl);
+  wrench_kdl = sensor_to_grasp_frame_kdl*wrench_kdl;
+  tf::wrenchKDLToMsg(wrench_kdl, converted_wrench.wrench);
   tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_);
+  ft_pub_.publish(converted_wrench);
 }
 
 /*

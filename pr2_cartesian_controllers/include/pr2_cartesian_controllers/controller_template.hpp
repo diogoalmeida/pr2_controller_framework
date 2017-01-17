@@ -10,7 +10,8 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_conversions/kdl_msg.h>
-#include <kdl/chainiksolvervel_wdls.hpp>
+// #include <kdl/chainiksolvervel_wdls.hpp>
+#include <kdl/chainiksolvervel_pinv_nso.hpp>
 #include <kdl/chainiksolverpos_lma.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
@@ -55,7 +56,8 @@ protected:
   // Robot related
   sensor_msgs::JointState robot_state;
   KDL::JntArray joint_positions_;
-  KDL::ChainIkSolverVel_wdls *ikvel_;
+  // KDL::ChainIkSolverVel_wdls *ikvel_;
+  KDL::ChainIkSolverVel_pinv_nso *ikvel_;
   KDL::ChainIkSolverPos_LMA *ikpos_;
   KDL::ChainFkSolverPos_recursive *fkpos_;
   KDL::Chain chain_;
@@ -90,6 +92,7 @@ protected:
   bool loadGenericParams();
   virtual bool loadParams() = 0;
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
+  void getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits);
   Eigen::Matrix<double, 6, 1> measured_wrench_;
   double force_d_;
 
@@ -103,6 +106,9 @@ private:
 template <class ActionClass, class ActionFeedback, class ActionResult>
 ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplate()
 {
+  KDL::JntArray min_limits, max_limits;
+  KDL::JntArray optimal_values, weights;
+
   nh_ = ros::NodeHandle("~");
 
   if(!loadGenericParams())
@@ -111,12 +117,38 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
     exit(0);
   }
 
-  joint_positions_.resize(7);
   kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
   tree_.getChain(base_link_, end_effector_link_, chain_);
+  getJointLimits(min_limits, max_limits);
+  ROS_INFO("Min limits rows: %d, min limits columns: %d", min_limits.rows(), min_limits.columns());
+  joint_positions_.resize(chain_.getNrOfJoints());
+  optimal_values.resize(chain_.getNrOfJoints());
+  weights.resize(chain_.getNrOfJoints());
+
+  ROS_INFO("Joint limits: ");
+  for (int i = 0; i < chain_.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
+  {
+    optimal_values(i) = (min_limits(i) + max_limits(i))/2;
+
+    ROS_INFO("Joint: %d, min_limit: %.2f, max_limit: %.2f, optimal_value: %.2f", i, min_limits(i), max_limits(i), optimal_values(i));
+
+    if (min_limits(i) == max_limits(i)) // Do not weight in joints with no limits in the nullspace optimization method
+    {
+      weights(i) = 0;
+    }
+    else
+    {
+      weights(i) = 0.1;
+    }
+
+    ROS_INFO("Weight: %.2f\n\n", weights(i));
+  }
+
 
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-  ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
+  // ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
+  // ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, eps_);
+  ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, optimal_values, weights, eps_);
   ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
   has_state_ = false;
 
@@ -125,6 +157,36 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ControllerTemplate::forceTorqueCB, this);
   ft_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name_ + "/converted", 1);
 }
+
+/*
+  Use the controller kinematic chain to obtain the joint limits of the manipulator
+*/
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits)
+{
+  KDL::Joint kdl_joint;
+  boost::shared_ptr<const urdf::Joint> urdf_joint;
+  int j = 0;
+
+  min_limits.resize(chain_.getNrOfJoints());
+  max_limits.resize(chain_.getNrOfJoints());
+
+  for (int i = 0; i < chain_.getNrOfSegments(); i++) // get joint limits
+  {
+    kdl_joint = chain_.getSegment(i).getJoint();
+
+    if (kdl_joint.getTypeName() == "None")
+    {
+      continue;
+    }
+
+    urdf_joint = model_.getJoint(kdl_joint.getName());
+    min_limits(j) = urdf_joint->limits->lower;
+    max_limits(j) = urdf_joint->limits->upper;
+    j++;
+  }
+}
+
 
 /*
   Return last controlled joint state

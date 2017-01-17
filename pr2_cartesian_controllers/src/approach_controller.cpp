@@ -97,7 +97,7 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::JntArray commanded_joint_velocities;
+    KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
     KDL::Twist twist_error;
@@ -108,7 +108,7 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       joint_positions_(i) = current_state.position[i];
     }
@@ -127,7 +127,7 @@ namespace cartesian_controllers {
     approach_direction = approach_direction/approach_direction.norm();
 
 
-    if (measured_wrench_.block<3,1>(0,0).dot(approach_direction) > force_threshold_)
+    if (std::abs(measured_wrench_.block<3,1>(0,0).dot(approach_direction)) > force_threshold_)
     {
       action_server_->setSucceeded(result_, "contact force achieved");
       has_initial_ = false;
@@ -153,7 +153,7 @@ namespace cartesian_controllers {
 
     control_output = current_state;
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       control_output.velocity[i] = commanded_joint_velocities(i);
       control_output.position[i] = current_state.position[i];

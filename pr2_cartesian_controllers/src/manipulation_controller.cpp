@@ -57,6 +57,7 @@ namespace cartesian_controllers {
 
     pose_in = goal->surface_frame;
     rot_gains_.header.frame_id = pose_in.header.frame_id;
+    listener_.waitForTransform(ft_frame_id_, base_link_, ros::Time(0), ros::Duration(0.1));
     try
     {
       // get surface frame
@@ -313,7 +314,7 @@ namespace cartesian_controllers {
   {
     sensor_msgs::JointState control_output;
     KDL::Frame end_effector_kdl, grasp_point_kdl;
-    KDL::JntArray commanded_joint_velocities;
+    KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
     KDL::Twist input_twist, twist_error;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef;
     double x_e, y_e, theta_e, x_d, y_d, theta_d, torque_c, force_c, x_c, theta_c;
@@ -329,7 +330,7 @@ namespace cartesian_controllers {
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       joint_positions_(i) = current_state.position[i];
     }
@@ -436,7 +437,7 @@ namespace cartesian_controllers {
     ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
     control_output = current_state;
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       control_output.position[i] = joint_positions_(i) + commanded_joint_velocities(i)*dt.toSec();
       control_output.velocity[i] = commanded_joint_velocities(i);

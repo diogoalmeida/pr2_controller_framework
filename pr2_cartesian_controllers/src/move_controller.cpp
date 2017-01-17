@@ -16,7 +16,6 @@ namespace cartesian_controllers {
   */
   void MoveController::goalCB()
   {
-    ROS_INFO("Move controller got a goal!");
     geometry_msgs::PoseStamped pose;
     KDL::JntArray temp_desired_joint_positions;
 
@@ -47,6 +46,7 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = true;
     }
     loadParams();
+    ROS_INFO("Move controller got a goal!");
   }
 
   /*
@@ -236,7 +236,7 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       joint_positions_(i) = current_state.position[i];
     }
@@ -245,7 +245,7 @@ namespace cartesian_controllers {
 
     // 0 - Check success
     int success = 0;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > error_threshold_)
       {
@@ -257,7 +257,7 @@ namespace cartesian_controllers {
       }
     }
 
-    if (success == 7)
+    if (success == chain_.getNrOfJoints())
     {
       ROS_INFO("Move joint controller executed successfully!");
       action_server_->setSucceeded();
@@ -266,7 +266,7 @@ namespace cartesian_controllers {
 
     // 1 - Compute position error
     std::vector<double> error;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
       {
@@ -289,7 +289,7 @@ namespace cartesian_controllers {
     }
 
     // 2 - send commands
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       control_output.velocity[i] = velocity_gain_ * error[i];
       control_output.position[i] = current_state.position[i];

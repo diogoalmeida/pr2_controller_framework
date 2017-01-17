@@ -25,7 +25,6 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose_in, pose_out;
-    std::string surface_frame_name;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
@@ -57,7 +56,7 @@ namespace cartesian_controllers {
 
     pose_in = goal->surface_frame;
     rot_gains_.header.frame_id = pose_in.header.frame_id;
-    listener_.waitForTransform(ft_frame_id_, base_link_, ros::Time(0), ros::Duration(0.1));
+    listener_.waitForTransform(pose_in.header.frame_id, base_link_, ros::Time(0), ros::Duration(0.1));
     try
     {
       // get surface frame

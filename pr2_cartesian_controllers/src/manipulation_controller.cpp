@@ -26,8 +26,8 @@ namespace cartesian_controllers {
     boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose_in, pose_out;
 
+    finished_acquiring_goal_ = false;
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
     debug_twist_ = false;
     use_debug_eef_to_grasp_ = false;
     surface_rotation_axis_ = false;
@@ -56,7 +56,7 @@ namespace cartesian_controllers {
 
     pose_in = goal->surface_frame;
     rot_gains_.header.frame_id = pose_in.header.frame_id;
-    listener_.waitForTransform(pose_in.header.frame_id, base_link_, ros::Time(0), ros::Duration(0.1));
+    listener_.waitForTransform(pose_in.header.frame_id, base_link_, ros::Time(0), ros::Duration(wait_for_tf_time_));
     try
     {
       // get surface frame
@@ -98,6 +98,7 @@ namespace cartesian_controllers {
       action_server_->setAborted();
     }
 
+    finished_acquiring_goal_ = true;
     ROS_INFO("Manipulation controller server received a goal!");
   }
 
@@ -252,6 +253,12 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/manipulation_controller/wait_for_tf_time", wait_for_tf_time_))
+    {
+      ROS_ERROR("Missing wait for tf time (/manipulation_controller/wait_for_tf_time)");
+      return false;
+    }
+
     if (rot_gains.size() != 3)
     {
       ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains.size());
@@ -320,7 +327,7 @@ namespace cartesian_controllers {
     Eigen::Matrix3d inv_g, skew;
     Eigen::Matrix<double, 6, 1> twist_eig;
 
-    if (!action_server_->isActive()) // TODO: should be moved to parent class
+    if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
       return lastState(current_state);
     }

@@ -31,6 +31,8 @@ private:
   Eigen::Matrix3d computeInvG(double length, double angle);
   Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
   std::string grasp_point_frame_name_;
+  bool finished_acquiring_goal_;
+  double wait_for_tf_time_;
 
   // Debug parameters
   bool debug_twist_, use_debug_eef_to_grasp_, surface_rotation_axis_;
@@ -58,6 +60,7 @@ public:
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_estimated", 1);
     eef_to_grasp_pub_ = nh_.advertise<visualization_msgs::Marker>("eef_to_grasp_pose", 1);
+    finished_acquiring_goal_ = false;
     feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
   }
   virtual ~ManipulationController()

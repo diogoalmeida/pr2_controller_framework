@@ -190,6 +190,7 @@ void TemplateJointController::resetAllocableVariables()
   velocity_joint_controllers_.clear();
   joint_names_.clear();
   time_of_last_cycle_.clear();
+  ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
 
@@ -258,7 +259,7 @@ bool TemplateJointController::allocateVariables()
     // create a controller instance and give it a unique namespace for setting the controller gains
     velocity_joint_controllers_.push_back(new control_toolbox::Pid());
     time_of_last_cycle_.push_back(robot_->getTime());
-    ff_joint_controllers_[i] = ff_gain;
+    ff_joint_controllers_.push_back(ff_gain);
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/velocity_loop_gains/" + joint_names_[i]));
   }
 

@@ -134,8 +134,6 @@ namespace cartesian_controllers {
     eef_to_grasp_marker.scale.y = 0.01;
     eef_to_grasp_marker.scale.z = 0.01;
 
-    x_d_eigen = surface_frame_.translation() + x_d_*surface_frame_.rotation().block<3,1>(0,0);
-    r_d = cos(theta_d_)*surface_frame_.rotation().block<3,1>(0,0) + sin(theta_d_)*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
 
     try
     {
@@ -146,6 +144,8 @@ namespace cartesian_controllers {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           r_1 = estimated_r_;
 
+          x_d_eigen = surface_frame_.translation() + x_d_*surface_frame_.rotation().block<3,1>(0,0);
+          r_d = cos(theta_d_)*surface_frame_.rotation().block<3,1>(0,0) + sin(theta_d_)*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
           getMarkerPoints(x_d_eigen, x_d_eigen + hardcoded_length_*r_d, desired_pose);
           getMarkerPoints(grasp_point_pose_.translation(), grasp_point_pose_.translation() + r_1, object_pose);
 

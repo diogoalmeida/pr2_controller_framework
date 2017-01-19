@@ -21,11 +21,13 @@ private:
   virtual bool loadParams();
 
   // Controller values
-  double force_threshold_;
+  double initial_force_, force_threshold_;
   KDL::Twist velocity_reference_;
   KDL::Frame initial_pose_;
   std::vector<double> rot_gains_;
-  bool has_initial_;
+  bool has_initial_, is_contact_;
+  ros::Duration contact_detection_time_;
+  ros::Time initial_contact_;
 
 public:
   ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,

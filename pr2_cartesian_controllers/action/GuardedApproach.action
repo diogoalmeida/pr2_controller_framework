@@ -7,6 +7,7 @@ float64 contact_force
 ---
 # Feedback: information that may be used to debug the controller
 geometry_msgs/WrenchStamped current_wrench
+float64 approach_direction_force
 float64[] velocity_reference
 geometry_msgs/TwistStamped commanded_twist
 geometry_msgs/TwistStamped error_twist

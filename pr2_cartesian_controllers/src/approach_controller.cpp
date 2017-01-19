@@ -8,9 +8,12 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::GuardedApproachGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::TwistStamped twist;
+    Eigen::Vector3d approach_direction;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
+    is_contact_ = false;
+    initial_contact_ = ros::Time(0);
     twist = goal->approach_command;
     tf::twistMsgToKDL(twist.twist, velocity_reference_);
 
@@ -21,6 +24,8 @@ namespace cartesian_controllers {
     }
 
     force_threshold_ = goal->contact_force;
+    approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
+    initial_force_ = measured_wrench_.block<3,1>(0,0).dot(approach_direction);
     loadParams();
     ROS_INFO("Approach controller server received a goal!");
   }
@@ -81,6 +86,15 @@ namespace cartesian_controllers {
       return false;
     }
 
+    double t;
+    if (!nh_.getParam("/approach_controller/contact_detection_time", t))
+    {
+      ROS_ERROR("Missing contact_detection_time (/approach_controller/contact_detection_time)");
+      return false;
+    }
+
+    contact_detection_time_ = ros::Duration(t);
+
     if (rot_gains_.size() != 3)
     {
       ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains_.size());
@@ -126,12 +140,26 @@ namespace cartesian_controllers {
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
     approach_direction = approach_direction/approach_direction.norm();
 
-
-    if (std::abs(measured_wrench_.block<3,1>(0,0).dot(approach_direction)) > force_threshold_)
+    double approach_direction_force = std::abs(measured_wrench_.block<3,1>(0,0).dot(approach_direction) - initial_force_);
+    feedback_.approach_direction_force = approach_direction_force;
+    if (approach_direction_force > force_threshold_)
     {
-      action_server_->setSucceeded(result_, "contact force achieved");
-      has_initial_ = false;
-      return current_state;
+      if (!is_contact_)
+      {
+        is_contact_ = true;
+        initial_contact_ = ros::Time::now();
+      }
+
+      if ((ros::Time::now() - initial_contact_) > contact_detection_time_) // reject momentary force peaks
+      {
+        action_server_->setSucceeded(result_, "contact force achieved");
+        has_initial_ = false;
+        return current_state;
+      }
+    }
+    else
+    {
+      is_contact_ = false;
     }
 
     fkpos_->JntToCart(joint_positions_, current_pose);

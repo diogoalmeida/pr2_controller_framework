@@ -249,9 +249,9 @@ bool TemplateJointController::allocateVariables()
       return false;
     }
 
-    if(!n_.getParam("/common/position_loop_gains/" + joint_names_[i] + "/feedforward_gain", ff_gain))
+    if(!n_.getParam("/common/velocity_loop_gains/" + joint_names_[i] + "/feedforward_gain", ff_gain))
     {
-      ROS_ERROR("Joint controller expects a velocity feedforward gain for joint %s (/common/position_loop_gains/%s/feedforward_gain)", joint_names_[i].c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects a velocity feedforward gain for joint %s (/common/velocity_loop_gains/%s/feedforward_gain)", joint_names_[i].c_str(), joint_names_[i].c_str());
       return false;
     }
 

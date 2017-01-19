@@ -142,49 +142,49 @@ common:
       i: 10
       d: 0
       i_clamp: 2
-      feedforward_gain: 0
+      feedforward_gain: 10
 
     l_shoulder_pan_joint:
       p: 20
       i: 3
       d: 0
       i_clamp: 1
-      feedforward_gain: 0
+      feedforward_gain: 10
 
     l_shoulder_lift_joint:
       p: 15
       i: 15
       d: 0
       i_clamp: 7.5
-      feedforward_gain: 0
+      feedforward_gain: 10
 
     l_forearm_roll_joint:
       p: 20
       i: 100
       d: 0
       i_clamp: 10
-      feedforward_gain: 0
+      feedforward_gain: 1
 
     l_elbow_flex_joint:
       p: 10
       i: 15
       d: 0
       i_clamp: 10
-      feedforward_gain: 0
+      feedforward_gain: 1
 
     l_wrist_flex_joint:
       p: 15
       i: 100
       d: 0
       i_clamp: 10
-      feedforward_gain: 0
+      feedforward_gain: 1
 
     l_wrist_roll_joint:
       p: 10
       i: 100
       d: 0
       i_clamp: 10
-      feedforward_gain: 0
+      feedforward_gain: 1
 
 manipulation_joint_controller:
   type: pr2_joint_position_controllers/ManipulationJointController

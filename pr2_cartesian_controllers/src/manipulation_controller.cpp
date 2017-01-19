@@ -295,7 +295,7 @@ namespace cartesian_controllers {
     // estimated spring deflection is given by the torque over the spring constant. TODO: apply kalman
     spring_deflection = -torque[1]/k_spring_ + initial_angle_offset_; // offset w.r.t 0 angle in the end-effector axis TODO: Fix this
     feedback_.spring_angle = spring_deflection;
-    end_effector_angle = std::acos(surface_tangent.dot(grasp_point_pose_.matrix().block<3,1>(0,0)));
+    end_effector_angle = std::acos(surface_tangent.dot(-grasp_point_pose_.matrix().block<3,1>(0,0)));
     feedback_.eef_angle = end_effector_angle;
     estimated_orientation_ = end_effector_angle - spring_deflection;
     r_dir = -(std::cos(estimated_orientation_)*surface_tangent + std::sin(estimated_orientation_)*surface_normal); // vector pointing from the grasping to the contact points

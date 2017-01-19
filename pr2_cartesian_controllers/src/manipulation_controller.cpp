@@ -380,13 +380,13 @@ namespace cartesian_controllers {
     theta_c = estimated_orientation_;
     torque_c = measured_wrench_.block<3,1>(3,0)[1];
 
-    if (!estimate_length_)
+    if (!estimate_length_) // TODO: Make proper
     {
-      force_c = torque_c/hardcoded_length_;
+      force_c = -torque_c/hardcoded_length_;
     }
     else
     {
-      force_c = torque_c/estimated_length_;
+      force_c = -torque_c/estimated_length_;
     }
 
     errors <<  x_d_      -     x_c,

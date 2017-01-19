@@ -21,7 +21,7 @@ private:
 
   // Controller values
   double k_spring_, estimated_length_, estimated_orientation_, hardcoded_length_, initial_angle_offset_;
-  Eigen::Affine3d surface_frame_, goal_pose_, grasp_point_pose_, end_effector_pose_;
+  Eigen::Affine3d surface_frame_, grasp_point_pose_, end_effector_pose_;
   Eigen::Matrix3d control_gains_;
   Eigen::Vector3d estimated_r_;
   geometry_msgs::Vector3Stamped rot_gains_;
@@ -33,6 +33,7 @@ private:
   std::string grasp_point_frame_name_;
   bool finished_acquiring_goal_;
   double wait_for_tf_time_;
+  double x_d_, theta_d_, f_d_;
 
   // Debug parameters
   bool debug_twist_, use_debug_eef_to_grasp_, surface_rotation_axis_;

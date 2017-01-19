@@ -1,11 +1,12 @@
 # Goal: triggers the controller.
 geometry_msgs/PoseStamped surface_frame
-geometry_msgs/PoseStamped goal_pose
+float64 x_d # defined along the surface frame x axis
+float64 theta_d # defined around the surface frame y axis
+float64 desired_contact_force
 
 bool is_debug
 bool use_debug_eef_to_grasp
 bool use_surface_rotation_axis
-float64 desired_contact_force
 geometry_msgs/Vector3 debug_eef_to_grasp
 geometry_msgs/Twist debug_twist
 ---

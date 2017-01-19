@@ -204,6 +204,24 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("experiment/goal_theta", goal_theta_))
+  {
+    ROS_ERROR("Need to set goal_theta (experiment/goal_theta)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/goal_x", goal_x_))
+  {
+    ROS_ERROR("Need to set goal_x (experiment/goal_x)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/goal_force", goal_force_))
+  {
+    ROS_ERROR("Need to set goal_force (experiment/goal_force)");
+    return false;
+  }
+
   std::vector<std::string> exclusion_list;
   if (nh_.getParam("initialization/exclude_controller_names", exclusion_list))
   {
@@ -407,28 +425,12 @@ void ManipulationClient::runExperiment()
 
         surface_pose_eigen = surface_pose_eigen*Eigen::AngleAxisd(0.5, rotation_axis);
 
-        manipulation_goal.goal_pose = surface_frame_pose_;
-        tf::poseEigenToMsg(surface_pose_eigen, manipulation_goal.goal_pose.pose);
-
+        manipulation_goal.x_d = goal_x_;
+        manipulation_goal.theta_d = goal_theta_;
+        manipulation_goal.desired_contact_force = goal_force_;
         manipulation_goal.is_debug = false;
         manipulation_goal.use_debug_eef_to_grasp = false;
         manipulation_goal.use_surface_rotation_axis = true;
-        manipulation_goal.desired_contact_force = 2;
-        manipulation_goal.goal_pose.header.stamp = ros::Time(0);
-        manipulation_goal.goal_pose.pose.position.x += 0.45;
-
-        try
-        {
-          listener_.transformPose(base_link_name_, manipulation_goal.goal_pose, manipulation_goal.goal_pose);
-        }
-        catch(tf::TransformException &e)
-        {
-          ROS_ERROR("Error transforming the goal pose into the base frame: %s", e.what());
-          action_server_->setAborted();
-          continue;
-        }
-
-        manipulation_goal.goal_pose.header.stamp = ros::Time(0);
 
         if (!monitorActionGoal<pr2_cartesian_controllers::ManipulationControllerAction,
                               pr2_cartesian_controllers::ManipulationControllerGoal,

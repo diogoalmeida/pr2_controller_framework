@@ -61,6 +61,7 @@ namespace manipulation{
     // Experimental setup
     std::vector<double> initial_pose_offset_;
     double initial_approach_angle_, approach_velocity_, approach_force_;
+    double goal_x_, goal_theta_, goal_force_;
     geometry_msgs::PoseStamped surface_frame_pose_;
     std::string base_link_name_, tool_frame_name_;
     std::string gravity_compensation_service_name_;

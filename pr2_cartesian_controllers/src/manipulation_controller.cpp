@@ -18,7 +18,6 @@ namespace cartesian_controllers {
 
     - rot_gains_ in the base frame
     - surface_frame_ in the base frame
-    - goal_pose_ in the base frame
     - end_effector_to_grasp_point_ in the end effector link frame
   */
   void ManipulationController::goalCB()
@@ -47,7 +46,9 @@ namespace cartesian_controllers {
       surface_rotation_axis_ = true;
     }
 
-    force_d_ = goal->desired_contact_force;
+    f_d_ = goal->desired_contact_force;
+    x_d_ = goal->x_d;
+    theta_d_ = goal->theta_d;
 
     if (!loadParams())
     {
@@ -65,11 +66,6 @@ namespace cartesian_controllers {
       pose_in.header.stamp = ros::Time(0);
       listener_.transformPose(base_link_, pose_in, pose_out);
       tf::poseMsgToEigen(pose_out.pose, surface_frame_);
-
-      // get the goal pose
-      pose_in = goal->goal_pose;
-      listener_.transformPose(base_link_, pose_in, pose_out);
-      tf::poseMsgToEigen(pose_out.pose, goal_pose_);
 
       tf::vectorMsgToEigen(goal->debug_eef_to_grasp, debug_eef_to_grasp_eig_);
       debug_x_ = goal->debug_twist.linear.x;
@@ -110,8 +106,8 @@ namespace cartesian_controllers {
     visualization_msgs::Marker object_pose, desired_pose, eef_to_grasp_marker;
     std_msgs::ColorRGBA object_color;
     geometry_msgs::Pose grasp_pose_geo;
-    Eigen::Vector3d r_1, goal_r;
     tf::Transform transform;
+    Eigen::Vector3d r_1, r_d, x_d_eigen;
 
     object_color.r = 1;
     object_color.g = 0;
@@ -138,6 +134,9 @@ namespace cartesian_controllers {
     eef_to_grasp_marker.scale.y = 0.01;
     eef_to_grasp_marker.scale.z = 0.01;
 
+    x_d_eigen = surface_frame_.translation() + x_d_*surface_frame_.rotation().block<3,1>(0,0);
+    r_d = cos(theta_d_)*surface_frame_.rotation().block<3,1>(0,0) + sin(theta_d_)*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
+
     try
     {
       while(ros::ok())
@@ -147,7 +146,7 @@ namespace cartesian_controllers {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           r_1 = estimated_r_;
 
-          getMarkerPoints(goal_pose_.translation(), goal_pose_.translation() + hardcoded_length_*goal_pose_.rotation().block<3,1>(0,0), desired_pose);
+          getMarkerPoints(x_d_eigen, x_d_eigen + hardcoded_length_*r_d, desired_pose);
           getMarkerPoints(grasp_point_pose_.translation(), grasp_point_pose_.translation() + r_1, object_pose);
 
           object_pose.header.stamp = ros::Time::now();
@@ -323,7 +322,7 @@ namespace cartesian_controllers {
     KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
     KDL::Twist input_twist, twist_error;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef;
-    double x_e, y_e, theta_e, x_d, y_d, theta_d, torque_c, force_c, x_c, theta_c;
+    double torque_c, force_c, x_c, theta_c;
     Eigen::Matrix3d inv_g, skew;
     Eigen::Matrix<double, 6, 1> twist_eig;
 
@@ -377,21 +376,14 @@ namespace cartesian_controllers {
       inv_g = computeInvG(estimated_length_, estimated_orientation_);
     }
 
-    Eigen::Vector3d goal_r = goal_pose_.matrix().block<3,1>(0,3) - origin; // vector from the surface frame (origin) to the goal pose (along the surface tangent)
-
-    // x_d = goal_r.dot(surface_tangent);
-    // theta_d = std::acos(surface_tangent.dot(goal_r));
-    theta_d = 0.5; // TODO: Fix
-    x_d = 0.35;
-
     x_c = (grasp_point_pose_.translation() + estimated_r_ - origin).dot(surface_tangent);
     theta_c = estimated_orientation_;
     torque_c = measured_wrench_.block<3,1>(3,0)[1];
     force_c = measured_wrench_.block<3,1>(0,0).dot(surface_normal); // TODO: Fix this
 
-    errors <<  x_d      -     x_c,
-               theta_d  - theta_c,
-               force_d_ - force_c;
+    errors <<  x_d_      -     x_c,
+               theta_d_  - theta_c,
+               f_d_ - force_c;
 
     if (debug_twist_)
     {
@@ -403,9 +395,9 @@ namespace cartesian_controllers {
     }
 
     feedback_.x_c = x_c;
-    feedback_.x_d = x_d;
+    feedback_.x_d = x_d_;
     feedback_.theta_c = theta_c;
-    feedback_.theta_d = theta_d;
+    feedback_.theta_d = theta_d_;
     feedback_.f_c = force_c;
     feedback_.torque_c = torque_c;
     feedback_.f_e.x = measured_wrench_[0];

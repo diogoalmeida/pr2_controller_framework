@@ -379,10 +379,11 @@ namespace cartesian_controllers {
 
     Eigen::Vector3d goal_r = goal_pose_.matrix().block<3,1>(0,3) - origin; // vector from the surface frame (origin) to the goal pose (along the surface tangent)
 
-    x_d = goal_r.dot(surface_tangent);
-    theta_d = std::acos(surface_tangent.dot(goal_r));
+    // x_d = goal_r.dot(surface_tangent);
+    // theta_d = std::acos(surface_tangent.dot(goal_r));
+    theta_d = 0.5; // TODO: Fix
 
-    x_c = (grasp_point_pose_.matrix().block<3,1>(0,3) + estimated_r_).dot(surface_tangent);
+    x_c = (grasp_point_pose_.translation() + estimated_r_ - origin).dot(surface_tangent);
     theta_c = estimated_orientation_;
     torque_c = measured_wrench_.block<3,1>(3,0)[1];
     force_c = measured_wrench_.block<3,1>(0,0).dot(surface_normal); // TODO: Fix this
@@ -401,7 +402,9 @@ namespace cartesian_controllers {
     }
 
     feedback_.x_c = x_c;
+    feedback_.x_d = x_d;
     feedback_.theta_c = theta_c;
+    feedback_.theta_d = theta_d;
     feedback_.f_c = force_c;
     feedback_.torque_c = torque_c;
     feedback_.f_e.x = measured_wrench_[0];
@@ -416,6 +419,9 @@ namespace cartesian_controllers {
     feedback_.commanded_x = commands[0];
     feedback_.commanded_y = commands[1];
     feedback_.commanded_rot = commands[2];
+    feedback_.rot_gains.x = rot_gains_.vector.x;
+    feedback_.rot_gains.y = rot_gains_.vector.y;
+    feedback_.rot_gains.z = rot_gains_.vector.z;
 
     velocity_command = commands[0]*surface_tangent + commands[1]*surface_normal;
     skew = computeSkewSymmetric(commands[2]*rotation_axis);
@@ -436,9 +442,11 @@ namespace cartesian_controllers {
 
     twist_error = KDL::diff(end_effector_kdl, initial_pose_); // to maintain the movement on the initial planar direction TODO: Implement this properly
 
-    input_twist(3) += rot_gains_.vector.x*twist_error(3);
+    // input_twist(3) += rot_gains_.vector.x*twist_error(3); // TODO: I have an issue with rotating around the world frame x
     input_twist(4) += rot_gains_.vector.y*twist_error(4);
     input_twist(5) += rot_gains_.vector.z*twist_error(5);
+
+    tf::twistKDLToMsg(input_twist, feedback_.corrected_twist);
 
     ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
     control_output = current_state;

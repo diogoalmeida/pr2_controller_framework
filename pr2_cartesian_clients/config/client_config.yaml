@@ -2,8 +2,8 @@ vision:
   surface_frame_name: id_0
 
 initialization:
-  initial_pose_offset: [0.4, 0.0, 0.3] # w.r.t the surface_frame_name
-  initial_approach_angle: 2.15 # in radians
+  initial_pose_offset: [0.5, 0.0, 0.3] # w.r.t the surface_frame_name
+  initial_approach_angle: 2.0 # in radians
   actionlib_server_names:
     manipulation_action_name: /realtime_loop/dexterous_manipulation
     approach_action_name: /realtime_loop/approach_controller

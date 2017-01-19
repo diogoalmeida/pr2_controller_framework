@@ -13,7 +13,9 @@ geometry_msgs/Twist debug_twist
 ---
 # Feedback: information that may be used to debug the controller
 float64 x_c
+float64 x_d
 float64 theta_c
+float64 theta_d
 float64 f_c
 float64 torque_c
 float64 error_x
@@ -26,4 +28,6 @@ float64 commanded_y
 float64 commanded_rot
 geometry_msgs/Point f_e
 geometry_msgs/Point tau_e
+geometry_msgs/Point rot_gains
 geometry_msgs/Twist commanded_twist
+geometry_msgs/Twist corrected_twist

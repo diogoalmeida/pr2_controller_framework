@@ -64,7 +64,10 @@ protected:
   KDL::Tree tree_;
   urdf::Model model_;
   std::string end_effector_link_, base_link_, ft_topic_name_, ft_frame_id_;
-  double eps_; // weighted damped least squares epsilon
+  double eps_; // ikSolverVel epsilon
+  double alpha_; // ikSolverVel alpha
+  int maxiter_; // ikSolverVel maxiter
+  double nso_weights_;
   double feedback_hz_;
   bool has_state_;
   sensor_msgs::JointState last_state_;
@@ -138,7 +141,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
     }
     else
     {
-      weights(i) = 0.1;
+      weights(i) = nso_weights_;
     }
 
     ROS_INFO("Weight: %.2f\n\n", weights(i));
@@ -148,7 +151,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
   // ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
   // ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, eps_);
-  ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, optimal_values, weights, eps_);
+  ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, optimal_values, weights, eps_, maxiter_, alpha_);
   ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
   has_state_ = false;
 
@@ -296,9 +299,27 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
     return false;
   }
 
-  if (!nh_.getParam("/common/wdls_epsilon", eps_))
+  if (!nh_.getParam("/common/solver/epsilon", eps_))
   {
-    ROS_ERROR("Missing wdls epsilon (/common/wdls_epsilon)");
+    ROS_ERROR("Missing solver epsilon (/common/solver/epsilon)");
+    return false;
+  }
+
+  if (!nh_.getParam("/common/solver/alpha", alpha_))
+  {
+    ROS_ERROR("Missing solver alpha (/common/solver/alpha)");
+    return false;
+  }
+
+  if (!nh_.getParam("/common/solver/maxiter", maxiter_))
+  {
+    ROS_ERROR("Missing solver maxiter (/common/solver/maxiter)");
+    return false;
+  }
+
+  if (!nh_.getParam("/common/solver/nso_weights", nso_weights_))
+  {
+    ROS_ERROR("Missing solver nso_weights (/common/solver/nso_weights)");
     return false;
   }
 

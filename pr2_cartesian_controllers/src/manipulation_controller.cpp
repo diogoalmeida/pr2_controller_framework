@@ -382,6 +382,7 @@ namespace cartesian_controllers {
     // x_d = goal_r.dot(surface_tangent);
     // theta_d = std::acos(surface_tangent.dot(goal_r));
     theta_d = 0.5; // TODO: Fix
+    x_d = 0.45;
 
     x_c = (grasp_point_pose_.translation() + estimated_r_ - origin).dot(surface_tangent);
     theta_c = estimated_orientation_;

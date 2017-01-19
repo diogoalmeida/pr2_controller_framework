@@ -14,7 +14,7 @@ manipulation_controller:
   action_server_name: dexterous_manipulation
   spring_constant: 0.3
   gains:
-    k_1: 0.01
+    k_1: 0.1
     k_2: 0.2
     k_3: 0.1
   rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME

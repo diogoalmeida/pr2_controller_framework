@@ -30,3 +30,6 @@ experiment:
   sim_mode: false
   approach_velocity: -0.03
   approach_force: 1.5
+  goal_theta: 0.5
+  goal_x: 0.3
+  goal_force: 1

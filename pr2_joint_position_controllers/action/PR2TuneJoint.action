@@ -5,6 +5,7 @@ float64 target_velocity
 float64 max_time
 pr2_joint_position_controllers/PIDGains gains_position
 pr2_joint_position_controllers/PIDGains gains_velocity
+float64 velocity_ff
 ---
 # Result:
 float64 time_elapsed

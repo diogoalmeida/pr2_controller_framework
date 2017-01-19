@@ -30,6 +30,7 @@ private:
   ros::Duration max_time_;
   double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, ros::Duration dt); // applies the nested control strategy
   double modified_velocity_reference_;
+  double ff_;
 
   // Reference mutex for preventing updating the reference halfway through a control cycle
   boost::mutex reference_mutex_;

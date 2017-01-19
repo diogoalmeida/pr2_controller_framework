@@ -75,6 +75,7 @@ void TuneJointController::goalCallback()
     position_joint_controller_->initPid(goal->gains_position.p, goal->gains_position.i, goal->gains_position.d, goal->gains_position.i_clamp, -goal->gains_position.i_clamp);
     velocity_joint_controller_ = new control_toolbox::Pid();
     velocity_joint_controller_->initPid(goal->gains_velocity.p, goal->gains_velocity.i, goal->gains_velocity.d, goal->gains_velocity.i_clamp, -goal->gains_velocity.i_clamp);
+    ff_ = goal->velocity_ff;
     ROS_INFO("%s action server started!", action_name_.c_str());
   }
 }
@@ -170,7 +171,7 @@ double TuneJointController::applyControlLoop(const pr2_mechanism_model::JointSta
   velocity_error = desired_velocity + position_feedback - current_velocity;
   modified_velocity_reference_ = desired_velocity + position_feedback;
 
-  return velocity_joint_controller_->computeCommand(velocity_error, dt);
+  return velocity_joint_controller_->computeCommand(velocity_error, dt) + ff_*desired_velocity;
 }
 
 /*

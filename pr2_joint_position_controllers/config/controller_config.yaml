@@ -142,28 +142,28 @@ common:
       i: 10
       d: 0
       i_clamp: 2
-      feedforward_gain: 10
+      feedforward_gain: 30
 
     l_shoulder_pan_joint:
       p: 20
       i: 3
       d: 0
       i_clamp: 1
-      feedforward_gain: 10
+      feedforward_gain: 20
 
     l_shoulder_lift_joint:
       p: 15
       i: 15
       d: 0
       i_clamp: 7.5
-      feedforward_gain: 10
+      feedforward_gain: 20
 
     l_forearm_roll_joint:
       p: 20
       i: 100
       d: 0
       i_clamp: 10
-      feedforward_gain: 1
+      feedforward_gain: 20
 
     l_elbow_flex_joint:
       p: 10

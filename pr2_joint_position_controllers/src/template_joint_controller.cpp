@@ -221,7 +221,7 @@ bool TemplateJointController::allocateVariables()
   {
     if(!n_.hasParam("/common/position_loop_gains/" + joint_names_[i]))
     {
-      ROS_ERROR("Joint controller expects velocity loop gains for joint %s (/common/position_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
+      ROS_ERROR("Joint controller expects position loop gains for joint %s (/common/position_loop_gains/%s)", joint_names_[i].c_str(), joint_names_[i].c_str());
       return false;
     }
 
@@ -240,6 +240,7 @@ bool TemplateJointController::allocateVariables()
     position_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/position_loop_gains/" + joint_names_[i]));
   }
 
+  double ff_gain;
   for(int i = 0; i < joint_names_.size(); i++) // initialize the velocity joint controllers. Expecting one set of PID gains per actuated joint
   {
     if(!n_.hasParam("/common/velocity_loop_gains/" + joint_names_[i])) // I'm trusting the user to actually set the gains on this namespace... otherwise, it will use the dynamic reconfig defaults
@@ -248,9 +249,16 @@ bool TemplateJointController::allocateVariables()
       return false;
     }
 
+    if(!n_.getParam("/common/position_loop_gains/" + joint_names_[i] + "/feedforward_gain", ff_gain))
+    {
+      ROS_ERROR("Joint controller expects a velocity feedforward gain for joint %s (/common/position_loop_gains/%s/feedforward_gain)", joint_names_[i].c_str(), joint_names_[i].c_str());
+      return false;
+    }
+
     // create a controller instance and give it a unique namespace for setting the controller gains
     velocity_joint_controllers_.push_back(new control_toolbox::Pid());
     time_of_last_cycle_.push_back(robot_->getTime());
+    ff_joint_controllers_[i] = ff_gain;
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/velocity_loop_gains/" + joint_names_[i]));
   }
 
@@ -278,7 +286,7 @@ double TemplateJointController::applyControlLoop(const pr2_mechanism_model::Join
   velocity_error = desired_velocity + position_feedback - current_velocity;
   modified_velocity_references_[controller_num] = desired_velocity + position_feedback;
 
-  return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt);
+  return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt) + ff_joint_controllers_[controller_num]*desired_velocity;
 }
 
 /*

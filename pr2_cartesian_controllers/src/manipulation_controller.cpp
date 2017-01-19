@@ -379,7 +379,15 @@ namespace cartesian_controllers {
     x_c = (grasp_point_pose_.translation() + estimated_r_ - origin).dot(surface_tangent);
     theta_c = estimated_orientation_;
     torque_c = measured_wrench_.block<3,1>(3,0)[1];
-    force_c = measured_wrench_.block<3,1>(0,0).dot(surface_normal); // TODO: Fix this
+
+    if (!estimate_length_)
+    {
+      force_c = torque_c/hardcoded_length_;
+    }
+    else
+    {
+      force_c = torque_c/estimated_length_;
+    }
 
     errors <<  x_d_      -     x_c,
                theta_d_  - theta_c,

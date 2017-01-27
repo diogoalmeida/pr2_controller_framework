@@ -1,6 +1,38 @@
 #include <pr2_cartesian_controllers/manipulation_controller.hpp>
 
 namespace cartesian_controllers {
+
+  ManipulationController::ManipulationController() : ControllerTemplate<pr2_cartesian_controllers::ManipulationControllerAction,
+                                                pr2_cartesian_controllers::ManipulationControllerFeedback,
+                                                pr2_cartesian_controllers::ManipulationControllerResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+
+    has_initial_ = false; // used to set the initial pose for one approach action run
+    startActionlib();
+    target_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_target", 1);
+    current_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_estimated", 1);
+    eef_to_grasp_pub_ = nh_.advertise<visualization_msgs::Marker>("eef_to_grasp_pose", 1);
+    finished_acquiring_goal_ = false;
+    feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
+  }
+
+  ManipulationController::~ManipulationController()
+  {
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+
+    action_server_->shutdown();
+    delete action_server_;
+  }
+
   /*
     Preempt controller.
   */
@@ -24,6 +56,8 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::PoseStamped pose_in, pose_out;
+    Eigen::Vector3d init_x;
+    double x_d, theta_d, f_d;
 
     finished_acquiring_goal_ = false;
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -46,11 +80,25 @@ namespace cartesian_controllers {
       surface_rotation_axis_ = true;
     }
 
-    f_d_ = goal->desired_contact_force;
-    x_d_ = goal->x_d;
-    theta_d_ = goal->theta_d;
+    f_d = goal->desired_contact_force;
+    x_d = goal->x_d;
+    theta_d = goal->theta_d;
+
+    x_d_ << x_d,
+            theta_d,
+            f_d;
 
     if (!loadParams())
+    {
+      action_server_->setAborted();
+    }
+
+    if (!ekf_estimator_.getParams(nh_))
+    {
+      action_server_->setAborted();
+    }
+
+    if (!controller_.getParams(nh_))
     {
       action_server_->setAborted();
     }
@@ -107,7 +155,8 @@ namespace cartesian_controllers {
     std_msgs::ColorRGBA object_color;
     geometry_msgs::Pose grasp_pose_geo;
     tf::Transform transform;
-    Eigen::Vector3d r_1, r_d, x_d_eigen;
+    Eigen::Vector3d r_1, r_d, x_d_eigen, x_c_eigen;
+    double estimated_length;
 
     object_color.r = 1;
     object_color.g = 0;
@@ -141,20 +190,23 @@ namespace cartesian_controllers {
       {
         if (action_server_->isActive())
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          r_1 = estimated_r_;
 
-          x_d_eigen = surface_frame_.translation() + x_d_*surface_frame_.rotation().block<3,1>(0,0);
-          r_d = cos(theta_d_)*surface_frame_.rotation().block<3,1>(0,0) + sin(theta_d_)*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          x_d_eigen = surface_frame_.translation() + x_d_[0]*surface_frame_.rotation().block<3,1>(0,0);
+          x_c_eigen = surface_frame_.translation() + x_hat_[0]*surface_frame_.rotation().block<3,1>(0,0);
+          r_d = cos(x_d_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_d_[1])*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
+          r_1 = cos(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,2);
+          estimated_length = (x_e_[0] - x_hat_[0])/cos(x_hat_[1]);
+
           getMarkerPoints(x_d_eigen, x_d_eigen + hardcoded_length_*r_d, desired_pose);
-          getMarkerPoints(grasp_point_pose_.translation(), grasp_point_pose_.translation() + r_1, object_pose);
+          getMarkerPoints(x_c_eigen, x_c_eigen + estimated_length*r_1, object_pose);
 
           object_pose.header.stamp = ros::Time::now();
 
           tf::poseEigenToMsg(grasp_point_pose_, grasp_pose_geo);
           transform.setOrigin(tf::Vector3(grasp_pose_geo.position.x, grasp_pose_geo.position.y, grasp_pose_geo.position.z));
           transform.setRotation(tf::Quaternion (grasp_pose_geo.orientation.x, grasp_pose_geo.orientation.y, grasp_pose_geo.orientation.z, grasp_pose_geo.orientation.w));
-          broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), base_link_, "computed_grasp_point"));
+          // broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), base_link_, "computed_grasp_point"));
 
           getMarkerPoints(end_effector_pose_.translation(), grasp_point_pose_.translation(), eef_to_grasp_marker);
 
@@ -198,12 +250,6 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/spring_constant", k_spring_))
-    {
-      ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
-      return false;
-    }
-
     if (!nh_.getParam("/manipulation_controller/estimate_length", estimate_length_))
     {
       ROS_ERROR("Missing estimate length (/manipulation_controller/estimate_length)");
@@ -216,35 +262,6 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/initial_angle_offset", initial_angle_offset_))
-    {
-      ROS_ERROR("Missing initial angle offset (/manipulation_controller/initial_angle_offset)");
-      return false;
-    }
-
-    double k_1, k_2, k_3;
-    if (!nh_.getParam("/manipulation_controller/gains/k_1", k_1))
-    {
-      ROS_ERROR("Missing k_1 (/manipulation_controller/gains/k_1)");
-      return false;
-    }
-
-    if (!nh_.getParam("/manipulation_controller/gains/k_2", k_2))
-    {
-      ROS_ERROR("Missing k_2 (/manipulation_controller/gains/k_2)");
-      return false;
-    }
-
-    if (!nh_.getParam("/manipulation_controller/gains/k_3", k_3))
-    {
-      ROS_ERROR("Missing k_3 (/manipulation_controller/gains/k_3)");
-      return false;
-    }
-
-    control_gains_ << k_1, 0  , 0  ,
-                      0  , k_2, 0  ,
-                      0  , 0  , k_3;
-
     std::vector<double> rot_gains;
     if (!nh_.getParam("/manipulation_controller/rotational_gains", rot_gains))
     {
@@ -255,6 +272,18 @@ namespace cartesian_controllers {
     if (!nh_.getParam("/manipulation_controller/wait_for_tf_time", wait_for_tf_time_))
     {
       ROS_ERROR("Missing wait for tf time (/manipulation_controller/wait_for_tf_time)");
+      return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/spring_constant", k_s_))
+    {
+      ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
+      return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/initial_angle_offset", theta_o_))
+    {
+      ROS_ERROR("Missing initial angle offset (/manipulation_controller/initial_angle_offset)");
       return false;
     }
 
@@ -276,53 +305,19 @@ namespace cartesian_controllers {
   }
 
   /*
-    Estimates the pose of the grasped object with respect to the end-effector.
-    Assumes rotation axis, surface tangent and normal in the base frame.
-  */
-  void ManipulationController::estimatePose(const Eigen::Vector3d &rotation_axis, const Eigen::Vector3d &surface_tangent, const Eigen::Vector3d &surface_normal, ros::Duration dt)
-  {
-    Eigen::Vector3d force, torque, r_dir;
-    double spring_deflection, end_effector_angle;
-
-    // Estimate the grasped object pose. Current: direct computation
-    // The force and torque data are assumed to be exerted in the grasping
-    // point
-    force = measured_wrench_.block<3,1>(0,0);
-    torque = measured_wrench_.block<3,1>(3,0);
-
-    // estimated orientation = end_effector_angle in the plane - estimated_spring deflection
-    // end effector rotation axis is the y axis. TODO: parametrize
-    // estimated spring deflection is given by the torque over the spring constant. TODO: apply kalman
-    spring_deflection = -torque[1]/k_spring_ + initial_angle_offset_; // offset w.r.t 0 angle in the end-effector axis TODO: Fix this
-    feedback_.spring_angle = spring_deflection;
-    end_effector_angle = std::acos(surface_tangent.dot(-grasp_point_pose_.matrix().block<3,1>(0,0)));
-    feedback_.eef_angle = end_effector_angle;
-    estimated_orientation_ = end_effector_angle - spring_deflection;
-    r_dir = -(std::cos(estimated_orientation_)*surface_tangent + std::sin(estimated_orientation_)*surface_normal); // vector pointing from the grasping to the contact points
-
-    if (!estimate_length_)
-    {
-      estimated_r_ = hardcoded_length_*r_dir;
-    }
-    else
-    {
-      estimated_length_ = std::abs(torque.norm()/force.norm());
-      estimated_r_ = estimated_length_*r_dir;
-    }
-  }
-
-  /*
     Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
     take more than 1ms to execute.
   */
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::Frame end_effector_kdl, grasp_point_kdl;
+    KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl;
     KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
     KDL::Twist input_twist, twist_error;
-    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, errors, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef;
-    double torque_c, force_c, x_c, theta_c;
+    Eigen::Affine3d surface_frame_to_grasp_eig;
+    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef;
+    Eigen::Vector3d u, e, y, temp, surface_tangent_in_grasp, surface_normal_in_grasp;
+    double torque_e, force_e, x_c, theta_c;
     Eigen::Matrix3d inv_g, skew;
     Eigen::Matrix<double, 6, 1> twist_eig;
 
@@ -340,20 +335,33 @@ namespace cartesian_controllers {
       joint_positions_(i) = current_state.position[i];
     }
 
-    if (!has_initial_)
-    {
-      fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
-      has_initial_ = true;
-    }
-
     fkpos_->JntToCart(joint_positions_, end_effector_kdl);
     grasp_point_kdl = end_effector_kdl*end_effector_to_grasp_point_;
+    tf::transformEigenToKDL(surface_frame_, surface_frame_kdl);
+    surface_frame_to_grasp = grasp_point_kdl.Inverse()*surface_frame_kdl;
+    tf::transformKDLToEigen(surface_frame_to_grasp, surface_frame_to_grasp_eig);
     tf::transformKDLToEigen(end_effector_kdl, end_effector_pose_); // base_link
     tf::transformKDLToEigen(grasp_point_kdl, grasp_point_pose_); // base_link
 
     surface_normal = surface_frame_.matrix().block<3,1>(0,2); // base_link
     surface_tangent = surface_frame_.matrix().block<3,1>(0,0); // base_link
+    surface_normal_in_grasp = surface_frame_to_grasp_eig.matrix().block<3,1>(0,2);
+    surface_tangent_in_grasp = surface_frame_to_grasp_eig.matrix().block<3,1>(0,0);
     origin = surface_frame_.matrix().block<3,1>(0,3); // base_link
+
+    x_e_ << (grasp_point_pose_.translation() - origin).dot(surface_tangent),
+           (grasp_point_pose_.translation() - origin).dot(surface_normal),
+           std::acos(surface_tangent.dot(-grasp_point_pose_.matrix().block<3,1>(0,0)));
+
+    if (!has_initial_)
+    {
+      fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
+      x_hat_[0] = x_e_[0] - 0.1; // initial x_c estimate, made different from x_e_ to avoid dx = 0
+      x_hat_[1] = 0.5; // To avoid sin(theta) = 0 or cos(theta) = 0;
+      x_hat_[2] = 0.5;
+      ekf_estimator_.initialize(x_hat_);
+      has_initial_ = true;
+    }
 
     if (surface_rotation_axis_)
     {
@@ -364,34 +372,13 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    estimatePose(rotation_axis, surface_tangent, surface_normal, dt);
-
-    // Compute the cartesian twist to command the end-effector. Current: straightly compensate for the kinematics
-    if (!estimate_length_)
-    {
-      inv_g = computeInvG(hardcoded_length_, estimated_orientation_);
-    }
-    else
-    {
-      inv_g = computeInvG(estimated_length_, estimated_orientation_);
-    }
-
-    x_c = (grasp_point_pose_.translation() + estimated_r_ - origin).dot(surface_tangent);
-    theta_c = estimated_orientation_;
-    torque_c = measured_wrench_.block<3,1>(3,0)[1];
-
-    if (!estimate_length_) // TODO: Make proper
-    {
-      force_c = -torque_c/hardcoded_length_;
-    }
-    else
-    {
-      force_c = -torque_c/estimated_length_;
-    }
-
-    errors <<  x_d_      -     x_c,
-               theta_d_  - theta_c,
-               f_d_ - force_c;
+    // force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal); // TODO: Check this
+    // torque_e = measured_wrench_.block<3,1>(3,0)[1];
+    // temp << measured_wrench_.block<3,1>(0,0)[0], 0, measured_wrench_.block<3,1>(0,0)[2];
+    // force_e = temp.norm();
+    // torque_e = measured_wrench_.block<3,1>(3,0).norm();
+    torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
+    force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
 
     if (debug_twist_)
     {
@@ -399,24 +386,31 @@ namespace cartesian_controllers {
     }
     else
     {
-      commands = inv_g*control_gains_*errors; // this is the desired twist for the grasping point, in the 2d plane (\dot{x}, \dot{y}, \dot{\theta})
+      commands = controller_.compute(x_d_, x_hat_, x_e_);
     }
 
-    feedback_.x_c = x_c;
-    feedback_.x_d = x_d_;
-    feedback_.theta_c = theta_c;
-    feedback_.theta_d = theta_d_;
-    feedback_.f_c = force_c;
-    feedback_.torque_c = torque_c;
+    // compute the measurements vector
+    y << torque_e/force_e,
+         force_e,
+         x_e_[2] + torque_e/k_s_ - theta_o_;
+
+    x_hat_ = ekf_estimator_.estimate(commands, y, x_e_, dt.toSec());
+
+    feedback_.x_c = x_hat_[0];
+    feedback_.x_d = x_d_[0];
+    feedback_.theta_c = x_hat_[1];
+    feedback_.theta_d = x_d_[1];
+    feedback_.f_c = x_hat_[2];
+    feedback_.torque_c = torque_e;
     feedback_.f_e.x = measured_wrench_[0];
     feedback_.f_e.y = measured_wrench_[1];
     feedback_.f_e.z = measured_wrench_[2];
     feedback_.tau_e.x = measured_wrench_[3];
     feedback_.tau_e.y = measured_wrench_[4];
     feedback_.tau_e.z = measured_wrench_[5];
-    feedback_.error_x = errors[0];
-    feedback_.error_theta = errors[1];
-    feedback_.error_force = errors[2];
+    feedback_.error_x = e[0];
+    feedback_.error_theta = e[1];
+    feedback_.error_force = e[2];
     feedback_.commanded_x = commands[0];
     feedback_.commanded_y = commands[1];
     feedback_.commanded_rot = commands[2];
@@ -459,20 +453,6 @@ namespace cartesian_controllers {
     }
 
     return control_output;
-  }
-
-  /*
-    Computes the inverse of the manipulation model matrix
-  */
-  Eigen::Matrix3d ManipulationController::computeInvG(double length, double angle)
-  {
-    Eigen::Matrix3d ret_val;
-
-    ret_val << 1, -length*std::sin(angle),                0,
-               0,  length*std::cos(angle),                0,
-               0,      -1                ,      length/k_spring_;
-
-    return ret_val;
   }
 
   /*

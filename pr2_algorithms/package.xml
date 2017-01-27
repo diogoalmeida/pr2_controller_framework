@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pr2_algorithms</name>
+  <version>0.0.1</version>
+  <description>
+    Implements algorithms to be used with the pr2_cartesian_controllers package.
+  </description>
+  <maintainer email="diogoa@kth.se">diogo</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>eigen_conversions</depend>
+</package>

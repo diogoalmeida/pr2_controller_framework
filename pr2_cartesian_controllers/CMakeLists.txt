@@ -14,6 +14,7 @@ catkin REQUIRED COMPONENTS
 	kdl_parser
   kdl_conversions
 	message_generation
+  pr2_algorithms
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
@@ -28,7 +29,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs moveit_msgs
+  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs moveit_msgs pr2_algorithms
   INCLUDE_DIRS include
   LIBRARIES manipulation_controller approach_controller move_controller
 )

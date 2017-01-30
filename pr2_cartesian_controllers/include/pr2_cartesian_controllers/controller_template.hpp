@@ -42,6 +42,7 @@ public:
   virtual ~ControllerTemplate()
   {
     delete fkpos_;
+    delete fkvel_;
     delete ikpos_;
     delete ikvel_;
 
@@ -56,10 +57,12 @@ protected:
   // Robot related
   sensor_msgs::JointState robot_state;
   KDL::JntArray joint_positions_;
+  KDL::JntArrayVel joint_velocities_;
   // KDL::ChainIkSolverVel_wdls *ikvel_;
   KDL::ChainIkSolverVel_pinv_nso *ikvel_;
   KDL::ChainIkSolverPos_LMA *ikpos_;
   KDL::ChainFkSolverPos_recursive *fkpos_;
+  KDL::ChainFkSolverVel_recursive *fkvel_;
   KDL::Chain chain_;
   KDL::Tree tree_;
   urdf::Model model_;
@@ -125,6 +128,8 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   getJointLimits(min_limits, max_limits);
   ROS_INFO("Min limits rows: %d, min limits columns: %d", min_limits.rows(), min_limits.columns());
   joint_positions_.resize(chain_.getNrOfJoints());
+  joint_velocities_.q.resize(chain_.getNrOfJoints());
+  joint_velocities_.qdot.resize(chain_.getNrOfJoints());
   optimal_values.resize(chain_.getNrOfJoints());
   weights.resize(chain_.getNrOfJoints());
 
@@ -149,6 +154,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
 
 
   fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
+  fkvel_ = new KDL::ChainFkSolverVel_recursive(chain_);
   // ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
   // ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, eps_);
   ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, optimal_values, weights, eps_, maxiter_, alpha_);

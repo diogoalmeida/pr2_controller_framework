@@ -113,7 +113,7 @@ namespace manipulation_algorithms{
 
     // std::cout << "P: " << P << std::endl << std::endl;
     // std::cout << "K: " << K << std::endl << std::endl;
-    std::cout << "y - h: " << y - h << std::endl << std::endl;
+    // std::cout << "y - h: " << y - h << std::endl << std::endl;
     // std::cout << "x_hat: " << x_hat_ << std::endl << std::endl;
 
     return x_hat_;

@@ -311,7 +311,8 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl, prev_grasp_point_kdl;
+    KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl;
+    KDL::FrameVel end_effector_velocity_kdl, grasp_point_velocity_kdl;
     KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
     KDL::Twist input_twist, twist_error, actual_twist;
     Eigen::Affine3d surface_frame_to_grasp_eig;
@@ -330,12 +331,17 @@ namespace cartesian_controllers {
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    
     for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       joint_positions_(i) = current_state.position[i];
+      joint_velocities_.q(i) = current_state.position[i];
+      joint_velocities_.qdot(i) = current_state.velocity[i];
     }
 
     fkpos_->JntToCart(joint_positions_, end_effector_kdl);
+    fkvel_->JntToCart(joint_velocities_, end_effector_velocity_kdl);
+    grasp_point_velocity_kdl = end_effector_velocity_kdl*end_effector_to_grasp_point_;
     grasp_point_kdl = end_effector_kdl*end_effector_to_grasp_point_;
     tf::transformEigenToKDL(surface_frame_, surface_frame_kdl);
     surface_frame_to_grasp = grasp_point_kdl.Inverse()*surface_frame_kdl;
@@ -361,7 +367,6 @@ namespace cartesian_controllers {
       x_hat_[2] = 0.5;
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
-      prev_grasp_point_kdl = grasp_point_kdl;
     }
 
     if (surface_rotation_axis_)
@@ -395,10 +400,15 @@ namespace cartesian_controllers {
          force_e,
          x_e_[2] + torque_e/k_s_ - theta_o_;
 
-    actual_twist = KDL::diff(grasp_point_kdl, prev_grasp_point_kdl);
+    actual_twist = grasp_point_velocity_kdl.GetTwist();
     tf::twistKDLToEigen(actual_twist, actual_twist_eigen);
+
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
+
+    std::cout << "-----" << std::endl;
+    std::cout << actual_commands << std::endl;
+    std::cout << "-----" << std::endl;
 
     feedback_.x_c = x_hat_[0];
     feedback_.x_d = x_d_[0];
@@ -456,7 +466,6 @@ namespace cartesian_controllers {
       control_output.velocity[i] = commanded_joint_velocities(i);
     }
 
-    prev_grasp_point_kdl = grasp_point_kdl;
     return control_output;
   }
 

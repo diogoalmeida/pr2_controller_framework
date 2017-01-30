@@ -55,7 +55,15 @@ namespace manipulation_algorithms{
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
     e = x_d - x_c;
 
-    return inv_G*Gamma_*e;
+    if (e.norm() > 0.001)
+    {
+      return inv_G*Gamma_*e;
+    }
+    else
+    {
+      ROS_WARN("Success");
+      return Eigen::Vector3d::Zero();
+    }
   }
 
   Eigen::Matrix3d ManipulationAlgorithm::computeInvG(const double x_e, const double x_c, const double theta_c)
@@ -65,10 +73,12 @@ namespace manipulation_algorithms{
 
     d_x = x_e - x_c;
 
-    if (std::abs(1/cos(theta_c)) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
+    if (std::abs(1/(k_s_*cos(theta_c))) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
     {
       ROS_WARN("Manipulation control algorithms numeric limit");
-      inv = Eigen::Matrix3d::Zero();
+      inv << 1, 0               , 0,
+             0, d_x             , 0,
+             0, -1              , 0;
     }
     else
     {

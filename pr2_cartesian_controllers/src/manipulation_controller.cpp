@@ -375,7 +375,7 @@ namespace cartesian_controllers {
     {
       fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
-      x_hat_[1] = x_e[1] + init_theta_offset_;
+      x_hat_[1] = x_e_[1] + init_theta_offset_;
       x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
@@ -413,11 +413,12 @@ namespace cartesian_controllers {
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
 
-    feedback_.x_c = x_hat_[0];
+    feedback_.x_c_hat = x_hat_[0];
     feedback_.x_d = x_d_[0];
-    feedback_.theta_c = x_hat_[1];
+    feedback_.theta_c_hat = x_hat_[1];
     feedback_.theta_d = x_d_[1];
-    feedback_.f_c = x_hat_[2];
+    feedback_.f_c_hat = x_hat_[2];
+    feedback_.f_c = force_e;
     feedback_.torque_c = torque_e;
     feedback_.f_e.x = measured_wrench_[0];
     feedback_.f_e.y = measured_wrench_[1];

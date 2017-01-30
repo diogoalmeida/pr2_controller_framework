@@ -65,7 +65,7 @@ namespace manipulation_algorithms{
     tan_theta = tan(x_hat_[1]);
     cos_theta_square = cos_theta*cos_theta;
     epsilon = std::numeric_limits<double>::epsilon();
-    error_limit = 0.001;
+    error_limit = epsilon;
 
     if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon)
     {

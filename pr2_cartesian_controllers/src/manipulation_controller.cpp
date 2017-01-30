@@ -311,15 +311,15 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl;
+    KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl, prev_grasp_point_kdl;
     KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
-    KDL::Twist input_twist, twist_error;
+    KDL::Twist input_twist, twist_error, actual_twist;
     Eigen::Affine3d surface_frame_to_grasp_eig;
-    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef;
+    Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef, actual_commands;
     Eigen::Vector3d u, e, y, temp, surface_tangent_in_grasp, surface_normal_in_grasp;
     double torque_e, force_e, x_c, theta_c;
     Eigen::Matrix3d inv_g, skew;
-    Eigen::Matrix<double, 6, 1> twist_eig;
+    Eigen::Matrix<double, 6, 1> twist_eig, actual_twist_eigen;
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
@@ -361,6 +361,7 @@ namespace cartesian_controllers {
       x_hat_[2] = 0.5;
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
+      prev_grasp_point_kdl = grasp_point_kdl;
     }
 
     if (surface_rotation_axis_)
@@ -394,7 +395,10 @@ namespace cartesian_controllers {
          force_e,
          x_e_[2] + torque_e/k_s_ - theta_o_;
 
-    x_hat_ = ekf_estimator_.estimate(commands, y, x_e_, dt.toSec());
+    actual_twist = KDL::diff(grasp_point_kdl, prev_grasp_point_kdl)/dt.toSec();
+    tf::twistKDLToEigen(actual_twist, actual_twist_eigen);
+    actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
+    x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
 
     feedback_.x_c = x_hat_[0];
     feedback_.x_d = x_d_[0];

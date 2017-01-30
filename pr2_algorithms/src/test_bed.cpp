@@ -6,18 +6,21 @@
 #include <random>
 
 using namespace manipulation_algorithms;
+const double k_s = 0.18;
+const double L = 0.12;
 
 void getInitialState(Eigen::Vector3d &x_c, Eigen::Vector3d &x_e, double &spring)
 {
-  double L = 0.12;
+  double init_theta = 0.9;
+  double init_force = 0.4;
+  double init_x = 0.1;
 
-  x_e << 0.3, 0.2, 1.2;
-  x_c << x_e[0] - L*cos(0.9), 0.9, 0;
-  spring = x_e[1] - x_c[1];
-  x_c[2] = -0.12*spring/L;
+  x_c << init_x, init_theta, init_force;
+  spring = -init_force*L/k_s;
+  x_e << init_x + L*std::cos(init_theta), L*std::sin(init_theta), spring + init_theta;
 }
 
-Eigen::Matrix3d computeG(const double x_e, const double x_c, const double theta_c, const double k_s)
+Eigen::Matrix3d computeG(const double x_e, const double x_c, const double theta_c)
 {
   Eigen::Matrix3d g;
   double d_x, eps;
@@ -25,15 +28,22 @@ Eigen::Matrix3d computeG(const double x_e, const double x_c, const double theta_
   eps = std::numeric_limits<double>::epsilon();
   d_x = x_e - x_c;
 
-  if (abs(1/cos(theta_c)) < eps || d_x < eps) // prevent 0/0, defined as 0
+  if (std::abs(1/cos(theta_c)) < eps || std::abs(d_x) < eps) // prevent 0/0, defined as 0
   {
-    g = Eigen::Matrix3d::Zero();
+    ROS_WARN("Limit");
+    std::cout << cos(theta_c) << std::endl;
+    std::cout << theta_c << std::endl;
+    std::cout << d_x << std::endl;
+
+    g << 1, 0, 0,
+         0, 0, 0,
+         0, 0, 0;
   }
   else
   {
-    g << 1, tan(theta_c)              , 0                   ,
+    g << 1, std::tan(theta_c)              , 0                   ,
          0, 1/d_x                     , 0                   ,
-         0, k_s*cos(theta_c)/(d_x*d_x), -k_s*cos(theta_c)/d_x;
+         0, k_s*std::cos(theta_c)/(d_x*d_x), -k_s*std::cos(theta_c)/d_x;
   }
 
   return g;
@@ -62,7 +72,6 @@ int main(int argc, char ** argv)
   x_d[0] = 0.02;
   x_d[1] = 0.1;
   x_d[2] = 1; // desired contact force
-  k_s = 0.12;
   force = 0;
   torque = 0;
   getInitialState(x_c, x_e, spring);
@@ -86,21 +95,23 @@ int main(int argc, char ** argv)
 
   while ((ros::Time::now() - init_time).toSec() < max_time)
   {
-    u = control_alg.compute(x_d, x_hat, x_e);
-    G = computeG(x_e[0], x_c[0], x_c[1], k_s);
+    u = control_alg.compute(x_d, x_c, x_e);
+    // u = Eigen::Vector3d::Zero();
+    G = computeG(x_e[0], x_c[0], x_c[1]);
     dt = ros::Time::now() - prev_time;
     x_e = x_e + u*dt.toSec();
     d_xc = G*u;
     x_c = x_c + d_xc*dt.toSec();
-    spring = spring + (u[1] - d_xc[1])*dt.toSec();
+    spring = spring + (u[2] - d_xc[1])*dt.toSec();
     torque = -k_s*spring;
-    force = torque/0.12;
+    force = torque/L;
 
     // ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
 
-    if(std::abs(cos(x_c[1])) > epsilon)
+    if(std::abs(std::cos(x_c[1])) > epsilon)
     {
-      y << torque/force + 0*obs_noise(generator), force + 0*obs_noise(generator), x_e[1] + torque/k_s + 0*obs_noise(generator);
+      // y << torque/force + 0*obs_noise(generator), force + 0*obs_noise(generator), x_e[1] + torque/k_s + 0*obs_noise(generator);
+      y << (x_e[0] - x_c[0])/std::cos(x_c[1]) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator);
     }
     else
     {

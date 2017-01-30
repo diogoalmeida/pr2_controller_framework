@@ -73,7 +73,7 @@ namespace manipulation_algorithms{
 
     d_x = x_e - x_c;
 
-    if (std::abs(1/(k_s_*cos(theta_c))) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
+    if (std::abs(1/(k_s_*std::cos(theta_c))) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
     {
       ROS_WARN("Manipulation control algorithms numeric limit");
       inv << 1, 0               , 0,
@@ -82,9 +82,9 @@ namespace manipulation_algorithms{
     }
     else
     {
-      inv << 1, -d_x*tan(theta_c), 0                     ,
+      inv << 1, -d_x*std::tan(theta_c), 0                     ,
              0, d_x             , 0                      ,
-             0, -1              , -d_x/(k_s_*cos(theta_c));
+             0, -1              , -d_x/(k_s_*std::cos(theta_c));
     }
 
     return inv;

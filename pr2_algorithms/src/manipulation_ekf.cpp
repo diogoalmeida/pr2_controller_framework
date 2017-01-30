@@ -90,6 +90,7 @@ namespace manipulation_algorithms{
 
     // 1 - predict according to the end-effector motion (u)
     x_hat_ = x_hat_ + G*u*dt;
+    A = I + A*dt;
     P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
 
     // 2 - update based on the innovation

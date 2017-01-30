@@ -390,11 +390,6 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    // force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal); // TODO: Check this
-    // torque_e = measured_wrench_.block<3,1>(3,0)[1];
-    // temp << measured_wrench_.block<3,1>(0,0)[0], 0, measured_wrench_.block<3,1>(0,0)[2];
-    // force_e = temp.norm();
-    // torque_e = measured_wrench_.block<3,1>(3,0).norm();
     torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
     force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
 
@@ -417,10 +412,6 @@ namespace cartesian_controllers {
 
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
-
-    std::cout << "-----" << std::endl;
-    std::cout << actual_commands << std::endl;
-    std::cout << "-----" << std::endl;
 
     feedback_.x_c = x_hat_[0];
     feedback_.x_d = x_d_[0];

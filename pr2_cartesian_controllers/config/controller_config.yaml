@@ -28,6 +28,9 @@ manipulation_controller:
     R:
       data: [0.01, 0, 0, 0, 1, 0, 0, 0, 0.01]
 
+    initial_x_offset: -0.02
+    initial_theta_offset: 0
+
 approach_controller:
   action_server_name: approach_controller
   rotational_gains: [5, 5, 5]

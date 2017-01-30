@@ -281,6 +281,18 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/manipulation_controller/estimator/initial_x_offset", init_x_offset_))
+    {
+      ROS_ERROR("Missing initial_x_offset (/manipulation_controller/estimator/initial_x_offset)");
+      return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/estimator/initial_theta_offset", init_theta_offset_))
+    {
+      ROS_ERROR("Missing initial_theta_offset (/manipulation_controller/estimator/initial_theta_offset)");
+      return false;
+    }
+
     if (!nh_.getParam("/manipulation_controller/initial_angle_offset", theta_o_))
     {
       ROS_ERROR("Missing initial angle offset (/manipulation_controller/initial_angle_offset)");
@@ -331,7 +343,7 @@ namespace cartesian_controllers {
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-    
+
     for (int i = 0; i < chain_.getNrOfJoints(); i++)
     {
       joint_positions_(i) = current_state.position[i];
@@ -362,9 +374,9 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
-      x_hat_[0] = x_e_[0] - 0.1; // initial x_c estimate, made different from x_e_ to avoid dx = 0
-      x_hat_[1] = 0.5; // To avoid sin(theta) = 0 or cos(theta) = 0;
-      x_hat_[2] = 0.5;
+      x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
+      x_hat_[1] = x_e[1] + init_theta_offset_;
+      x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
     }

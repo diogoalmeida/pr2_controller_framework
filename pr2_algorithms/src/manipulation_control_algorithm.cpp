@@ -38,6 +38,12 @@ namespace manipulation_algorithms{
               0  , k_2, 0  ,
               0  , 0  , k_3;
 
+    if (!n.getParam("/manipulation_controller/gains/spring_constant", k_s_))
+    {
+      ROS_ERROR("Missing spring_constant (/manipulation_controller/gains/spring_constant)");
+      return false;
+    }
+
     return true;
   }
 
@@ -61,11 +67,12 @@ namespace manipulation_algorithms{
 
     if (std::abs(1/cos(theta_c)) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
     {
+      ROS_WARN("Manipulation control algorithms numeric limit");
       inv = Eigen::Matrix3d::Zero();
     }
     else
     {
-      inv << 1, -d_x*tan(theta_c), 0                      ,
+      inv << 1, -d_x*tan(theta_c), 0                     ,
              0, d_x             , 0                      ,
              0, -1              , -d_x/(k_s_*cos(theta_c));
     }

@@ -52,9 +52,9 @@ namespace manipulation_algorithms{
 
   Eigen::Vector3d ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
-    Eigen::Matrix3d A, C, dP, K, G, I, P, O;
-    Eigen::Vector3d h, one, innovation;
-    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon, error_limit;
+    Eigen::Matrix3d A, C, K, G, I, P, O;
+    Eigen::Vector3d h, innovation;
+    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon;
 
     I = Eigen::Matrix3d::Identity();
     dx = x_e[0] - x_hat_[0];
@@ -65,7 +65,6 @@ namespace manipulation_algorithms{
     tan_theta = tan(x_hat_[1]);
     cos_theta_square = cos_theta*cos_theta;
     epsilon = std::numeric_limits<double>::epsilon();
-    error_limit = epsilon;
 
     if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon)
     {
@@ -81,10 +80,6 @@ namespace manipulation_algorithms{
          0, 0, 1,
          0, 1, 0;
 
-    // dP = A*P_ + P_*A.transpose() + R_ - P_*C.transpose()*Q_.inverse()*C*P_;
-    //
-    // P_ = P_ + dP*dt;
-
     G << 1, tan_theta, 0,
          0, 1/dx, 0,
          0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx;
@@ -93,28 +88,14 @@ namespace manipulation_algorithms{
 
     innovation = y - h;
 
+    // 1 - predict according to the end-effector motion (u)
     x_hat_ = x_hat_ + G*u*dt;
-
     P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
 
+    // 2 - update based on the innovation
     K = P_.selfadjointView<Eigen::Upper>()*C.transpose()*(C*P_.selfadjointView<Eigen::Upper>()*C.transpose() + Q_).inverse();
-
-    for (int i = 0; i < 3; i++)
-    {
-      if (std::abs(innovation[i]) < error_limit)
-      {
-        K.block<1,3>(i,0) << 0, 0, 0;
-      }
-    }
-
     x_hat_ = x_hat_ + K*innovation;
-
     P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
-
-    // std::cout << "P: " << P << std::endl << std::endl;
-    // std::cout << "K: " << K << std::endl << std::endl;
-    // std::cout << "y - h: " << y - h << std::endl << std::endl;
-    // std::cout << "x_hat: " << x_hat_ << std::endl << std::endl;
 
     return x_hat_;
   }

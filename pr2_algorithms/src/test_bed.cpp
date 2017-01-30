@@ -52,7 +52,7 @@ int main(int argc, char ** argv)
   double k_s, max_time, epsilon, spring, force, torque;
   ros::Time init_time, prev_time;
   ros::Duration dt;
-  ros::Rate r(1000);
+  ros::Rate r(100);
   std::default_random_engine generator;
   std::normal_distribution<double> obs_noise(0.0, 0.01);
 
@@ -96,7 +96,7 @@ int main(int argc, char ** argv)
     torque = -k_s*spring;
     force = torque/0.12;
 
-    ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
+    // ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
 
     if(std::abs(cos(x_c[1])) > epsilon)
     {

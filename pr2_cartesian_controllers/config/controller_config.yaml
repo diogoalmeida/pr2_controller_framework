@@ -24,7 +24,7 @@ manipulation_controller:
   wait_for_tf_time: 1
   estimator:
     Q:
-      data: [100, 0, 0, 0, 1, 0, 0, 0, 100]
+      data: [100, 0, 0, 0, 0.1, 0, 0, 0, 100]
     R:
       data: [0.01, 0, 0, 0, 1, 0, 0, 0, 0.01]
 

@@ -7,12 +7,14 @@
 
 using namespace manipulation_algorithms;
 
-void getInitialState(Eigen::Vector3d &x_c, Eigen::Vector3d &x_e)
+void getInitialState(Eigen::Vector3d &x_c, Eigen::Vector3d &x_e, double &spring)
 {
   double L = 0.12;
 
   x_e << 0.3, 0.2, 1.2;
-  x_c << x_e[0] - L*cos(0.9), 0.9, 5;
+  x_c << x_e[0] - L*cos(0.9), 0.9, 0;
+  spring = x_e[1] - x_c[1];
+  x_c[2] = -0.12*spring/L;
 }
 
 Eigen::Matrix3d computeG(const double x_e, const double x_c, const double theta_c, const double k_s)
@@ -47,13 +49,12 @@ int main(int argc, char ** argv)
   Eigen::Vector3d x_c, d_xc, x_e, u, x_d, x_hat, y;
   pr2_algorithms::TestBedFeedback feedback_msg;
   Eigen::Matrix3d G;
-  double k_s, max_time, epsilon;
+  double k_s, max_time, epsilon, spring, force, torque;
   ros::Time init_time, prev_time;
   ros::Duration dt;
   ros::Rate r(1000);
   std::default_random_engine generator;
   std::normal_distribution<double> obs_noise(0.0, 0.01);
-
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedFeedback>("/test_bed/feedback", 1);
 
@@ -62,8 +63,10 @@ int main(int argc, char ** argv)
   x_d[1] = 0.1;
   x_d[2] = 1; // desired contact force
   k_s = 0.12;
-  getInitialState(x_c, x_e);
-  x_hat << x_c[0] + 0.2, x_c[1] + 0.2, 4.7;
+  force = 0;
+  torque = 0;
+  getInitialState(x_c, x_e, spring);
+  x_hat << x_c[0] + 0.2, x_c[1] + 0.2, x_c[2] + 0.3;
   estimator_alg.getParams(n);
   control_alg.getParams(n);
   estimator_alg.initialize(x_hat);
@@ -89,14 +92,19 @@ int main(int argc, char ** argv)
     x_e = x_e + u*dt.toSec();
     d_xc = G*u;
     x_c = x_c + d_xc*dt.toSec();
+    spring = spring + (u[1] - d_xc[1])*dt.toSec();
+    torque = -k_s*spring;
+    force = torque/0.12;
+
+    ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
 
     if(std::abs(cos(x_c[1])) > epsilon)
     {
-      y << (x_e[0] - x_c[0])/cos(x_c[1]) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator);
+      y << torque/force + 0*obs_noise(generator), force + 0*obs_noise(generator), x_e[1] + torque/k_s + 0*obs_noise(generator);
     }
     else
     {
-      y << 0, x_c[2], x_c[1];
+      y << 0, force, x_c[1];
     }
 
     x_hat = estimator_alg.estimate(u, y, x_e, dt.toSec());

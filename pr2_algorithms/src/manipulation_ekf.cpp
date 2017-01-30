@@ -52,9 +52,9 @@ namespace manipulation_algorithms{
 
   Eigen::Vector3d ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
-    Eigen::Matrix3d A, C, dP, K, G, I, P;
-    Eigen::Vector3d h, one;
-    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon;
+    Eigen::Matrix3d A, C, dP, K, G, I, P, O;
+    Eigen::Vector3d h, one, innovation;
+    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon, error_limit;
 
     I = Eigen::Matrix3d::Identity();
     dx = x_e[0] - x_hat_[0];
@@ -65,6 +65,7 @@ namespace manipulation_algorithms{
     tan_theta = tan(x_hat_[1]);
     cos_theta_square = cos_theta*cos_theta;
     epsilon = std::numeric_limits<double>::epsilon();
+    error_limit = 0.001;
 
     if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon)
     {
@@ -90,15 +91,25 @@ namespace manipulation_algorithms{
 
     h << dx/cos_theta, x_hat_[2], x_hat_[1];
 
+    innovation = y - h;
+
+    x_hat_ = x_hat_ + G*u*dt;
+
     P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
 
     K = P_.selfadjointView<Eigen::Upper>()*C.transpose()*(C*P_.selfadjointView<Eigen::Upper>()*C.transpose() + Q_).inverse();
 
-    x_hat_ = x_hat_ + G*u*dt;
-    x_hat_ = x_hat_ + K*(y - h)*dt;
+    for (int i = 0; i < 3; i++)
+    {
+      if (std::abs(innovation[i]) < error_limit)
+      {
+        K.block<1,3>(i,0) << 0, 0, 0;
+      }
+    }
+
+    x_hat_ = x_hat_ + K*innovation;
 
     P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
-    P = I*P_.selfadjointView<Eigen::Upper>();
 
     // std::cout << "P: " << P << std::endl << std::endl;
     // std::cout << "K: " << K << std::endl << std::endl;

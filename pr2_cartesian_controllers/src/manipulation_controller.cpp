@@ -395,7 +395,7 @@ namespace cartesian_controllers {
          force_e,
          x_e_[2] + torque_e/k_s_ - theta_o_;
 
-    actual_twist = KDL::diff(grasp_point_kdl, prev_grasp_point_kdl)/dt.toSec();
+    actual_twist = KDL::diff(grasp_point_kdl, prev_grasp_point_kdl);
     tf::twistKDLToEigen(actual_twist, actual_twist_eigen);
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());

@@ -456,6 +456,7 @@ namespace cartesian_controllers {
       control_output.velocity[i] = commanded_joint_velocities(i);
     }
 
+    prev_grasp_point_kdl = grasp_point_kdl;
     return control_output;
   }
 

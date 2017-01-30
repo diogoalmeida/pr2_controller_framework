@@ -38,9 +38,9 @@ namespace manipulation_algorithms{
               0  , k_2, 0  ,
               0  , 0  , k_3;
 
-    if (!n.getParam("/manipulation_controller/gains/spring_constant", k_s_))
+    if (!n.getParam("/manipulation_controller/spring_constant", k_s_))
     {
-      ROS_ERROR("Missing spring_constant (/manipulation_controller/gains/spring_constant)");
+      ROS_ERROR("Missing spring_constant (/manipulation_controller/spring_constant)");
       return false;
     }
 

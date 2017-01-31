@@ -5,6 +5,7 @@
 #include <rosbag/recorder.h>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 namespace pr2_cartesian_clients{
   /**
@@ -58,6 +59,7 @@ namespace pr2_cartesian_clients{
 
   private:
     rosbag::RecorderOptions options_;
+    rosbag::Recorder *recorder_;
     std::thread record_thread_;
     std::mutex record_mutex_;
     bool is_recording_;

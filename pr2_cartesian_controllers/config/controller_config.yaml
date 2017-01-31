@@ -15,7 +15,7 @@ manipulation_controller:
   spring_constant: 0.18
   gains:
     k_1: 0.5
-    k_2: 0.1
+    k_2: 0.15
     k_3: 0.5
   rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
   estimate_length: false

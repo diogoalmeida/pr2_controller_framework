@@ -67,7 +67,6 @@ namespace manipulation{
     int num_of_experiments_;
     bool use_vision_, sim_mode_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
-    pr2_cartesian_clients::DataLogger data_logger_;
   };
   }
 #endif

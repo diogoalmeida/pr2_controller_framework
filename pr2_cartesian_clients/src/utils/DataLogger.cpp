@@ -6,7 +6,9 @@ namespace pr2_cartesian_clients{
   {
     options_.append_date = false;
     options_.trigger = false;
-    options_.min_space = 0;
+    #if ROS_VERSION_MINIMUM(1, 12, 6) // min_space does not exist in hydro. This checks for indigo
+      options_.min_space = 0;
+    #endif
     options_.verbose = false;
     options_.split = false;
   }

@@ -311,7 +311,9 @@ void ManipulationClient::runExperiment()
   geometry_msgs::PoseStamped initial_eef_pose;
   ros::Time init, curr;
   bool got_eef_pose = false;
+  int current_iter = 1;
 
+  data_logger_.addRecordTopic("/realtime_loop/dexterous_manipulation/feedback");
   action_server_->start();
   ROS_INFO("Started the manipulation client action server: %s", cartesian_client_action_name_.c_str());
   while (ros::ok())
@@ -408,6 +410,11 @@ void ManipulationClient::runExperiment()
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = manipulation_action_name_;
         }
+
+        std::string bag_name;
+
+        bag_name = std::string("Manipulation_Experiment_") + std::to_string(current_iter);
+        data_logger_.startRecording(bag_name, manipulation_action_time_limit_);
 
         if (!controller_runner_.runController(manipulation_controller_name_))
         {

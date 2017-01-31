@@ -4,6 +4,7 @@ project(pr2_cartesian_clients)
 find_package(
 catkin REQUIRED COMPONENTS
   roscpp
+  rosbag
 	std_msgs
 	geometry_msgs
 	sensor_msgs
@@ -33,9 +34,9 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers
+  CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers rosbag
   INCLUDE_DIRS include
-  LIBRARIES exclusive_controller_runner
+  LIBRARIES exclusive_controller_runner data_logger
 )
 
 include_directories(
@@ -46,5 +47,8 @@ include_directories(
 add_library(exclusive_controller_runner src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
 target_link_libraries(exclusive_controller_runner ${catkin_LIBRARIES})
 
+add_library(data_logger src/utils/DataLogger.cpp)
+target_link_libraries(data_logger ${catkin_LIBRARIES})
+
 add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/extra.cpp)
-target_link_libraries(manipulation_client exclusive_controller_runner ${catkin_LIBRARIES})
+target_link_libraries(manipulation_client exclusive_controller_runner data_logger ${catkin_LIBRARIES})

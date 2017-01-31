@@ -12,8 +12,9 @@
 #include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
-#include <utils/ExclusiveControllerRunner.hpp>
 #include <utils/extra.hpp>
+#include <utils/DataLogger.hpp>
+#include <utils/ExclusiveControllerRunner.hpp>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>
 
@@ -28,18 +29,23 @@ namespace manipulation{
     void runExperiment();
 
   private:
-    // boost
+    void goalCB();
+    void preemptCB();
+    bool loadParams();
+    void publishFeedback();
+    bool waitForTablePose(ros::Duration max_time);
+    bool getInitialEefPose(geometry_msgs::PoseStamped & pose);
+    void destroyActionClients();
+
+  private:
     boost::thread feedback_thread_;
     boost::mutex reference_mutex_;
 
-    // ros
     ros::NodeHandle nh_;
     ros::ServiceClient gravity_compensation_client_;
     tf::TransformListener listener_;
     std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
-    bool loadParams();
 
-    // actionlib
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction> *approach_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction> *move_action_client_;
@@ -48,17 +54,10 @@ namespace manipulation{
     double server_timeout_, feedback_hz_;
     double move_action_time_limit_, approach_action_time_limit_, manipulation_action_time_limit_;
     pr2_cartesian_clients::ManipulationFeedback feedback_;
-    void publishFeedback();
-    void goalCB();
-    void preemptCB();
 
-    // Vision feedback
     double vision_timeout_;
-    bool waitForTablePose(ros::Duration max_time);
     std::string surface_frame_name_;
-    bool getInitialEefPose(geometry_msgs::PoseStamped & pose);
 
-    // Experimental setup
     std::vector<double> initial_pose_offset_;
     double initial_approach_angle_, approach_velocity_, approach_force_;
     double goal_x_, goal_theta_, goal_force_;
@@ -68,9 +67,7 @@ namespace manipulation{
     int num_of_experiments_;
     bool use_vision_, sim_mode_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
-
-    // others
-    void destroyActionClients();
+    pr2_cartesian_clients::DataLogger data_logger_;
   };
   }
 #endif

@@ -349,6 +349,7 @@ void ManipulationClient::runExperiment()
 
       while(action_server_->isActive()) // need to add more conditions
       {
+        controller_runner_.unloadAll();
         // Send experiment arm to right initial pose
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);

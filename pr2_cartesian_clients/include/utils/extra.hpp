@@ -17,9 +17,10 @@ namespace pr2_cartesian_clients{
     It returns false if the client aborts.
   */
   template<typename ClientAction, typename Goal, typename ServerAction>
-  bool monitorActionGoal(actionlib::SimpleActionClient<ClientAction> *client, Goal &goal, actionlib::SimpleActionServer<ServerAction> *server, double wait_timeout, double run_timeout)
+  bool monitorActionGoal(actionlib::SimpleActionClient<ClientAction> *client, Goal &goal, actionlib::SimpleActionServer<ServerAction> *server, double wait_timeout, double run_timeout, bool &timeout)
   {
     ros::Time init, curr;
+    timeout = false;
     if(!client->waitForServer(ros::Duration(wait_timeout)))
     {
       ROS_ERROR("Failed to connect to the action server");
@@ -54,6 +55,7 @@ namespace pr2_cartesian_clients{
 
     if (!client->getState().isDone())
     {
+      timeout = true;
       client->cancelAllGoals();
       return false;
     }

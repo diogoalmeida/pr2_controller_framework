@@ -91,8 +91,8 @@ if __name__ == '__main__':
             if sys.argv[1] == "debug":
                 rospy.Subscriber(subscription_topic_name, pr2_algorithms.msg.TestBedFeedback, feedbackCallback)
             else:
-                rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerFeedback, feedbackCallback)
+                rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerActionFeedback, feedbackCallback)
         else:
-            rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerFeedback, feedbackCallback)
+            rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerActionFeedback, feedbackCallback)
 
         rospy.spin()

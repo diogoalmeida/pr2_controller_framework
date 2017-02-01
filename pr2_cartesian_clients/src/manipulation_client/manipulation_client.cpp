@@ -325,7 +325,6 @@ void ManipulationClient::runExperiment()
 
   while (ros::ok())
   {
-
     if (action_server_->isActive())
     {
       controller_runner_.unloadAll();
@@ -364,11 +363,11 @@ void ManipulationClient::runExperiment()
           continue;
         }
 
-
+        bool move_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
                               pr2_cartesian_controllers::MoveGoal,
                               pr2_cartesian_clients::ManipulationAction>
-                                (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_))
+                                (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
         {
           ROS_ERROR("Error in the move action. Aborting.");
           action_server_->setAborted();
@@ -404,10 +403,11 @@ void ManipulationClient::runExperiment()
         approach_goal.approach_command.twist.linear.z = approach_velocity_;
         approach_goal.contact_force = approach_force_;
 
+        bool approach_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
                               pr2_cartesian_controllers::GuardedApproachGoal,
                               pr2_cartesian_clients::ManipulationAction>
-                                (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_))
+                                (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_, approach_timeout))
         {
           ROS_ERROR("Error in the approach action. Aborting.");
           action_server_->setAborted();
@@ -458,21 +458,26 @@ void ManipulationClient::runExperiment()
         manipulation_goal.use_debug_eef_to_grasp = false;
         manipulation_goal.use_surface_rotation_axis = true;
 
+        bool manipulation_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::ManipulationControllerAction,
                               pr2_cartesian_controllers::ManipulationControllerGoal,
                               pr2_cartesian_clients::ManipulationAction>
-                                (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_))
+                                (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_, manipulation_timeout))
         {
-          ROS_ERROR("Error in the manipulation action.");
-          {
-            pr2_cartesian_clients::LogMessages srv;
-            srv.request.log_type = srv.request.DISCARD_BAG;
-            if (!logging_service_client_.call(srv))
-            {
-              ROS_WARN("Error calling the logging service, will not be able to log experiment");
-            }
-          }
           continue;
+          if (!manipulation_timeout)
+          {
+            ROS_ERROR("Error in the manipulation action.");
+            {
+              pr2_cartesian_clients::LogMessages srv;
+              srv.request.log_type = srv.request.DISCARD_BAG;
+              if (!logging_service_client_.call(srv))
+              {
+                ROS_WARN("Error calling the logging service, will not be able to log experiment");
+              }
+            }
+            continue;
+          }
         }
 
         {
@@ -483,6 +488,9 @@ void ManipulationClient::runExperiment()
             ROS_WARN("Error calling the logging service, will not be able to log experiment");
           }
         }
+        current_iter++;
+        ros::spinOnce();
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
     }
     else
@@ -490,6 +498,7 @@ void ManipulationClient::runExperiment()
       got_eef_pose = false;
     }
 
+    current_iter = 1;
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
   }

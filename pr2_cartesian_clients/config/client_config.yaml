@@ -35,5 +35,5 @@ experiment:
   goal_force: -1.0
 
   logging:
-    logging_topic: /test_bed/feedback
+    logging_topic: /realtime_loop/dexterous_manipulation/feedback
     toggle_logging_service: /data_logger/toggle

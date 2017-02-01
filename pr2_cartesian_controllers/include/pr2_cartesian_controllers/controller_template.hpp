@@ -138,7 +138,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   {
     optimal_values(i) = (min_limits(i) + max_limits(i))/2;
 
-    ROS_INFO("Joint: %d, min_limit: %.2f, max_limit: %.2f, optimal_value: %.2f", i, min_limits(i), max_limits(i), optimal_values(i));
+    ROS_DEBUG("Joint: %d, min_limit: %.2f, max_limit: %.2f, optimal_value: %.2f", i, min_limits(i), max_limits(i), optimal_values(i));
 
     if (min_limits(i) == max_limits(i)) // Do not weight in joints with no limits in the nullspace optimization method
     {
@@ -149,7 +149,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
       weights(i) = nso_weights_;
     }
 
-    ROS_INFO("Weight: %.2f\n\n", weights(i));
+    ROS_DEBUG("Weight: %.2f\n\n", weights(i));
   }
 
 

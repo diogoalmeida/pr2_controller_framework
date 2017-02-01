@@ -12,6 +12,7 @@
 #include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
+#include <pr2_cartesian_clients/LogMessages.h>
 #include <utils/extra.hpp>
 #include <utils/ExclusiveControllerRunner.hpp>
 #include <std_srvs/Empty.h>
@@ -41,7 +42,7 @@ namespace manipulation{
     boost::mutex reference_mutex_;
 
     ros::NodeHandle nh_;
-    ros::ServiceClient gravity_compensation_client_;
+    ros::ServiceClient gravity_compensation_client_, logging_service_client_;
     tf::TransformListener listener_;
     std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
 
@@ -49,7 +50,7 @@ namespace manipulation{
     actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction> *approach_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction> *move_action_client_;
     actionlib::SimpleActionServer<pr2_cartesian_clients::ManipulationAction> *action_server_; // Allows user-triggered preemption
-    std::string move_action_name_, manipulation_action_name_, approach_action_name_, cartesian_client_action_name_, current_action_;
+    std::string move_action_name_, manipulation_action_name_, approach_action_name_, cartesian_client_action_name_, current_action_, logging_service_;
     double server_timeout_, feedback_hz_;
     double move_action_time_limit_, approach_action_time_limit_, manipulation_action_time_limit_;
     pr2_cartesian_clients::ManipulationFeedback feedback_;

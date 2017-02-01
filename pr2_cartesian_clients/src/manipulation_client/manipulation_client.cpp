@@ -13,6 +13,7 @@ ManipulationClient::ManipulationClient()
   }
 
   gravity_compensation_client_ = nh_.serviceClient<std_srvs::Empty>(gravity_compensation_service_name_);
+  logging_service_client_ = nh_.serviceClient<pr2_cartesian_clients::LogMessages>(logging_service_);
   manipulation_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction>(manipulation_action_name_, true);
   approach_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction>(approach_action_name_, true);
   move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
@@ -165,6 +166,12 @@ bool ManipulationClient::loadParams()
   if(!nh_.getParam("experiment/num_of_experiments", num_of_experiments_))
   {
     ROS_ERROR("No number of experiments defined (experiment/num_of_experiments)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/logging/toggle_logging_service", logging_service_))
+  {
+    ROS_ERROR("No logging toggle service provided (experiment/logging/toggle_logging_service)");
     return false;
   }
 
@@ -386,6 +393,7 @@ void ManipulationClient::runExperiment()
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = approach_action_name_;
         }
+
         if (!controller_runner_.runController(approach_controller_name_))
         {
           ROS_ERROR("Failed to run the controller %s", approach_action_name_.c_str());
@@ -423,6 +431,17 @@ void ManipulationClient::runExperiment()
         std::string bag_name;
         bag_name = std::string("Manipulation_Experiment_") + std::to_string(current_iter);
 
+        {
+          pr2_cartesian_clients::LogMessages srv;
+          srv.request.log_type = srv.request.START_LOGGING;
+          srv.request.name = bag_name;
+          srv.request.max_record_time = manipulation_action_time_limit_ + 10;
+          if (!logging_service_client_.call(srv))
+          {
+            ROS_WARN("Error calling the logging service, will not be able to log experiment");
+          }
+        }
+
         manipulation_goal.surface_frame = surface_frame_pose_;
 
         Eigen::Affine3d surface_pose_eigen;
@@ -445,7 +464,24 @@ void ManipulationClient::runExperiment()
                                 (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_))
         {
           ROS_ERROR("Error in the manipulation action.");
+          {
+            pr2_cartesian_clients::LogMessages srv;
+            srv.request.log_type = srv.request.DISCARD_BAG;
+            if (!logging_service_client_.call(srv))
+            {
+              ROS_WARN("Error calling the logging service, will not be able to log experiment");
+            }
+          }
           continue;
+        }
+
+        {
+          pr2_cartesian_clients::LogMessages srv;
+          srv.request.log_type = srv.request.SAVE_BAG;
+          if (!logging_service_client_.call(srv))
+          {
+            ROS_WARN("Error calling the logging service, will not be able to log experiment");
+          }
         }
       }
     }

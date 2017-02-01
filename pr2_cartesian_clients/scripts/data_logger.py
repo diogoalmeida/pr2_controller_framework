@@ -13,6 +13,8 @@ is_logging = False
 subscription_topic_name = " "
 toggle_logging_service_name = " "
 bag = None
+init_log_time = rospy.Time()
+max_log_duration = rospy.Duration(-1)
 
 
 def feedbackCallback(feedback_msg):
@@ -21,22 +23,27 @@ def feedbackCallback(feedback_msg):
     global bag
 
     if is_logging:
-        try:
-            bag.write(subscription_topic_name, feedback_msg)
-        except:
-            print "Unexpected error:", sys.exc_info()[0]
+        if rospy.Time.now() - init_log_time < max_log_duration:
+            try:
+                bag.write(subscription_topic_name, feedback_msg)
+            except:
+                print "Unexpected error:", sys.exc_info()[0]
 
 
 def loggingCallback(logging_req):
     """Toggle logging data into the bag file."""
     global is_logging
     global bag
+    global init_log_time
+    global max_log_duration
 
     rospack = rospkg.RosPack()
 
     if logging_req.log_type == logging_req.START_LOGGING:
         is_logging = True
         bag = rosbag.Bag(rospack.get_path("pr2_cartesian_clients") + "/data/results/" + logging_req.name + ".bag", 'w')
+        init_log_time = rospy.Time.now()
+        max_log_duration = rospy.Duration(logging_req.max_record_time)
         rospy.loginfo("Data logger starting")
         return True
     elif logging_req.log_type == logging_req.SAVE_BAG:
@@ -79,7 +86,13 @@ if __name__ == '__main__':
 
     if loadParams():
         logging_service = rospy.Service(toggle_logging_service_name, LogMessages, loggingCallback)
-        rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerFeedback, feedbackCallback)
-        # rospy.Subscriber(subscription_topic_name, pr2_algorithms.msg.TestBedFeedback, feedbackCallback)
+
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "debug":
+                rospy.Subscriber(subscription_topic_name, pr2_algorithms.msg.TestBedFeedback, feedbackCallback)
+            else:
+                rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerFeedback, feedbackCallback)
+        else:
+            rospy.Subscriber(subscription_topic_name, pr2_cartesian_controllers.msg.ManipulationControllerFeedback, feedbackCallback)
 
         rospy.spin()

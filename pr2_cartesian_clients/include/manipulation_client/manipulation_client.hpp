@@ -13,7 +13,6 @@
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/ManipulationAction.h>
 #include <utils/extra.hpp>
-#include <utils/DataLogger.hpp>
 #include <utils/ExclusiveControllerRunner.hpp>
 #include <std_srvs/Empty.h>
 #include <boost/thread.hpp>

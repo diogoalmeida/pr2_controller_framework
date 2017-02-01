@@ -308,7 +308,6 @@ void ManipulationClient::goalCB()
 */
 void ManipulationClient::runExperiment()
 {
-  pr2_cartesian_clients::DataLogger data_logger;
   geometry_msgs::PoseStamped initial_eef_pose;
   ros::Time init, curr;
   bool got_eef_pose = false;
@@ -317,8 +316,6 @@ void ManipulationClient::runExperiment()
   action_server_->start();
   ROS_INFO("Started the manipulation client action server: %s", cartesian_client_action_name_.c_str());
 
-  // data_logger.addRecordTopic("/realtime_loop/dexterous_manipulation/feedback");
-  data_logger.addRecordTopic("/ft/l_gripper_motor");
   while (ros::ok())
   {
 
@@ -423,10 +420,8 @@ void ManipulationClient::runExperiment()
           continue;
         }
 
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
         std::string bag_name;
         bag_name = std::string("Manipulation_Experiment_") + std::to_string(current_iter);
-        data_logger.startRecording(bag_name, manipulation_action_time_limit_);
 
         manipulation_goal.surface_frame = surface_frame_pose_;
 
@@ -452,8 +447,6 @@ void ManipulationClient::runExperiment()
           ROS_ERROR("Error in the manipulation action.");
           continue;
         }
-
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
       }
     }
     else

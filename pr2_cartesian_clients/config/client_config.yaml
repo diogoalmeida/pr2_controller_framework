@@ -33,3 +33,7 @@ experiment:
   goal_theta: 0.35
   goal_x: 0.2
   goal_force: -1.0
+
+  logging:
+    logging_topic: /test_bed/feedback
+    toggle_logging_service: /data_logger/toggle

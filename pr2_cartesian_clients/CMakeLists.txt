@@ -24,6 +24,11 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 #   FILES
 # )
 
+add_service_files(
+  FILES
+  LogMessages.srv
+)
+
 add_action_files(
 	DIRECTORY action
 	FILES Manipulation.action
@@ -36,7 +41,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib pr2_cartesian_controllers rosbag
   INCLUDE_DIRS include
-  LIBRARIES exclusive_controller_runner data_logger
+  LIBRARIES exclusive_controller_runner
 )
 
 include_directories(
@@ -47,11 +52,5 @@ include_directories(
 add_library(exclusive_controller_runner src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
 target_link_libraries(exclusive_controller_runner ${catkin_LIBRARIES})
 
-add_library(data_logger src/utils/DataLogger.cpp)
-target_link_libraries(data_logger ${catkin_LIBRARIES})
-
 add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/extra.cpp)
-target_link_libraries(manipulation_client exclusive_controller_runner data_logger ${catkin_LIBRARIES})
-
-add_executable(data_logger_test src/utils/data_logger_test.cpp)
-target_link_libraries(data_logger_test data_logger ${catkin_LIBRARIES})
+target_link_libraries(manipulation_client exclusive_controller_runner ${catkin_LIBRARIES})

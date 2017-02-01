@@ -1,0 +1,9 @@
+int32 log_type
+string name # desired bag name
+float64 max_record_time
+
+int32 START_LOGGING = 1
+int32 SAVE_BAG = 2
+int32 DISCARD_BAG = 3
+---
+bool result

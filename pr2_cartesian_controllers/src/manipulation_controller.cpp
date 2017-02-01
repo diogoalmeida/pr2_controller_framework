@@ -424,7 +424,7 @@ namespace cartesian_controllers {
     feedback_.var_theta = variances[1];
     feedback_.f_c_hat = x_hat_[2];
     feedback_.f_c = force_e;
-    feedback_.f_c = x_d_[2];
+    feedback_.f_d = x_d_[2];
     feedback_.var_f = variances[2];
     feedback_.torque_c = torque_e;
     feedback_.f_e.x = measured_wrench_[0];

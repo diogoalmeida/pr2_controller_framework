@@ -52,3 +52,6 @@ target_link_libraries(data_logger ${catkin_LIBRARIES})
 
 add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/extra.cpp)
 target_link_libraries(manipulation_client exclusive_controller_runner data_logger ${catkin_LIBRARIES})
+
+add_executable(data_logger_test src/utils/data_logger_test.cpp)
+target_link_libraries(data_logger_test data_logger ${catkin_LIBRARIES})

@@ -36,6 +36,11 @@ namespace pr2_cartesian_clients{
     bool startRecording(const std::string &bag_name, const double time);
 
     /**
+      Stops recording.
+    */
+    void stopRecording();
+
+    /**
       Check if a previous bag is being recorded.
 
       @return True if an active recording is happening.
@@ -49,6 +54,13 @@ namespace pr2_cartesian_clients{
     */
     void addRecordTopic(const std::string &topic_name);
 
+    /**
+      Stores data in a bag file
+
+      @return False if no record is happening.
+    */
+    bool saveData();
+
   private:
     /**
       The recorder thread method.
@@ -61,7 +73,7 @@ namespace pr2_cartesian_clients{
     rosbag::RecorderOptions options_;
     rosbag::Recorder *recorder_;
     std::thread record_thread_;
-    std::mutex record_mutex_;
+    // std::mutex record_mutex_;
     bool is_recording_;
   };
 }

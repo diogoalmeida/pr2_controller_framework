@@ -29,7 +29,7 @@ experiment:
   use_vision: true
   sim_mode: false
   approach_velocity: -0.03
-  approach_force: 0.1
+  approach_force: 0.2
   goal_theta: 0.35
   goal_x: 0.2
   goal_force: -1.0

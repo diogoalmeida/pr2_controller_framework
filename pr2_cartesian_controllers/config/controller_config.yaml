@@ -12,11 +12,11 @@ common:
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
-  spring_constant: 0.18
+  spring_constant: 0.17
   gains:
-    k_1: 0 #0.5
-    k_2: 0 #0.15
-    k_3: 0 #0.5
+    k_1: 0.5
+    k_2: 0.03
+    k_3: 0.5
   rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
   estimate_length: false
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
@@ -24,7 +24,7 @@ manipulation_controller:
   wait_for_tf_time: 1
   estimator:
     Q:
-      data: [50, 0, 0, 0, 1, 0, 0, 0, 25]
+      data: [100, 0, 0, 0, 10, 0, 0, 0, 1]
     R:
       data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
 

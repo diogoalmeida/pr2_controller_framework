@@ -413,12 +413,15 @@ namespace cartesian_controllers {
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
 
+    e = x_d_ - x_hat_;
+
     feedback_.x_c_hat = x_hat_[0];
     feedback_.x_d = x_d_[0];
     feedback_.theta_c_hat = x_hat_[1];
     feedback_.theta_d = x_d_[1];
     feedback_.f_c_hat = x_hat_[2];
     feedback_.f_c = force_e;
+    feedback_.f_c = x_d_[2];
     feedback_.torque_c = torque_e;
     feedback_.f_e.x = measured_wrench_[0];
     feedback_.f_e.y = measured_wrench_[1];

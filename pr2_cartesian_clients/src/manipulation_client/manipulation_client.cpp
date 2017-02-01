@@ -464,7 +464,6 @@ void ManipulationClient::runExperiment()
                               pr2_cartesian_clients::ManipulationAction>
                                 (manipulation_action_client_, manipulation_goal, action_server_, server_timeout_, manipulation_action_time_limit_, manipulation_timeout))
         {
-          continue;
           if (!manipulation_timeout)
           {
             ROS_ERROR("Error in the manipulation action.");

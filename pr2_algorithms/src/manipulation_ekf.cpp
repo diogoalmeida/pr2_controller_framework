@@ -50,6 +50,15 @@ namespace manipulation_algorithms{
     return true;
   }
 
+  Eigen::Vector3d ManipulationEKF::getVariance()
+  {
+    Eigen::Vector3d variances;
+
+    variances << P_(0, 0), P_(1,1), P_(2,2);
+
+    return variances;
+  }
+
   Eigen::Vector3d ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
     Eigen::Matrix3d A, C, K, G, I, P, O;
@@ -91,12 +100,15 @@ namespace manipulation_algorithms{
     // 1 - predict according to the end-effector motion (u)
     x_hat_ = x_hat_ + G*u*dt;
     A = I + A*dt;
-    P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
+    // P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
+    P_ = A*P_*A.transpose() + R_;
 
     // 2 - update based on the innovation
-    K = P_.selfadjointView<Eigen::Upper>()*C.transpose()*(C*P_.selfadjointView<Eigen::Upper>()*C.transpose() + Q_).inverse();
+    // K = P_.selfadjointView<Eigen::Upper>()*C.transpose()*(C*P_.selfadjointView<Eigen::Upper>()*C.transpose() + Q_).inverse();
+    K = P_*C.transpose()*(C*P_*C.transpose() + Q_).inverse();
     x_hat_ = x_hat_ + K*innovation;
-    P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
+    // P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
+    P_ = (I - K*C)*P_;
 
     return x_hat_;
   }

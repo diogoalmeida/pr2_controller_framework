@@ -56,7 +56,7 @@ int main(int argc, char ** argv)
   ros::NodeHandle n;
   ManipulationAlgorithm control_alg;
   ManipulationEKF estimator_alg;
-  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, x_hat, y;
+  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, x_hat, y, variances;
   pr2_algorithms::TestBedFeedback feedback_msg;
   Eigen::Matrix3d G;
   double k_s, max_time, epsilon, spring, force, torque;
@@ -115,14 +115,17 @@ int main(int argc, char ** argv)
     }
     else
     {
-      y << 0, force, x_c[1];
+      y << 0, force + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator);
     }
 
+    variances = estimator_alg.getVariance();
+    std::cout << variances << std::endl << std::endl;
     x_hat = estimator_alg.estimate(u, y, x_e, dt.toSec());
 
     feedback_msg.x_c = x_c[0];
     feedback_msg.theta_c = x_c[1];
     feedback_msg.f_c = x_c[2];
+
 
     feedback_msg.x_e = x_e[0];
     feedback_msg.y_e = x_e[1];
@@ -131,6 +134,10 @@ int main(int argc, char ** argv)
     feedback_msg.x_c_hat = x_hat[0];
     feedback_msg.theta_c_hat = x_hat[1];
     feedback_msg.f_c_hat = x_hat[2];
+
+    feedback_msg.var_x = x_hat[0] + 3*variances[0];
+    feedback_msg.var_theta = x_hat[1] + 3*variances[1];
+    feedback_msg.var_f = x_hat[2] + 3*variances[2];
 
     pub.publish(feedback_msg);
     r.sleep();

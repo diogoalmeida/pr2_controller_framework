@@ -55,13 +55,12 @@ namespace manipulation_algorithms{
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
     e = x_d - x_c;
 
-    if (e.norm() > 0.001)
+    if (e.norm() > 0.0001)
     {
       return inv_G*Gamma_*e;
     }
     else
     {
-      ROS_WARN("Success");
       return Eigen::Vector3d::Zero();
     }
   }

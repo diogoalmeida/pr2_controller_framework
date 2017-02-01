@@ -48,6 +48,13 @@ public:
   */
   bool getParams(const ros::NodeHandle &n);
 
+  /**
+    Returns the variance of each estimated variable
+
+    @return A vector with [sigma_x, sigma_theta, sigma_f]
+  */
+  Eigen::Vector3d getVariance();
+
 private:
   Eigen::Vector3d x_hat_;
   Eigen::Matrix3d P_, Q_, R_;

@@ -163,6 +163,12 @@ bool ManipulationClient::loadParams()
     return false;
   }
 
+  if(!nh_.getParam("experiment/bag_prefix", bag_prefix_))
+  {
+    ROS_ERROR("Need to set bag_prefix (experiment/bag_prefix)");
+    return false;
+  }
+
   if(!nh_.getParam("experiment/num_of_experiments", num_of_experiments_))
   {
     ROS_ERROR("No number of experiments defined (experiment/num_of_experiments)");
@@ -210,7 +216,6 @@ bool ManipulationClient::loadParams()
     ROS_ERROR("No server timeout defined (initialization/server_timeout)");
     return false;
   }
-
   if(!nh_.getParam("experiment/goal_theta", goal_theta_))
   {
     ROS_ERROR("Need to set goal_theta (experiment/goal_theta)");
@@ -346,8 +351,9 @@ void ManipulationClient::runExperiment()
       pr2_cartesian_controllers::ManipulationControllerGoal manipulation_goal;
 
       ROS_INFO("Starting experiment!");
+      current_iter = 1;
 
-      while(action_server_->isActive()) // need to add more conditions
+      while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
         controller_runner_.unloadAll();
         // Send experiment arm to right initial pose
@@ -430,7 +436,7 @@ void ManipulationClient::runExperiment()
         }
 
         std::string bag_name;
-        bag_name = std::string("Manipulation_Experiment_") + std::to_string(current_iter);
+        bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(current_iter);
 
         {
           pr2_cartesian_clients::LogMessages srv;
@@ -492,6 +498,9 @@ void ManipulationClient::runExperiment()
         ros::spinOnce();
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
+
+      ROS_INFO("Experiment done!");
+      action_server_->setSucceeded();
     }
     else
     {

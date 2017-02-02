@@ -44,7 +44,7 @@ namespace manipulation{
     ros::NodeHandle nh_;
     ros::ServiceClient gravity_compensation_client_, logging_service_client_;
     tf::TransformListener listener_;
-    std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_;
+    std::string move_controller_name_, manipulation_controller_name_, approach_controller_name_, bag_prefix_;
 
     actionlib::SimpleActionClient<pr2_cartesian_controllers::ManipulationControllerAction> *manipulation_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::GuardedApproachAction> *approach_action_client_;

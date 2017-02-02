@@ -15,6 +15,7 @@ toggle_logging_service_name = " "
 bag = None
 init_log_time = rospy.Time()
 max_log_duration = rospy.Duration(-1)
+log_directory_name = " "
 
 
 def feedbackCallback(feedback_msg):
@@ -40,8 +41,15 @@ def loggingCallback(logging_req):
     rospack = rospkg.RosPack()
 
     if logging_req.log_type == logging_req.START_LOGGING:
+        bag_dir = rospack.get_path("pr2_cartesian_clients") + "/data/" + log_directory_name
+        print "bag dir: " + bag_dir
+
+        if not os.path.exists(bag_dir):
+            print "making dir: " + bag_dir
+            os.makedirs(bag_dir)
+
         is_logging = True
-        bag = rosbag.Bag(rospack.get_path("pr2_cartesian_clients") + "/data/results/" + logging_req.name + ".bag", 'w')
+        bag = rosbag.Bag(bag_dir + "/" + logging_req.name + ".bag", 'w')
         init_log_time = rospy.Time.now()
         max_log_duration = rospy.Duration(logging_req.max_record_time)
         rospy.loginfo("Data logger starting")
@@ -66,6 +74,7 @@ def loadParams():
     """Get parameters from the parameter server."""
     global subscription_topic_name
     global toggle_logging_service_name
+    global log_directory_name
 
     if rospy.has_param('/manipulation_client/experiment/logging/logging_topic'):
         subscription_topic_name = rospy.get_param("/manipulation_client/experiment/logging/logging_topic")
@@ -77,6 +86,12 @@ def loadParams():
         toggle_logging_service_name = rospy.get_param("/manipulation_client/experiment/logging/toggle_logging_service")
     else:
         rospy.logerr("Missing toggle logging service name (experiment/logging/toggle_logging_service)")
+        return False
+
+    if rospy.has_param('/manipulation_client/experiment/logging/log_directory'):
+        log_directory_name = rospy.get_param("/manipulation_client/experiment/logging/log_directory")
+    else:
+        rospy.logerr("Missing toggle logging service name (experiment/logging/log_directory)")
         return False
 
     return True

@@ -16,7 +16,7 @@ initialization:
   controller_timeouts:
     move_timeout: 30
     approach_timeout: 20
-    manipulation_timeout: 20
+    manipulation_timeout: 10
   gravity_compensation_service_name: /gravity_compensation/calibrate_bias
   server_timeout: 2
   exclude_controller_names: [l_gripper_controller]
@@ -25,15 +25,15 @@ experiment:
   feedback_rate: 1
   tool_frame_name: l_gripper_tool_frame
   base_link_name: torso_lift_link
-  num_of_experiments: 1
-  bag_prefix: Thursday_02_02_morning
+  num_of_experiments: 20
+  bag_prefix: Thursday_02_02_morning_higher_gains
   use_vision: true
   sim_mode: false
   approach_velocity: -0.03
   approach_force: 0.2
-  goal_theta: 0.35
+  goal_theta: 0.25
   goal_x: 0.2
-  goal_force: -1.0
+  goal_force: -1.5
 
   logging:
     logging_topic: /realtime_loop/dexterous_manipulation/feedback

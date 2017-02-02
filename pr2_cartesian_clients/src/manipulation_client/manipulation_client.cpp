@@ -435,9 +435,10 @@ void ManipulationClient::runExperiment()
           continue;
         }
 
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
         std::string bag_name;
         bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(current_iter);
-
+        ROS_INFO("Running experiment %d/%d", current_iter, num_of_experiments_);
         {
           pr2_cartesian_clients::LogMessages srv;
           srv.request.log_type = srv.request.START_LOGGING;
@@ -493,6 +494,7 @@ void ManipulationClient::runExperiment()
           {
             ROS_WARN("Error calling the logging service, will not be able to log experiment");
           }
+          boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
         }
         current_iter++;
         ros::spinOnce();
@@ -500,6 +502,7 @@ void ManipulationClient::runExperiment()
       }
 
       ROS_INFO("Experiment done!");
+      controller_runner_.unloadAll();
       action_server_->setSucceeded();
     }
     else

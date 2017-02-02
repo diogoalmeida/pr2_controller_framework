@@ -34,6 +34,24 @@ namespace manipulation_algorithms{
       return false;
     }
 
+    if (!n.getParam("/manipulation_controller/saturations/x", max_command_x_))
+    {
+      ROS_ERROR("Missing x velocity saturation (/manipulation_controller/saturations/x)");
+      return false;
+    }
+
+    if (!n.getParam("/manipulation_controller/saturations/theta", max_command_theta_))
+    {
+      ROS_ERROR("Missing theta velocity saturation (/manipulation_controller/saturations/theta)");
+      return false;
+    }
+
+    if (!n.getParam("/manipulation_controller/saturations/y", max_command_y_))
+    {
+      ROS_ERROR("Missing y velocity saturation (/manipulation_controller/saturations/y)");
+      return false;
+    }
+
     Gamma_ << k_1, 0  , 0  ,
               0  , k_2, 0  ,
               0  , 0  , k_3;
@@ -47,17 +65,38 @@ namespace manipulation_algorithms{
     return true;
   }
 
+  double ManipulationAlgorithm::saturateOutput(const double original, const double max)
+  {
+    if (std::abs(original) > max)
+    {
+      if (original < 0)
+      {
+        return -max;
+      }
+
+      return max;
+    }
+
+    return original;
+  }
+
   Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::Vector3d &x_c, const Eigen::Vector3d &x_e)
   {
     Eigen::Matrix3d inv_G;
-    Eigen::Vector3d e;
+    Eigen::Vector3d e, u;
 
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
     e = x_d - x_c;
 
     if (e.norm() > 0.001)
     {
-      return inv_G*Gamma_*e;
+      u = inv_G*Gamma_*e;
+
+      u[0] = saturateOutput(u[0], max_command_x_);
+      u[1] = saturateOutput(u[1], max_command_y_);
+      u[2] = saturateOutput(u[2], max_command_theta_);
+      
+      return u;
     }
     else
     {

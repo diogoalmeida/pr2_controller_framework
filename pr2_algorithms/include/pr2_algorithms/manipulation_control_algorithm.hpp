@@ -36,7 +36,7 @@ namespace manipulation_algorithms{
 
   private:
     Eigen::Matrix3d Gamma_;
-    double k_s_;
+    double k_s_, max_command_x_, max_command_y_, max_command_theta_;
 
     /**
       Compute the inverse of the task jacobian from the system state.
@@ -67,6 +67,15 @@ namespace manipulation_algorithms{
       @param vals A vector with the values to fill in
     */
     void initializeEigenMatrix(Eigen::Matrix3d &M, const std::vector<double> vals);
+
+    /**
+      Saturates a control output
+
+      @param original The computed output
+      @param max The maximum allowed absolute value for the computed output
+      @return The original, if abs(original) <= max, sign(original)*max otherwise
+    */
+    double saturateOutput(const double original, const double max);
   };
 }
 #endif

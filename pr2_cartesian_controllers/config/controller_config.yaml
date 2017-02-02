@@ -15,12 +15,12 @@ manipulation_controller:
   spring_constant: 0.17
   gains:
     k_1: 0.9
-    k_2: 0.06
-    k_3: 2.2
+    k_2: 1.5
+    k_3: 3.2
   saturations:
     x: 0.1
-    y: 0.05
-    theta: 0.1
+    y: 0.1
+    theta: 0.05
   rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
   estimate_length: false
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
@@ -28,7 +28,7 @@ manipulation_controller:
   wait_for_tf_time: 1
   estimator:
     Q:
-      data: [100, 0, 0, 0, 10, 0, 0, 0, 1]
+      data: [100, 0, 0, 0, 10, 0, 0, 0, 2]
     R:
       data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
 

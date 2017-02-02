@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Vector3.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 #include <eigen_conversions/eigen_msg.h>
@@ -67,6 +68,11 @@ namespace manipulation{
     int num_of_experiments_;
     bool use_vision_, sim_mode_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
+
+    std::default_random_engine noise_generator_;
+    std::normal_distribution<double> noise_x_d_;
+    std::normal_distribution<double> noise_theta_d_;
+    std::normal_distribution<double> noise_f_d_;
   };
   }
 #endif

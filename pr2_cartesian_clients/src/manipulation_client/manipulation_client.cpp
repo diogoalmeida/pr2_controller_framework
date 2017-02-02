@@ -289,7 +289,8 @@ void ManipulationClient::preemptCB()
 */
 void ManipulationClient::goalCB()
 {
-  action_server_->acceptNewGoal();
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
+  boost::shared_ptr<const pr2_cartesian_clients::ManipulationGoal> goal = action_server_->acceptNewGoal();
 
   if (!action_server_->isPreemptRequested())
   {
@@ -303,6 +304,33 @@ void ManipulationClient::goalCB()
         ROS_ERROR("Could not find table frame. Aborting");
         action_server_->setAborted();
         return;
+      }
+    }
+
+    if (goal->use_goal)
+    {
+      initial_pose_offset_.push_back(goal->initial_pose_offset.x);
+      initial_pose_offset_.push_back(goal->initial_pose_offset.y);
+      initial_pose_offset_.push_back(goal->initial_pose_offset.z);
+      initial_approach_angle_ = goal->initial_approach_angle;
+      manipulation_action_time_limit_ = goal->manipulation_timeout;
+      num_of_experiments_ = goal->num_of_experiments;
+      bag_prefix_ = goal->bag_prefix.data;
+      goal_x_ = goal->desired_state.x;
+      goal_theta_ = goal->desired_state.y;
+      goal_force_ = goal->desired_state.z;
+
+      if (goal->randomize_desired_state)
+      {
+        noise_x_d_ = std::normal_distribution<double>(0, goal->randomization_covars.x);
+        noise_theta_d_ = std::normal_distribution<double>(0, goal->randomization_covars.y);
+        noise_f_d_ = std::normal_distribution<double>(0, goal->randomization_covars.z);
+      }
+      else
+      {
+        noise_x_d_ = std::normal_distribution<double>(0, 0);
+        noise_theta_d_ = std::normal_distribution<double>(0, 0);
+        noise_f_d_ = std::normal_distribution<double>(0, 0);
       }
     }
   }
@@ -332,6 +360,9 @@ void ManipulationClient::runExperiment()
   {
     if (action_server_->isActive())
     {
+      {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_); // to wait if goal is being processed
+      }
       controller_runner_.unloadAll();
       // At this point I have knowledge of the arm that I want to move (tool frame)
       // and I can compute the desired initial pose of the end-effector
@@ -459,9 +490,9 @@ void ManipulationClient::runExperiment()
 
         surface_pose_eigen = surface_pose_eigen*Eigen::AngleAxisd(0.5, rotation_axis);
 
-        manipulation_goal.x_d = goal_x_;
-        manipulation_goal.theta_d = goal_theta_;
-        manipulation_goal.desired_contact_force = goal_force_;
+        manipulation_goal.x_d = goal_x_ + noise_x_d_(noise_generator_);
+        manipulation_goal.theta_d = goal_theta_ + noise_theta_d_(noise_generator_);
+        manipulation_goal.desired_contact_force = goal_force_ + noise_f_d_(noise_generator_);
         manipulation_goal.is_debug = false;
         manipulation_goal.use_debug_eef_to_grasp = false;
         manipulation_goal.use_surface_rotation_axis = true;

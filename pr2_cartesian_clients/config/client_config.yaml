@@ -26,7 +26,7 @@ experiment:
   tool_frame_name: l_gripper_tool_frame
   base_link_name: torso_lift_link
   num_of_experiments: 20
-  bag_prefix: Thursday_02_02_morning_higher_gains
+  bag_prefix: Thursday_02_02_afternoon
   use_vision: true
   sim_mode: false
   approach_velocity: -0.03

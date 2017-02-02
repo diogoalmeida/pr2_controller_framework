@@ -309,6 +309,7 @@ void ManipulationClient::goalCB()
 
     if (goal->use_goal)
     {
+      ROS_INFO("Using goal");
       initial_pose_offset_.push_back(goal->initial_pose_offset.x);
       initial_pose_offset_.push_back(goal->initial_pose_offset.y);
       initial_pose_offset_.push_back(goal->initial_pose_offset.z);
@@ -332,6 +333,12 @@ void ManipulationClient::goalCB()
         noise_theta_d_ = std::normal_distribution<double>(0, 0);
         noise_f_d_ = std::normal_distribution<double>(0, 0);
       }
+    }
+    else
+    {
+      noise_x_d_ = std::normal_distribution<double>(0, 0);
+      noise_theta_d_ = std::normal_distribution<double>(0, 0);
+      noise_f_d_ = std::normal_distribution<double>(0, 0);
     }
   }
   else

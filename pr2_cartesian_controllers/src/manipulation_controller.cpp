@@ -439,9 +439,9 @@ namespace cartesian_controllers {
     C = center_y*center_y - hardcoded_length_*hardcoded_length_ + center_x*center_x - 2*line_displacement*center_y + line_displacement*line_displacement;
 
     real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta1 = std::atan2(std::abs(center_y), (real_x1 - center_x));
+    real_theta1 = std::atan2(center_y, (real_x1 - center_x));
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta2 = std::atan2(std::abs(center_y), (real_x2 - center_x));
+    real_theta2 = std::atan2(center_y, (real_x2 - center_x));
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;
@@ -473,6 +473,9 @@ namespace cartesian_controllers {
     feedback_.rot_gains.x = rot_gains_.vector.x;
     feedback_.rot_gains.y = rot_gains_.vector.y;
     feedback_.rot_gains.z = rot_gains_.vector.z;
+    feedback_.x_e = x_e_[0];
+    feedback_.y_e = x_e_[1];
+    feedback_.theta_e = x_e_[2];
 
     velocity_command = commands[0]*surface_tangent + commands[1]*surface_normal;
     skew = computeSkewSymmetric(commands[2]*rotation_axis);

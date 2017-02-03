@@ -37,6 +37,9 @@ float64 eef_angle
 float64 commanded_x
 float64 commanded_y
 float64 commanded_rot
+float64 x_e
+float64 y_e
+float64 theta_e
 geometry_msgs/Point f_e
 geometry_msgs/Point tau_e
 geometry_msgs/Point rot_gains

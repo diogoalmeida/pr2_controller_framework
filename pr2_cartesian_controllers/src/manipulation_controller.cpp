@@ -379,7 +379,7 @@ namespace cartesian_controllers {
     origin = surface_frame_.matrix().block<3,1>(0,3); // base_link
 
     x_e_ << (grasp_point_pose_.translation() - origin).dot(surface_tangent),
-           -(grasp_point_pose_.translation() - origin).dot(surface_normal),
+           (grasp_point_pose_.translation() - origin).dot(surface_normal),
            std::acos(surface_tangent.dot(-grasp_point_pose_.matrix().block<3,1>(0,0)));
 
     if (!has_initial_)
@@ -441,7 +441,7 @@ namespace cartesian_controllers {
     real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta1 = std::atan2(center_y, (real_x1 - center_x)) - M_PI;
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta2 = std::atan2(center_y, (real_x2 - center_x)) + M_PI;
+    real_theta2 = std::atan2(center_y, -(real_x2 - center_x));
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;

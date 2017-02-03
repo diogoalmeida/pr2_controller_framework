@@ -40,6 +40,11 @@ def openBag(name):
     return bag
 
 
+def addLabelledPlot(x, y, label, color='k'):
+    """Add a plot with the given label."""
+    handle, = plt.plot(x, y, color)
+    plt.legend([handle], [label])
+
 if __name__ == '__main__':
     rospy.init_node('data_reader')
     gray = (0.85, 0.87, 0.89)
@@ -110,38 +115,32 @@ if __name__ == '__main__':
                     plt.subplot(321)
                     plt.plot(t, x_d - x_c_hat, color=gray)
                     plt.title('$x_c$ error')
-                    plt.legend(['$x_d - \hat{x}_c$'])
                     plt.grid(True)
 
                     plt.subplot(322)
                     plt.plot(t, x_c_hat, color=gray)
                     plt.title('$x_c$ estimate')
-                    plt.legend(['$\hat{x}_c$'])
                     plt.grid(True)
 
                     plt.subplot(323)
                     plt.plot(t, theta_d - theta_c_hat, color=gray)
                     plt.title('Theta error')
-                    plt.legend(['$\\theta_d - \hat{\\theta}_c$'])
                     plt.grid(True)
 
                     plt.subplot(324)
                     plt.plot(t, theta_c_hat, color=gray)
                     plt.title('Angle estimate')
-                    plt.legend(['$\hat{\\theta}_c$'])
                     plt.grid(True)
 
                     plt.subplot(325)
                     plt.plot(t, f_d - f_c_hat, color=gray)
                     plt.title('Force error')
-                    plt.legend(['$f_d - \hat{f}_c$'])
                     plt.xlabel('Time [s]')
                     plt.grid(True)
 
                     plt.subplot(326)
                     plt.plot(t, f_c_hat, color=gray)
                     plt.title('Force estimate')
-                    plt.legend(['$\hat{f}_c$'])
                     plt.xlabel('Time [s]')
                     plt.grid(True)
 
@@ -153,15 +152,15 @@ if __name__ == '__main__':
         mean_error_f_c_hat = mean_error_f_c_hat/(num + 1)
 
         plt.subplot(321)
-        plt.plot(t, mean_error_x_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_error_x_c_hat[0:len(t)], "$x_d - \hat{x}_c$", 'k')
         plt.subplot(322)
-        plt.plot(t, mean_x_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_x_c_hat[0:len(t)], '$\hat{x}_c$', 'k')
         plt.subplot(323)
-        plt.plot(t, mean_error_theta_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_error_theta_c_hat[0:len(t)], '$\\theta_d - \hat{\\theta}_c$', 'k')
         plt.subplot(324)
-        plt.plot(t, mean_theta_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_theta_c_hat[0:len(t)], '$\hat{\\theta}_c$', 'k')
         plt.subplot(325)
-        plt.plot(t, mean_error_f_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_error_f_c_hat[0:len(t)], '$f_d - \hat{f}_c$', 'k')
         plt.subplot(326)
-        plt.plot(t, mean_f_c_hat[0:len(t)], 'k')
+        addLabelledPlot(t, mean_f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
         plt.show()

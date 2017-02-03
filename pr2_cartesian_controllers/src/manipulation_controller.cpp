@@ -418,11 +418,14 @@ namespace cartesian_controllers {
 
     // Compute the ground truth from the known length and known surface
     double real_x1, real_x2, real_theta1, real_theta2;
-    double A, B, C, line_displacement;
+    double A, B, C, line_displacement, center_x, center_y;
+    center_x = x_e_[0];
+    center_y = x_e_[1];
+
     line_displacement = 0;
     A = 1;
-    B = -x_e_[0];
-    C = x_e_[1]*x_e_[1] - hardcoded_length_*hardcoded_length_ + x_e_[0]*x_e_[0] - 2*line_displacement*x_e_[1] + line_displacement*line_displacement;
+    B = -2*center_x;
+    C = center_y*center_y - hardcoded_length_*hardcoded_length_ + center_x*center_x - 2*line_displacement*center_y + line_displacement*line_displacement;
 
     real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta1 = std::acos(real_x1/hardcoded_length_);

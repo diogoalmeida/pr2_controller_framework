@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 log_directory_name = " "
-bag_prefix = "Thursday_02_02_afternoon_random_goals_"
+bag_prefix = "test_"
 
 
 def loadParams():
@@ -61,9 +61,13 @@ if __name__ == '__main__':
         for num in range(len(glob.glob(getDir() + "/" + bag_prefix + "*.bag"))):
             t = np.array([])
             x_c_hat = np.array([])
+            x_c = np.array([])
+            x_e = np.array([])
+            y_e = np.array([])
             x_d = np.array([])
             var_x = np.array([])
             theta_c_hat = np.array([])
+            theta_c = np.array([])
             theta_d = np.array([])
             var_theta = np.array([])
             f_c = np.array([])
@@ -80,9 +84,13 @@ if __name__ == '__main__':
                 for topic, msg, time in bag.read_messages():
                     t = np.append(t, [time.to_sec()])
                     x_c_hat = np.append(x_c_hat, [msg.feedback.x_c_hat])
+                    x_c = np.append(x_c, [msg.feedback.x_c_2])
+                    x_e = np.append(x_e, [msg.feedback.x_e])
+                    y_e = np.append(y_e, [msg.feedback.y_e])
                     x_d = np.append(x_d, [msg.feedback.x_d])
                     var_x = np.append(var_x, [msg.feedback.var_x])
                     theta_c_hat = np.append(theta_c_hat, [msg.feedback.theta_c_hat])
+                    theta_c = np.append(theta_c, [msg.feedback.theta_c_2])
                     theta_d = np.append(theta_d, [msg.feedback.theta_d])
                     var_theta = np.append(var_theta, [msg.feedback.var_theta])
                     f_c = np.append(f_c, [msg.feedback.f_c])
@@ -91,16 +99,16 @@ if __name__ == '__main__':
                     var_f = np.append(var_f, [msg.feedback.var_f])
 
                     if num == 0 or len(mean_x_c_hat) <= i:
-                        mean_x_c_hat = np.append(mean_x_c_hat, [msg.feedback.x_c_hat])
+                        mean_x_c_hat = np.append(mean_x_c_hat, [msg.feedback.x_c_hat - msg.feedback.x_c_2])
                         mean_error_x_c_hat = np.append(mean_error_x_c_hat, [msg.feedback.x_d - msg.feedback.x_c_hat])
-                        mean_theta_c_hat = np.append(mean_theta_c_hat, [msg.feedback.theta_c_hat])
+                        mean_theta_c_hat = np.append(mean_theta_c_hat, [msg.feedback.theta_c_hat - msg.feedback.theta_c_2])
                         mean_error_theta_c_hat = np.append(mean_error_theta_c_hat, [msg.feedback.theta_d - msg.feedback.theta_c_hat])
                         mean_f_c_hat = np.append(mean_f_c_hat, [msg.feedback.f_c_hat])
                         mean_error_f_c_hat = np.append(mean_error_f_c_hat, [msg.feedback.f_d - msg.feedback.f_c_hat])
                     else:
-                        mean_x_c_hat[i] = (mean_x_c_hat[i] + msg.feedback.x_c_hat)
+                        mean_x_c_hat[i] = (mean_x_c_hat[i] + msg.feedback.x_c_hat - msg.feedback.x_c_2)
                         mean_error_x_c_hat[i] = mean_error_x_c_hat[i] + msg.feedback.x_d - msg.feedback.x_c_hat
-                        mean_theta_c_hat[i] = (mean_theta_c_hat[i] + msg.feedback.theta_c_hat)
+                        mean_theta_c_hat[i] = (mean_theta_c_hat[i] + msg.feedback.theta_c_hat - msg.feedback.theta_c_2)
                         mean_error_theta_c_hat[i] = mean_error_theta_c_hat[i] + msg.feedback.theta_d - msg.feedback.theta_c_hat
                         mean_f_c_hat[i] = (mean_f_c_hat[i] + msg.feedback.f_c_hat)
                         mean_error_f_c_hat[i] = mean_error_f_c_hat[i] + msg.feedback.f_d - msg.feedback.f_c_hat
@@ -118,7 +126,7 @@ if __name__ == '__main__':
                     plt.grid(True)
 
                     plt.subplot(322)
-                    plt.plot(t, x_c_hat, color=gray)
+                    plt.plot(t, x_c_hat - x_c, color=gray)
                     plt.title('$x_c$ estimate')
                     plt.grid(True)
 
@@ -128,7 +136,7 @@ if __name__ == '__main__':
                     plt.grid(True)
 
                     plt.subplot(324)
-                    plt.plot(t, theta_c_hat, color=gray)
+                    plt.plot(t, theta_c_hat - theta_c, color=gray)
                     plt.title('Angle estimate')
                     plt.grid(True)
 
@@ -144,6 +152,26 @@ if __name__ == '__main__':
                     plt.xlabel('Time [s]')
                     plt.grid(True)
 
+                    # plt.figure(2)
+                    # plt.subplot(311)
+                    # plt.plot(t, x_c, 'k')
+                    # plt.plot(t, x_e, 'b')
+                    # plt.title('$x_c$')
+                    # plt.grid(True)
+                    # plt.subplot(312)
+                    # plt.plot(t, y_e, 'b')
+                    # plt.title('$y_e$')
+                    # plt.grid(True)
+                    # plt.subplot(313)
+                    # plt.plot(t, theta_c, 'k')
+                    # plt.plot(t, theta_c_hat, 'b')
+                    # plt.title('$\\theta_c$')
+                    # plt.xlabel('Time [s]')
+                    # plt.grid(True)
+
+                else:
+                    print("error, no t")
+
         mean_x_c_hat = mean_x_c_hat/(num + 1)
         mean_theta_c_hat = mean_theta_c_hat/(num + 1)
         mean_f_c_hat = mean_f_c_hat/(num + 1)
@@ -151,6 +179,7 @@ if __name__ == '__main__':
         mean_error_theta_c_hat = mean_error_theta_c_hat/(num + 1)
         mean_error_f_c_hat = mean_error_f_c_hat/(num + 1)
 
+        plt.figure(1)
         plt.subplot(321)
         addLabelledPlot(t, mean_error_x_c_hat[0:len(t)], "$x_d - \hat{x}_c$", 'k')
         plt.subplot(322)

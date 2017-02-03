@@ -417,19 +417,16 @@ namespace cartesian_controllers {
     e = x_d_ - x_hat_;
 
     // Compute the ground truth from the known length and known surface
-    double x1, x2, y1, y2, D, dr, dx, dy, real_x1, real_x2, real_theta1, real_theta2;
-    x1 = -x_e_[0];
-    x2 = 5 - x_e_[0]; // any point will do, make it distant to prevent issues
-    y1 = -x_e_[1];
-    y2 = -x_e_[1];
-    dx = x2 - x1;
-    dy = y2 - y1;
-    D = x1*y2 - x2*y1;
-    dr = std::sqrt(dx*dx + dy*dy);
+    double real_x1, real_x2, real_theta1, real_theta2;
+    double A, B, C, line_displacement;
+    line_displacement = 0;
+    A = 1;
+    B = -x_e_[0];
+    C = x_e_[1]*x_e_[1] - hardcoded_length_*hardcoded_length_ + x_e_[0]*x_e_[0] - 2*line_displacement*x_e_[1] + line_displacement*line_displacement;
 
-    real_x1 = (D*dy + dx*std::sqrt(hardcoded_length_*hardcoded_length_*dr*dr - D*D))/(dr*dr);
+    real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta1 = std::acos(real_x1/hardcoded_length_);
-    real_x2 = (D*dy - dx*std::sqrt(hardcoded_length_*hardcoded_length_*dr*dr - D*D))/(dr*dr);
+    real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta2 = std::acos(real_x2/hardcoded_length_);
 
     feedback_.x_c_1 = real_x1;

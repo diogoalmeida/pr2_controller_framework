@@ -65,14 +65,14 @@ namespace manipulation{
     geometry_msgs::PoseStamped surface_frame_pose_;
     std::string base_link_name_, tool_frame_name_;
     std::string gravity_compensation_service_name_;
-    int num_of_experiments_;
+    int num_of_experiments_, current_iter_;
     bool use_vision_, sim_mode_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 
     std::default_random_engine noise_generator_;
-    std::normal_distribution<double> noise_x_d_;
-    std::normal_distribution<double> noise_theta_d_;
-    std::normal_distribution<double> noise_f_d_;
+    std::uniform_real_distribution<double> noise_x_d_;
+    std::uniform_real_distribution<double> noise_theta_d_;
+    std::uniform_real_distribution<double> noise_f_d_;
   };
   }
 #endif

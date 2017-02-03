@@ -14,8 +14,8 @@ manipulation_controller:
   action_server_name: dexterous_manipulation
   spring_constant: 0.17
   gains:
-    k_1: 0.9
-    k_2: 1.5
+    k_1: 0.7
+    k_2: 1.0
     k_3: 3.2
   saturations:
     x: 0.1
@@ -26,13 +26,14 @@ manipulation_controller:
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
   initial_angle_offset: -0.0
   wait_for_tf_time: 1
+  surface_frame_offset: 0.02
   estimator:
     Q:
-      data: [100, 0, 0, 0, 10, 0, 0, 0, 3]
+      data: [100, 0, 0, 0, 10, 0, 0, 0, 4]
     R:
       data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
 
-    initial_x_offset: -0.07
+    initial_x_offset: -0.15
     initial_theta_offset: 0
 
 approach_controller:

@@ -7,10 +7,16 @@ int32 num_of_experiments
 std_msgs/String bag_prefix
 geometry_msgs/Vector3 desired_state
 bool randomize_desired_state
-geometry_msgs/Vector3 randomization_covars
+float64 x_min
+float64 x_max
+float64 theta_min
+float64 theta_max
+float64 f_min
+float64 f_max
 
 ---
 # Empty result
 ---
 # Provide status of what's being run as feedback
 string current_action
+string progress

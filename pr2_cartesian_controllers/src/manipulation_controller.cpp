@@ -115,6 +115,7 @@ namespace cartesian_controllers {
       pose_in.header.stamp = ros::Time(0);
       listener_.transformPose(base_link_, pose_in, pose_out);
       tf::poseMsgToEigen(pose_out.pose, surface_frame_);
+      surface_frame_.matrix().block<3,1>(0,3) = surface_frame_.matrix().block<3,1>(0,3) - surface_frame_offset_*surface_frame_.matrix().block<3,1>(0,2); // compensate for camera offset
 
       tf::vectorMsgToEigen(goal->debug_eef_to_grasp, debug_eef_to_grasp_eig_);
       debug_x_ = goal->debug_twist.linear.x;
@@ -301,6 +302,12 @@ namespace cartesian_controllers {
     if (!nh_.getParam("/manipulation_controller/estimator/initial_theta_offset", init_theta_offset_))
     {
       ROS_ERROR("Missing initial_theta_offset (/manipulation_controller/estimator/initial_theta_offset)");
+      return false;
+    }
+
+    if (!nh_.getParam("/manipulation_controller/surface_frame_offset", surface_frame_offset_))
+    {
+      ROS_ERROR("Missing surface_frame_offset (/manipulation_controller/surface_frame_offset)");
       return false;
     }
 

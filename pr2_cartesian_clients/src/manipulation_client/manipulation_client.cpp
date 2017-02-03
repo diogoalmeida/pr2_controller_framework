@@ -260,6 +260,7 @@ void ManipulationClient::publishFeedback()
       {
         boost::lock_guard<boost::mutex> guard(reference_mutex_);
         feedback_.current_action = current_action_;
+        feedback_.progress = std::string("Performed ") + std::to_string(current_iter_) + std::string(" out of ") + std::to_string(num_of_experiments_);
         action_server_->publishFeedback(feedback_);
       }
 
@@ -323,22 +324,22 @@ void ManipulationClient::goalCB()
 
       if (goal->randomize_desired_state)
       {
-        noise_x_d_ = std::normal_distribution<double>(0, goal->randomization_covars.x);
-        noise_theta_d_ = std::normal_distribution<double>(0, goal->randomization_covars.y);
-        noise_f_d_ = std::normal_distribution<double>(0, goal->randomization_covars.z);
+        noise_x_d_ = std::uniform_real_distribution<double>(goal->x_min, goal->x_max);
+        noise_theta_d_ = std::uniform_real_distribution<double>(goal->theta_min, goal->theta_max);
+        noise_f_d_ = std::uniform_real_distribution<double>(goal->f_min, goal->f_max);
       }
       else
       {
-        noise_x_d_ = std::normal_distribution<double>(0, 0);
-        noise_theta_d_ = std::normal_distribution<double>(0, 0);
-        noise_f_d_ = std::normal_distribution<double>(0, 0);
+        noise_x_d_ = std::uniform_real_distribution<double>(0, 0);
+        noise_theta_d_ = std::uniform_real_distribution<double>(0, 0);
+        noise_f_d_ = std::uniform_real_distribution<double>(0, 0);
       }
     }
     else
     {
-      noise_x_d_ = std::normal_distribution<double>(0, 0);
-      noise_theta_d_ = std::normal_distribution<double>(0, 0);
-      noise_f_d_ = std::normal_distribution<double>(0, 0);
+      noise_x_d_ = std::uniform_real_distribution<double>(0, 0);
+      noise_theta_d_ = std::uniform_real_distribution<double>(0, 0);
+      noise_f_d_ = std::uniform_real_distribution<double>(0, 0);
     }
   }
   else
@@ -463,6 +464,7 @@ void ManipulationClient::runExperiment()
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = manipulation_action_name_;
+          current_iter_ = current_iter;
         }
 
 

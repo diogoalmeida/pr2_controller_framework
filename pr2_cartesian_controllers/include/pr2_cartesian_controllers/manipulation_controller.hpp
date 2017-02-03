@@ -19,7 +19,7 @@ private:
   double wait_for_tf_time_;
   bool has_initial_, estimate_length_;
   bool finished_acquiring_goal_;
-  double estimated_length_, estimated_orientation_, hardcoded_length_, k_s_, theta_o_;
+  double estimated_length_, estimated_orientation_, hardcoded_length_, k_s_, theta_o_, surface_frame_offset_;
   double init_x_offset_, init_theta_offset_; // to initialize the ekf estimator
   Eigen::Affine3d surface_frame_, grasp_point_pose_, end_effector_pose_;
   Eigen::Vector3d estimated_r_, x_hat_, x_d_, x_e_;

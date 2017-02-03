@@ -203,7 +203,9 @@ namespace cartesian_controllers {
           x_real_eigen = y_pos + (feedback_.x_c_2 + surface_frame_horizontal_offset_)*surface_frame_.rotation().block<3,1>(0,0);
           r_d = cos(x_d_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_d_[1])*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
           r_1 = cos(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,2);
-          r_real = cos(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,0) + sin(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,2);
+
+          double theta = std::atan2(x_e_[1] + surface_frame_vertical_offset_, x_e_[0] + surface_frame_horizontal_offset_ - feedback_.x_c_2);
+          r_real = cos(theta)*surface_frame_.rotation().block<3,1>(0,0) + sin(theta)*surface_frame_.rotation().block<3,1>(0,2);
           estimated_length = (x_e_[0] - x_hat_[0])/cos(x_hat_[1]);
 
           getMarkerPoints(x_d_eigen, x_d_eigen + hardcoded_length_*r_d, desired_pose);

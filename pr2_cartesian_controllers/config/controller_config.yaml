@@ -27,7 +27,7 @@ manipulation_controller:
   initial_angle_offset: -0.0
   wait_for_tf_time: 1
   surface_frame_vertical_offset: -0.01
-  surface_frame_horizontal_offset: 0.02
+  surface_frame_horizontal_offset: -0.1
   estimator:
     Q:
       data: [100, 0, 0, 0, 10, 0, 0, 0, 4]

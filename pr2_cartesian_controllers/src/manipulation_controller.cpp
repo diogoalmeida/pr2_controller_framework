@@ -199,9 +199,9 @@ namespace cartesian_controllers {
         {
 
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          x_d_eigen = surface_frame_.translation() + x_d_[0]*surface_frame_.rotation().block<3,1>(0,0);
-          x_c_eigen = surface_frame_.translation() + x_hat_[0]*surface_frame_.rotation().block<3,1>(0,0);
-          x_real_eigen = surface_frame_.translation() + feedback_.x_c_2*surface_frame_.rotation().block<3,1>(0,0);
+          x_d_eigen = surface_frame_.matrix().block<3,1>(0,3) + x_d_[0]*surface_frame_.rotation().block<3,1>(0,0);
+          x_c_eigen = surface_frame_.matrix().block<3,1>(0,3) + x_hat_[0]*surface_frame_.rotation().block<3,1>(0,0);
+          x_real_eigen = surface_frame_.matrix().block<3,1>(0,3) + feedback_.x_c_2*surface_frame_.rotation().block<3,1>(0,0);
           r_d = cos(x_d_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_d_[1])*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
           r_1 = cos(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,2);
           r_real = cos(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,0) + sin(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,2);

@@ -441,7 +441,7 @@ namespace cartesian_controllers {
     real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta1 = std::atan2(center_y, (center_x - real_x2)) - M_PI;
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta2 = std::arctan2(center_y/(center_x - real_x2)) - M_PI;
+    real_theta2 = std::atan2(center_y/(center_x - real_x2)) - M_PI;
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;

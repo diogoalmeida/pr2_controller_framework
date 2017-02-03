@@ -16,6 +16,7 @@ namespace cartesian_controllers {
     startActionlib();
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_estimated", 1);
+    ground_truth_pub_ = nh_.advertise<visualization_msgs::Marker>("manipulation_controller_ground_truth", 1);
     eef_to_grasp_pub_ = nh_.advertise<visualization_msgs::Marker>("eef_to_grasp_pose", 1);
     finished_acquiring_goal_ = false;
     feedback_thread_ = boost::thread(boost::bind(&ManipulationController::publishFeedback, this));
@@ -151,11 +152,11 @@ namespace cartesian_controllers {
   */
   void ManipulationController::publishFeedback()
   {
-    visualization_msgs::Marker object_pose, desired_pose, eef_to_grasp_marker;
+    visualization_msgs::Marker object_pose, desired_pose, ground_truth, eef_to_grasp_marker;
     std_msgs::ColorRGBA object_color;
     geometry_msgs::Pose grasp_pose_geo;
     tf::Transform transform;
-    Eigen::Vector3d r_1, r_d, x_d_eigen, x_c_eigen;
+    Eigen::Vector3d r_1, r_d, x_d_eigen, x_c_eigen, r_real, x_real_eigen;
     double estimated_length;
 
     object_color.r = 1;
@@ -177,8 +178,12 @@ namespace cartesian_controllers {
     desired_pose.id = 2;
     desired_pose.color.r = 0;
     desired_pose.color.g = 1;
+    ground_truth = object_pose;
+    ground_truth.id = 3;
+    ground_truth.color.g = 0;
+    ground_truth.color.b = 1;
     eef_to_grasp_marker = desired_pose;
-    eef_to_grasp_marker.id = 3;
+    eef_to_grasp_marker.id = 4;
     eef_to_grasp_marker.type = eef_to_grasp_marker.ARROW;
     eef_to_grasp_marker.scale.y = 0.01;
     eef_to_grasp_marker.scale.z = 0.01;
@@ -194,14 +199,19 @@ namespace cartesian_controllers {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           x_d_eigen = surface_frame_.translation() + x_d_[0]*surface_frame_.rotation().block<3,1>(0,0);
           x_c_eigen = surface_frame_.translation() + x_hat_[0]*surface_frame_.rotation().block<3,1>(0,0);
+          x_real_eigen = surface_frame_.translation() + feedback_.x_c_2*surface_frame_.rotation().block<3,1>(0,0);
           r_d = cos(x_d_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_d_[1])*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
           r_1 = cos(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,2);
+          r_real = cos(feedback_.x_c_2)*surface_frame_.rotation().block<3,1>(0,0) + sin(hardcoded_length_*cos(feedback_.theta_c_2))*surface_frame_.rotation().block<3,1>(0,2);
           estimated_length = (x_e_[0] - x_hat_[0])/cos(x_hat_[1]);
 
           getMarkerPoints(x_d_eigen, x_d_eigen + hardcoded_length_*r_d, desired_pose);
           getMarkerPoints(x_c_eigen, x_c_eigen + estimated_length*r_1, object_pose);
+          getMarkerPoints(x_real_eigen, x_real_eigen + hardcoded_length_*r_real, ground_truth);
 
           object_pose.header.stamp = ros::Time::now();
+          desired_pose.header.stamp = ros::Time::now();
+          ground_truth.header.stamp = ros::Time::now();
 
           tf::poseEigenToMsg(grasp_point_pose_, grasp_pose_geo);
           transform.setOrigin(tf::Vector3(grasp_pose_geo.position.x, grasp_pose_geo.position.y, grasp_pose_geo.position.z));
@@ -212,7 +222,8 @@ namespace cartesian_controllers {
 
           current_pub_.publish(object_pose);
           target_pub_.publish(desired_pose);
-          eef_to_grasp_pub_.publish(eef_to_grasp_marker);
+          ground_truth_pub_.publish(ground_truth);
+          // eef_to_grasp_pub_.publish(eef_to_grasp_marker);
 
           action_server_->publishFeedback(feedback_);
         }

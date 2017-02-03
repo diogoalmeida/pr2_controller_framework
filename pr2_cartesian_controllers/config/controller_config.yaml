@@ -28,9 +28,9 @@ manipulation_controller:
   wait_for_tf_time: 1
   estimator:
     Q:
-      data: [100, 0, 0, 0, 10, 0, 0, 0, 2]
+      data: [100, 0, 0, 0, 10, 0, 0, 0, 3]
     R:
-      data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
+      data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
 
     initial_x_offset: -0.07
     initial_theta_offset: 0

@@ -37,7 +37,7 @@ private:
   Eigen::Vector3d debug_eef_to_grasp_eig_;
   double debug_x_, debug_y_, debug_rot_;
 
-  ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_;
+  ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_, ground_truth_pub_;
   tf::TransformBroadcaster broadcaster_;
 
   Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);

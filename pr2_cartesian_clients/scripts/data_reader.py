@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 log_directory_name = " "
-bag_prefix = "random_no_spring_"
+bag_prefix = "test_"
 
 
 def loadParams():

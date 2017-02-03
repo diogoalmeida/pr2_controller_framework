@@ -26,7 +26,8 @@ manipulation_controller:
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
   initial_angle_offset: -0.0
   wait_for_tf_time: 1
-  surface_frame_offset: 0.02
+  surface_frame_vertical_offset: -0.01
+  surface_frame_horizontal_offset: 0.02
   estimator:
     Q:
       data: [100, 0, 0, 0, 10, 0, 0, 0, 4]

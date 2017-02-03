@@ -439,9 +439,9 @@ namespace cartesian_controllers {
     C = center_y*center_y - hardcoded_length_*hardcoded_length_ + center_x*center_x - 2*line_displacement*center_y + line_displacement*line_displacement;
 
     real_x1 = (-B + std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta1 = std::asin(center_y/hardcoded_length_);
+    real_theta1 = std::atan(center_y/(real_x1 - x_center));
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
-    real_theta2 = std::asin(center_y/hardcoded_length_);
+    real_theta2 = std::atan(center_y/(real_x2 - x_center));
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;

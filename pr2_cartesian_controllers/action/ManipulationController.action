@@ -14,9 +14,13 @@ geometry_msgs/Twist debug_twist
 ---
 # Feedback: information that may be used to debug the controller
 float64 x_c_hat
+float64 x_c_1
+float64 x_c_2
 float64 x_d
 float64 var_x
 float64 theta_c_hat
+float64 theta_c_1
+float64 theta_c_2
 float64 theta_d
 float64 var_theta
 float64 f_c_hat # estimated

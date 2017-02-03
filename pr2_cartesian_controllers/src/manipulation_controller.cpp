@@ -115,8 +115,6 @@ namespace cartesian_controllers {
       pose_in.header.stamp = ros::Time(0);
       listener_.transformPose(base_link_, pose_in, pose_out);
       tf::poseMsgToEigen(pose_out.pose, surface_frame_);
-      surface_frame_.matrix().block<3,1>(0,3) = surface_frame_.matrix().block<3,1>(0,3) + surface_frame_vertical_offset_*surface_frame_.matrix().block<3,1>(0,2); // compensate for camera offset
-      surface_frame_.matrix().block<3,1>(0,3) = surface_frame_.matrix().block<3,1>(0,3) + surface_frame_horizontal_offset_*surface_frame_.matrix().block<3,1>(0,0); // compensate for camera offset
 
       tf::vectorMsgToEigen(goal->debug_eef_to_grasp, debug_eef_to_grasp_eig_);
       debug_x_ = goal->debug_twist.linear.x;
@@ -199,9 +197,10 @@ namespace cartesian_controllers {
         {
 
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          x_d_eigen = surface_frame_.matrix().block<3,1>(0,3) + x_d_[0]*surface_frame_.rotation().block<3,1>(0,0);
-          x_c_eigen = surface_frame_.matrix().block<3,1>(0,3) + x_hat_[0]*surface_frame_.rotation().block<3,1>(0,0);
-          x_real_eigen = surface_frame_.matrix().block<3,1>(0,3) + feedback_.x_c_2*surface_frame_.rotation().block<3,1>(0,0);
+          Eigen::Vector3d y_pos = surface_frame_.translation() + surface_frame_vertical_offset_*surface_frame_.rotation().block<3,1>(0,2);
+          x_d_eigen = y_pos + (x_d_[0] + surface_frame_horizontal_offset_)*surface_frame_.rotation().block<3,1>(0,0);
+          x_c_eigen = y_pos + (x_hat_[0] + surface_frame_horizontal_offset_)*surface_frame_.rotation().block<3,1>(0,0);
+          x_real_eigen = y_pos + (feedback_.x_c_2 + surface_frame_horizontal_offset_)*surface_frame_.rotation().block<3,1>(0,0);
           r_d = cos(x_d_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_d_[1])*surface_frame_.rotation().block<3,1>(0,2); // r = cos(theta)*x + sin(theta)*z
           r_1 = cos(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,0) + sin(x_hat_[1])*surface_frame_.rotation().block<3,1>(0,2);
           r_real = cos(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,0) + sin(feedback_.theta_c_2)*surface_frame_.rotation().block<3,1>(0,2);

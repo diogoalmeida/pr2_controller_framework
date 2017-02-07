@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <math.h>
+#include <pr2_algorithms/algorithm_base.hpp>
 #include <limits>
 #include <stdexcept>
 
@@ -11,7 +12,7 @@ namespace manipulation_algorithms{
   Class that implements an extended kalman filter observer to estimate
   the state of the dexterous manipulation controller.
 */
-class ManipulationEKF
+class ManipulationEKF : public AlgorithmBase
 {
 public:
   ManipulationEKF();
@@ -57,28 +58,9 @@ public:
 
 private:
   Eigen::Vector3d x_hat_;
-  Eigen::Matrix3d P_, Q_, R_;
+  Eigen::MatrixXd P_, Q_, R_;
   double k_s_, theta_o_;
-
-  /**
-    Initialize a 3x3 matrix from values obtained from the ros parameter
-    server.
-
-    @param M The matrix to be initialized
-    @param configName The parameter server location
-    @param n The ros nodehandle used to query the parameter server
-
-    @return True for success, False otherwise
-  */
-  bool parseMatrixData(Eigen::Matrix3d &M, const std::string configName, const ros::NodeHandle &n);
-
-  /**
-    Fill in a 3x3 matrix with the given values.
-
-    @param M The matrix to be filled in
-    @param vals A vector with the values to fill in
-  */
-  void initializeEigenMatrix(Eigen::Matrix3d &M, const std::vector<double> vals);
+  bool estimate_k_s_;
 };
 }
 #endif

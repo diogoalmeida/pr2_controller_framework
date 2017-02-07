@@ -65,20 +65,7 @@ namespace manipulation_algorithms{
     return true;
   }
 
-  double ManipulationAlgorithm::saturateOutput(const double original, const double max)
-  {
-    if (std::abs(original) > max)
-    {
-      if (original < 0)
-      {
-        return -max;
-      }
-
-      return max;
-    }
-
-    return original;
-  }
+  
 
   Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::Vector3d &x_c, const Eigen::Vector3d &x_e)
   {
@@ -95,7 +82,7 @@ namespace manipulation_algorithms{
       u[0] = saturateOutput(u[0], max_command_x_);
       u[1] = saturateOutput(u[1], max_command_y_);
       u[2] = saturateOutput(u[2], max_command_theta_);
-      
+
       return u;
     }
     else

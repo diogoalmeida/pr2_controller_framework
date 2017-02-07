@@ -33,10 +33,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(manipulation_control_algorithm src/manipulation_control_algorithm.cpp)
+add_library(manipulation_control_algorithm src/manipulation_control_algorithm.cpp src/algorithm_base.cpp)
 target_link_libraries(manipulation_control_algorithm ${catkin_LIBRARIES})
 
-add_library(manipulation_ekf src/manipulation_ekf.cpp)
+add_library(manipulation_ekf src/manipulation_ekf.cpp src/algorithm_base.cpp)
 target_link_libraries(manipulation_ekf ${catkin_LIBRARIES})
 
 add_executable(test_bed src/test_bed.cpp)

@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <math.h>
+#include <pr2_algorithms/algorithm_base.hpp>
 #include <limits>
 #include <stdexcept>
 
@@ -10,7 +11,7 @@ namespace manipulation_algorithms{
   /**
     Class that implements the dexterous manipulation control algorithm.
   */
-  class ManipulationAlgorithm
+  class ManipulationAlgorithm : public AlgorithmBase
   {
   public:
     ManipulationAlgorithm();
@@ -47,35 +48,6 @@ namespace manipulation_algorithms{
       @return The inverse of the task jacobian
     */
     Eigen::Matrix3d computeInvG(const double x_e, const double x_c, const double theta_c);
-
-    /**
-      Initialize a 3x3 matrix from values obtained from the ros parameter
-      server.
-
-      @param M The matrix to be initialized
-      @param configName The parameter server location
-      @param n The ros nodehandle used to query the parameter server
-
-      @return True for success, False otherwise
-    */
-    bool parseMatrixData(Eigen::Matrix3d &M, const std::string configName, const ros::NodeHandle &n);
-
-    /**
-      Fill in a 3x3 matrix with the given values.
-
-      @param M The matrix to be filled in
-      @param vals A vector with the values to fill in
-    */
-    void initializeEigenMatrix(Eigen::Matrix3d &M, const std::vector<double> vals);
-
-    /**
-      Saturates a control output
-
-      @param original The computed output
-      @param max The maximum allowed absolute value for the computed output
-      @return The original, if abs(original) <= max, sign(original)*max otherwise
-    */
-    double saturateOutput(const double original, const double max);
   };
 }
 #endif

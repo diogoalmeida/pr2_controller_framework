@@ -31,6 +31,23 @@ namespace manipulation_algorithms{
       return false;
     }
 
+    if (!n.getParam("/manipulation_controller/estimate_spring_constant", estimate_k_s_)) // if true, k_s_ will be taken as a state variable
+    {
+      ROS_ERROR("Missing estimate spring constant (/manipulation_controller/estimate_spring_constant)");
+      return false;
+    }
+
+    if (estimate_k_s_)
+    {
+      P_ = Eigen::MatrixXd(4,4);
+      R_ = Eigen::MatrixXd(4,4);
+    }
+    else
+    {
+      P_ = Eigen::MatrixXd(3,3);
+      P_ = Eigen::MatrixXd(3,3);
+    }
+
     if (!n.getParam("/manipulation_controller/initial_angle_offset", theta_o_))
     {
       ROS_ERROR("Missing initial angle offset (/manipulation_controller/initial_angle_offset)");
@@ -111,49 +128,6 @@ namespace manipulation_algorithms{
     // P_ = (I - K*C)*P_;
 
     return x_hat_;
-  }
-
-  bool ManipulationEKF::parseMatrixData(Eigen::Matrix3d &M, const std::string configName, const ros::NodeHandle &n)
-  {
-    std::vector<double> vals;
-
-    if(n.hasParam(configName.c_str()))
-    {
-      if(n.hasParam((configName + std::string("/data").c_str())))
-      {
-        n.getParam((configName + std::string("/data")).c_str(), vals);
-        initializeEigenMatrix(M, vals);
-      }
-      else
-      {
-        ROS_ERROR("Matrix definition %s has no data values (%s)! Shutting down..."
-        , configName.c_str(), (configName + std::string("/data")).c_str());
-        return false;
-      }
-    }
-    else
-    {
-      ROS_ERROR("Configuration name %s does not exist", configName.c_str());
-      return false;
-    }
-
-    return true;
-  }
-
-  void ManipulationEKF::initializeEigenMatrix(Eigen::Matrix3d &M, const std::vector<double> vals)
-  {
-    if (vals.size() != 9)
-    {
-      throw std::length_error("'vals' has incorrect dimension");
-    }
-
-    for(int i = 0; i < 3; i++)
-    {
-      for(int j = 0; j < 3; j++)
-        {
-          M(i,j) = vals[i*3 + j];
-        }
-    }
   }
 
 }

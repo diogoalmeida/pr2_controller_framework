@@ -38,4 +38,4 @@ experiment:
   logging:
     logging_topic: /realtime_loop/dexterous_manipulation/feedback
     toggle_logging_service: /data_logger/toggle
-    log_directory: throwaway
+    log_directory: best_results

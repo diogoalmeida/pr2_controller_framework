@@ -38,6 +38,8 @@ namespace manipulation_algorithms {
     // TODO: Checks
     int size = std::sqrt(vals.size());
 
+    ROS_INFO("Initializing size %d", size);
+
     M = Eigen::MatrixXd(size, size);
 
     for(int i = 0; i < size; i++)

@@ -65,12 +65,15 @@ namespace manipulation_algorithms{
     return true;
   }
 
-  
-
-  Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::Vector3d &x_c, const Eigen::Vector3d &x_e)
+  Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c, const Eigen::Vector3d &x_e)
   {
     Eigen::Matrix3d inv_G;
-    Eigen::Vector3d e, u;
+    Eigen::Vector3d e, u, control_state;
+
+    if (x_c.size() > 3) // spring is being estimated
+    {
+      k_s_ = x_c[3];
+    }
 
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
     e = x_d - x_c;
@@ -94,11 +97,13 @@ namespace manipulation_algorithms{
   Eigen::Matrix3d ManipulationAlgorithm::computeInvG(const double x_e, const double x_c, const double theta_c)
   {
     Eigen::Matrix3d inv;
-    double d_x;
+    double d_x, epsilon;
+
+    epsilon = std::numeric_limits<double>::epsilon();
 
     d_x = x_e - x_c;
 
-    if (std::abs(1/(k_s_*std::cos(theta_c))) < std::numeric_limits<double>::epsilon()) // prevent 0/0, defined as 0
+    if (std::abs(1/(k_s_*std::cos(theta_c))) < epsilon || std::abs(k_s_) < epsilon) // prevent 0/0, defined as 0
     {
       ROS_WARN("Manipulation control algorithms numeric limit");
       inv << 1, 0               , 0,

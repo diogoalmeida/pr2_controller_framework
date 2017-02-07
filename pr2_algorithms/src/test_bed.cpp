@@ -62,7 +62,7 @@ int main(int argc, char ** argv)
   double k_s, max_time, epsilon, spring, force, torque;
   ros::Time init_time, prev_time;
   ros::Duration dt;
-  ros::Rate r(100);
+  ros::Rate r(1000);
   std::default_random_engine generator;
   std::normal_distribution<double> obs_noise(0.0, 0.01);
 
@@ -71,11 +71,11 @@ int main(int argc, char ** argv)
   x_d = Eigen::Vector3d::Zero();
   x_d[0] = 0.02;
   x_d[1] = 0.1;
-  x_d[2] = 1; // desired contact force
+  x_d[2] = -1; // desired contact force
   force = 0;
   torque = 0;
   getInitialState(x_c, x_e, spring);
-  x_hat << x_c[0] + 0.2, x_c[1] + 0.2, x_c[2] + 0.3;
+  x_hat << x_c[0], x_c[1], x_c[2];
   estimator_alg.getParams(n);
   control_alg.getParams(n);
   estimator_alg.initialize(x_hat);
@@ -95,28 +95,32 @@ int main(int argc, char ** argv)
 
   while ((ros::Time::now() - init_time).toSec() < max_time)
   {
-    u = control_alg.compute(x_d, x_c, x_e);
+    // u = control_alg.compute(x_d, x_c, x_e);
+    u = control_alg.compute(x_d, x_hat, x_e);
     // u = Eigen::Vector3d::Zero();
     G = computeG(x_e[0], x_c[0], x_c[1]);
     dt = ros::Time::now() - prev_time;
     x_e = x_e + u*dt.toSec();
     d_xc = G*u;
     x_c = x_c + d_xc*dt.toSec();
-    spring = spring + (u[2] - d_xc[1])*dt.toSec();
+    spring = x_e[2] - x_c[1];
     torque = -k_s*spring;
     force = torque/L;
 
     // ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
 
-    if(std::abs(std::cos(x_c[1])) > epsilon)
+    if(std::abs(k_s*std::cos(x_c[1])) > epsilon)
     {
-      // y << torque/force + 0*obs_noise(generator), force + 0*obs_noise(generator), x_e[1] + torque/k_s + 0*obs_noise(generator);
-      y << (x_e[0] - x_c[0])/std::cos(x_c[1]) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator);
+      // y << torque/force + 0*obs_noise(generator),  x_e[1] + torque/k_s + 0*obs_noise(generator), force + 0*obs_noise(generator);
+      y << L + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator);
+      // y << (x_e[0] - x_c[0])/std::cos(x_c[1]) + 0*obs_noise(generator), x_c[1] - x_c[2]*(x_e[0] - x_c[0])/(k_s*std::cos(x_c[1])) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator);
     }
     else
     {
-      y << 0, force + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator);
+      y << 0, x_c[1] + 0*obs_noise(generator), force + 0*obs_noise(generator);
     }
+
+    std::cout << "y:" << std::endl << y << std::endl;
 
     variances = estimator_alg.getVariance();
     std::cout << variances << std::endl << std::endl;

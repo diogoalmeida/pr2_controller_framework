@@ -3,10 +3,6 @@
 namespace manipulation_algorithms{
   ManipulationEKF::ManipulationEKF()
   {
-    x_hat_ << Eigen::Vector3d::Zero();
-    P_ << Eigen::Matrix3d::Identity();
-    Q_ << Eigen::Matrix3d::Identity();
-    R_ << Eigen::Matrix3d::Identity();
     k_s_ = 1; // avoid division by 0
     theta_o_ = 0;
   }
@@ -18,9 +14,15 @@ namespace manipulation_algorithms{
 
   void ManipulationEKF::initialize(const Eigen::Vector3d &init_x)
   {
-    x_hat_ = init_x;
+    for (int i = 0; i < 3; i++)
+    {
+      x_hat_[i] = init_x[i];
+    }
 
-    P_ << Eigen::Matrix3d::Identity();
+    for (int i = 0; i < P_.rows(); i++)
+    {
+      P_(i, i) = 1;
+    }
   }
 
   bool ManipulationEKF::getParams(const ros::NodeHandle &n)
@@ -40,11 +42,9 @@ namespace manipulation_algorithms{
     if (estimate_k_s_)
     {
       P_ = Eigen::MatrixXd(4,4);
-      R_ = Eigen::MatrixXd(4,4);
     }
     else
     {
-      P_ = Eigen::MatrixXd(3,3);
       P_ = Eigen::MatrixXd(3,3);
     }
 
@@ -64,6 +64,12 @@ namespace manipulation_algorithms{
       return false;
     }
 
+    if (estimate_k_s_ && R_.rows() != 4)
+    {
+      ROS_ERROR("Incorrect size for R, must be 4x4, is %dx%d", (int)R_.rows(), (int)R_.cols());
+      return false;
+    }
+
     return true;
   }
 
@@ -78,11 +84,53 @@ namespace manipulation_algorithms{
 
   Eigen::Vector3d ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
-    Eigen::Matrix3d A, C, K, G, I, P, O;
+    Eigen::MatrixXd A, C, P, G, I, K;
     Eigen::Vector3d h, innovation;
-    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon;
+    Eigen::VectorXd estimate;
+    double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon, xi, gamma_1, gamma_2;
 
-    I = Eigen::Matrix3d::Identity();
+    if (estimate_k_s_)
+    {
+      C = Eigen::MatrixXd(3,4);
+      P = Eigen::MatrixXd(4,4);
+      G = Eigen::MatrixXd(4,3);
+      A = Eigen::MatrixXd(4,4);
+      K = Eigen::MatrixXd(4,3);
+      estimate = Eigen::VectorXd(4);
+      estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+      I = Eigen::MatrixXd(4,4);
+      for (int i = 0; i < 16; i++)
+      {
+        I(i) = 0;
+      }
+
+      for (int i = 0; i < 4; i++)
+      {
+        I(i, i) = 1;
+      }
+    }
+    else
+    {
+      C = Eigen::MatrixXd(3,3);
+      P = Eigen::MatrixXd(3,3);
+      G = Eigen::MatrixXd(3,3);
+      I = Eigen::MatrixXd(3,3);
+      A = Eigen::MatrixXd(3,3);
+      K = Eigen::MatrixXd(3,3);
+
+      for (int i = 0; i < 9; i++)
+      {
+        I(i) = 0;
+      }
+
+      for (int i = 0; i < 3; i++)
+      {
+        I(i, i) = 1;
+      }
+      estimate = Eigen::VectorXd(3);
+      estimate << x_hat_[0], x_hat_[1], x_hat_[2];
+    }
+
     dx = x_e[0] - x_hat_[0];
     dx_square = dx*dx;
     dx_cube = dx_square*dx;
@@ -92,40 +140,70 @@ namespace manipulation_algorithms{
     cos_theta_square = cos_theta*cos_theta;
     epsilon = std::numeric_limits<double>::epsilon();
 
-    if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon)
+    if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon || std::abs(k_s_) < epsilon)
     {
-      ROS_WARN("Division by 0. dx_cube: %f\ncos_theta: %f\ncos_theta_square: %f\nepsilon: %f", dx_cube, cos_theta, cos_theta_square, epsilon);
+      ROS_WARN("Division by 0. dx_cube: %f\ncos_theta: %f\ncos_theta_square: %f\nk_s: %f\nepsilon: %f", dx_cube, cos_theta, cos_theta_square, k_s_, epsilon);
       return x_hat_;
     }
 
-    A << 0                         , u[1]/cos_theta_square, 0,
-         u[1]/dx_square, 0          , 0,
-         k_s_*cos_theta*(2*u[1] - u[2]*dx)/dx_cube, k_s_*sin_theta*(u[1] - u[2]*dx)/dx_square, 0;
+    gamma_1 = (2*u[1] - u[2]*dx)/dx_cube;
+    gamma_2 = (u[1] - u[2]*dx)/dx_square;
+    xi = 1/(cos_theta*k_s_);
 
-    C << -1/cos_theta, tan_theta*dx/cos_theta, 0,
-         0, 0, 1,
-         0, 1, 0;
+    if (!estimate_k_s_)
+    {
+      A << 0                         , u[1]/cos_theta_square, 0,
+           u[1]/dx_square, 0          , 0,
+           k_s_*cos_theta*gamma_1, -k_s_*sin_theta*gamma_2, 0;
 
-    G << 1, tan_theta, 0,
-         0, 1/dx, 0,
-         0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx;
+      C << -1/cos_theta, tan_theta*dx/cos_theta, 0,
+            0, 1, 0,
+            0, 0, 1;
 
-    h << dx/cos_theta, x_hat_[2], x_hat_[1];
+      G << 1, tan_theta, 0,
+           0, 1/dx, 0,
+           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx;
+
+      h << dx/cos_theta, x_hat_[1], x_hat_[2];
+    }
+    else
+    {
+      A << 0                         , u[1]/cos_theta_square, 0, 0,
+           u[1]/dx_square, 0          , 0, 0,
+           k_s_*cos_theta*gamma_1, -k_s_*sin_theta*gamma_2, 0, cos_theta*gamma_2,
+           0             , 0          , 0, 0;
+
+      C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
+            x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s_,
+            0, 0, 1, 0;
+
+      G << 1, tan_theta, 0,
+           0, 1/dx, 0,
+           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx,
+           0, 0, 0;
+
+      h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
+    }
 
     innovation = y - h;
 
+    std::cout << "innovation:" << std::endl << innovation << std::endl;
+
     // 1 - predict according to the end-effector motion (u)
-    x_hat_ = x_hat_ + G*u*dt;
+    estimate = estimate + G*u*dt;
     A = I + A*dt;
+
     P_.triangularView<Eigen::Upper>() = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
-    // P_ = A*P_*A.transpose() + R_;
 
     // 2 - update based on the innovation
     K = P_.selfadjointView<Eigen::Upper>()*C.transpose()*(C*P_.selfadjointView<Eigen::Upper>()*C.transpose() + Q_).inverse();
-    // K = P_*C.transpose()*(C*P_*C.transpose() + Q_).inverse();
-    x_hat_ = x_hat_ + K*innovation;
+    estimate = estimate + K*innovation;
     P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
-    // P_ = (I - K*C)*P_;
+
+    std::cout << "K:" << std::endl << K << std::endl;
+    std::cout << "estimate:" << std::endl << estimate << std::endl;
+
+    x_hat_ << estimate[0], estimate[1], estimate[2];
 
     return x_hat_;
   }

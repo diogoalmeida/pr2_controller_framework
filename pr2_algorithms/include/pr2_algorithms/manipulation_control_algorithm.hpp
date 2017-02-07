@@ -25,7 +25,7 @@ namespace manipulation_algorithms{
       @param x_e The end-effector state.
       @return The computed control values
     */
-    Eigen::Vector3d compute(const Eigen::Vector3d &x_d, const Eigen::Vector3d &x_c, const Eigen::Vector3d &x_e);
+    Eigen::Vector3d compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c, const Eigen::Vector3d &x_e);
 
     /**
       Obtain the parameters relevant to the controller from the parameter server.

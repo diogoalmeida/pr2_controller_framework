@@ -187,7 +187,7 @@ namespace manipulation_algorithms{
 
     innovation = y - h;
 
-    std::cout << "innovation:" << std::endl << innovation << std::endl;
+    // std::cout << "innovation:" << std::endl << innovation << std::endl;
 
     // 1 - predict according to the end-effector motion (u)
     estimate = estimate + G*u*dt;
@@ -200,10 +200,15 @@ namespace manipulation_algorithms{
     estimate = estimate + K*innovation;
     P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
 
-    std::cout << "K:" << std::endl << K << std::endl;
-    std::cout << "estimate:" << std::endl << estimate << std::endl;
+    // std::cout << "K:" << std::endl << K << std::endl;
+    // std::cout << "estimate:" << std::endl << estimate << std::endl;
 
     x_hat_ << estimate[0], estimate[1], estimate[2];
+
+    if (estimate_k_s_)
+    {
+      k_s_ = estimate[3];
+    }
 
     return x_hat_;
   }

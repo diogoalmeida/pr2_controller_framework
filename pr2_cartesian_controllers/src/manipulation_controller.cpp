@@ -431,8 +431,8 @@ namespace cartesian_controllers {
 
     // compute the measurements vector
     y << torque_e/force_e,
-         force_e,
-         x_e_[2] + torque_e/k_s_ - theta_o_;
+         x_e_[2] + torque_e/k_s_ - theta_o_,
+         force_e;
 
     actual_twist = grasp_point_velocity_kdl.GetTwist();
     tf::twistKDLToEigen(actual_twist, actual_twist_eigen);

@@ -15,10 +15,10 @@ manipulation_controller:
   spring_constant: 0.18
   estimate_spring_constant: false
   gains:
-    k_1: 0.7
-    k_2: 0.8
+    k_1: 0 #0.7
+    k_2: 0 #0.8
     # k_3: 3.2
-    k_3: 0.1
+    k_3: 0 #0.1
   saturations:
     x: 0.1
     y: 0.1
@@ -32,8 +32,8 @@ manipulation_controller:
   surface_frame_horizontal_offset: 0.02
   estimator:
     Q:
-      # data: [90, 0, 0, 0, 10, 0, 0, 0, 5]
-      data: [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1]
+      data: [90, 0, 0, 0, 10, 0, 0, 0, 5]
+      # data: [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1]
     R:
       # data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
       data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]

@@ -21,7 +21,7 @@ namespace manipulation_algorithms{
 
     for (int i = 0; i < P_.rows(); i++)
     {
-      P_(i, i) = 1;
+      P_(i, i) = 0.01;
     }
 
     if (init_x.size() > 3)

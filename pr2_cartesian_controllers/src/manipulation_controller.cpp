@@ -432,7 +432,16 @@ namespace cartesian_controllers {
     }
     else
     {
-      commands = controller_.compute(x_d_, x_hat_, x_e_);
+      if (estimate_k_s_)
+      {
+        Eigen::VectorXd x_c_aug;
+        x_c_aug << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+        commands = controller_.compute(x_d_, x_c_aug, x_e_);
+      }
+      else
+      {
+        commands = controller_.compute(x_d_, x_hat_, x_e_);
+      }
     }
 
     // compute the measurements vector

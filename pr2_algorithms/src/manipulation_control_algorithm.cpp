@@ -70,19 +70,14 @@ namespace manipulation_algorithms{
     Eigen::Matrix3d inv_G;
     Eigen::Vector3d e, u, control_state, x_c;
 
-    std::cout << "computing" << std::endl;
     if (x_c_aug.size() > 3) // spring is being estimated
     {
-      std::cout << "getting ks" << std::endl;
       k_s_ = x_c_aug[3];
     }
 
-    std::cout << "building x_c" << std::endl;
     x_c << x_c_aug[0], x_c_aug[1], x_c_aug[2]; // TODO: Check size
 
-    std::cout << "building inv G" << std::endl;
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
-    std::cout << "computing error" << std::endl;
     e = x_d - x_c;
 
     if (e.norm() > 0.001)

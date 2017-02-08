@@ -12,7 +12,7 @@ namespace manipulation_algorithms{
     // Bye!
   }
 
-  void ManipulationEKF::initialize(const Eigen::Vector3d &init_x)
+  void ManipulationEKF::initialize(const Eigen::VectorXd &init_x)
   {
     for (int i = 0; i < 3; i++)
     {
@@ -22,6 +22,11 @@ namespace manipulation_algorithms{
     for (int i = 0; i < P_.rows(); i++)
     {
       P_(i, i) = 1;
+    }
+
+    if (init_x.size() > 3)
+    {
+      k_s_ = init_x[3];
     }
   }
 

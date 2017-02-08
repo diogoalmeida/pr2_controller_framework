@@ -26,7 +26,7 @@ public:
 
     @param init_x The initial estimate for the system state: x = [x_c, theta_c, f_c]
   */
-  void initialize(const Eigen::Vector3d &init_x);
+  void initialize(const Eigen::VectorXd &init_x);
 
   /**
     Update the EKF estimate.

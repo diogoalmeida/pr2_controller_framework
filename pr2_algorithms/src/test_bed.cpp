@@ -56,7 +56,8 @@ int main(int argc, char ** argv)
   ros::NodeHandle n;
   ManipulationAlgorithm control_alg;
   ManipulationEKF estimator_alg;
-  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, x_hat, y, variances;
+  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, y, variances;
+  Eigen::VectorXd x_hat(4);
   pr2_algorithms::TestBedFeedback feedback_msg;
   Eigen::Matrix3d G;
   double k_s, max_time, epsilon, spring, force, torque;
@@ -75,7 +76,7 @@ int main(int argc, char ** argv)
   force = 0;
   torque = 0;
   getInitialState(x_c, x_e, spring);
-  x_hat << x_c[0], x_c[1], x_c[2];
+  x_hat << x_c[0], x_c[1], x_c[2], k_s;
   estimator_alg.getParams(n);
   control_alg.getParams(n);
   estimator_alg.initialize(x_hat);

@@ -21,11 +21,11 @@ namespace manipulation_algorithms{
       Compute the control values for the system.
 
       @param x_d The desired control goal.
-      @param x_c The current system state.
+      @param x_c_aug The current system state.
       @param x_e The end-effector state.
       @return The computed control values
     */
-    Eigen::Vector3d compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c, const Eigen::Vector3d &x_e);
+    Eigen::Vector3d compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c_aug, const Eigen::Vector3d &x_e);
 
     /**
       Obtain the parameters relevant to the controller from the parameter server.

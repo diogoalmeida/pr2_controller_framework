@@ -65,15 +65,17 @@ namespace manipulation_algorithms{
     return true;
   }
 
-  Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c, const Eigen::Vector3d &x_e)
+  Eigen::Vector3d ManipulationAlgorithm::compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c_aug, const Eigen::Vector3d &x_e)
   {
     Eigen::Matrix3d inv_G;
-    Eigen::Vector3d e, u, control_state;
+    Eigen::Vector3d e, u, control_state, x_c;
 
-    if (x_c.size() > 3) // spring is being estimated
+    if (x_c_aug.size() > 3) // spring is being estimated
     {
-      k_s_ = x_c[3];
+      k_s_ = x_c_aug[3];
     }
+
+    x_c << x_c_aug[0], x_c_aug[1], x_c_aug[2]; // TODO: Check size
 
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1]);
     e = x_d - x_c;

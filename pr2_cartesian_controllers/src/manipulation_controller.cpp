@@ -411,8 +411,8 @@ namespace cartesian_controllers {
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
       x_hat_[1] = x_e_[1] + init_theta_offset_;
       x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
-      init_estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_; 
-      ekf_estimator_.initialize(x_hat_);
+      init_estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+      ekf_estimator_.initialize(init_estimate);
       has_initial_ = true;
     }
 

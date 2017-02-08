@@ -406,11 +406,21 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
+      Eigen::VectorXd init_estimate(4);
       fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
       x_hat_[1] = x_e_[1] + init_theta_offset_;
       x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
-      ekf_estimator_.initialize(x_hat_);
+
+      if (estimate_k_s_)
+      {
+        init_estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+        ekf_estimator_.initialize(init_estimate);
+      }
+      else
+      {
+        ekf_estimator_.initialize(x_hat_);
+      }
       has_initial_ = true;
     }
 
@@ -434,7 +444,7 @@ namespace cartesian_controllers {
     {
       if (estimate_k_s_)
       {
-        Eigen::VectorXd x_c_aug;
+        Eigen::VectorXd x_c_aug(4);
         x_c_aug << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
         commands = controller_.compute(x_d_, x_c_aug, x_e_);
       }
@@ -464,6 +474,7 @@ namespace cartesian_controllers {
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     Eigen::Vector3d variances = ekf_estimator_.getVariance();
     Eigen::VectorXd estimate = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
+
     x_hat_ << estimate[0], estimate[1], estimate[2];
 
     if (estimate_k_s_)

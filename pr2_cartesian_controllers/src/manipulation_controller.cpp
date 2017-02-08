@@ -447,7 +447,7 @@ namespace cartesian_controllers {
     {
       if (estimate_k_s_)
       {
-        Eigen::VectorXd x_c_aug;
+        Eigen::VectorXd x_c_aug(4);
         x_c_aug << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
         std::cout << "computing control with: " << x_c_aug << std::endl;
         commands = controller_.compute(x_d_, x_c_aug, x_e_);

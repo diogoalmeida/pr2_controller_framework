@@ -148,6 +148,14 @@ namespace manipulation_algorithms{
     if (std::abs(dx_cube) < epsilon || std::abs(cos_theta) < epsilon || std::abs(cos_theta_square) < epsilon || std::abs(k_s_) < epsilon)
     {
       ROS_WARN("Division by 0. dx_cube: %f\ncos_theta: %f\ncos_theta_square: %f\nk_s: %f\nepsilon: %f", dx_cube, cos_theta, cos_theta_square, k_s_, epsilon);
+
+      if (estimate_k_s_)
+      {
+        Eigen::VectorXd estimate(4);
+        estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+        return estimate;
+      }
+
       return x_hat_;
     }
 

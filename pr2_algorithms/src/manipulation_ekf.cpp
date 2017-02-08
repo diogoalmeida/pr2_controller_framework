@@ -179,7 +179,7 @@ namespace manipulation_algorithms{
            0             , 0          , 0, 0;
 
       C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
-            x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s_,
+            -x_hat_[2]*xi, 1 + tan_theta*dx*x_hat_[2]*xi, dx*xi, -x_hat_[2]*dx*xi/k_s_,
             0, 0, 1, 0;
 
       G << 1, tan_theta, 0,

@@ -82,7 +82,7 @@ namespace manipulation_algorithms{
     return variances;
   }
 
-  Eigen::Vector3d ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
+  Eigen::VectorXd ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
     Eigen::MatrixXd A, C, P, G, I, K;
     Eigen::Vector3d h, innovation;
@@ -210,7 +210,7 @@ namespace manipulation_algorithms{
       k_s_ = estimate[3];
     }
 
-    return x_hat_;
+    return estimate;
   }
 
 }

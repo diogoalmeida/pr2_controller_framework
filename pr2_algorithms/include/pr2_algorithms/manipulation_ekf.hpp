@@ -38,7 +38,7 @@ public:
     @param dt The time-step since the last estimate update
     @return The new estimate values
   */
-  Eigen::Vector3d estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt);
+  Eigen::VectorXd estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt);
 
   /**
     Obtain the parameters relevant to the estimator from the parameter server.

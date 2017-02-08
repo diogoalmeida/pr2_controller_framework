@@ -17,7 +17,7 @@ class ManipulationController : public cartesian_controllers::ControllerTemplate<
 {
 private:
   double wait_for_tf_time_;
-  bool has_initial_, estimate_length_;
+  bool has_initial_, estimate_length_, estimate_k_s_;
   bool finished_acquiring_goal_;
   double estimated_length_, estimated_orientation_, hardcoded_length_, k_s_, theta_o_, surface_frame_vertical_offset_, surface_frame_horizontal_offset_;
   double init_x_offset_, init_theta_offset_; // to initialize the ekf estimator

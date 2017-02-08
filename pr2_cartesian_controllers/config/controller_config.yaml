@@ -13,12 +13,11 @@ common:
 manipulation_controller:
   action_server_name: dexterous_manipulation
   spring_constant: 0.18
-  estimate_spring_constant: false
+  estimate_spring_constant: true
   gains:
     k_1: 0 #0.7
     k_2: 0 #0.8
-    # k_3: 3.2
-    k_3: 0 #0.1
+    k_3: 0 #3.2
   saturations:
     x: 0.1
     y: 0.1
@@ -29,15 +28,16 @@ manipulation_controller:
   initial_angle_offset: -0.0
   wait_for_tf_time: 1
   surface_frame_vertical_offset: -0.01
-  surface_frame_horizontal_offset: 0.02
+  surface_frame_horizontal_offset: 0.03
   estimator:
     Q:
-      data: [90, 0, 0, 0, 10, 0, 0, 0, 5]
+      # data: [90, 0, 0, 0, 1, 0, 0, 0, 5]
+      data: [90, 0, 0, 0, 0.01, 0, 0, 0, 1]
       # data: [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1]
     R:
       # data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
-      data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
-      # data: [0.1, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0.1]
+      # data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
+      data: [0.01, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0.002, 0, 0, 0, 0, 0.0001]
 
     initial_x_offset: -0.15
     initial_theta_offset: 0

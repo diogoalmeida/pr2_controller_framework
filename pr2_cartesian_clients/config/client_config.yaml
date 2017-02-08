@@ -33,7 +33,7 @@ experiment:
   approach_force: 0.2
   goal_theta: 0.25
   goal_x: 0.2
-  goal_force: -1.5
+  goal_force: 1.5
 
   logging:
     logging_topic: /realtime_loop/dexterous_manipulation/feedback

@@ -424,6 +424,7 @@ namespace cartesian_controllers {
         ekf_estimator_.initialize(x_hat_);
       }
       has_initial_ = true;
+      std::cout << "Done initializing" << std::endl;
     }
 
     if (surface_rotation_axis_)
@@ -448,7 +449,9 @@ namespace cartesian_controllers {
       {
         Eigen::VectorXd x_c_aug;
         x_c_aug << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
+        std::cout << "computing control with: " << x_c_aug << std::endl;
         commands = controller_.compute(x_d_, x_c_aug, x_e_);
+        std::cout << "Done computing control" << std::endl;
       }
       else
       {
@@ -462,6 +465,8 @@ namespace cartesian_controllers {
       y << torque_e/force_e,
            x_e_[2] - theta_o_,
            force_e;
+
+      std::cout << "Measured: " << y << std::endl;
     }
     else
     {
@@ -476,6 +481,9 @@ namespace cartesian_controllers {
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     Eigen::Vector3d variances = ekf_estimator_.getVariance();
     Eigen::VectorXd estimate = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
+
+    std::cout << "Updated estimate: " << estimate << std::endl;
+
     x_hat_ << estimate[0], estimate[1], estimate[2];
 
     if (estimate_k_s_)

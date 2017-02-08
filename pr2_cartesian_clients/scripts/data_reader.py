@@ -8,6 +8,7 @@ import rospkg
 import argparse
 import glob
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
 
@@ -41,6 +42,12 @@ def openBag(name):
     """Open bag with given name in data/results."""
     bag = rosbag.Bag(getDir() + "/" + name + ".bag", 'r')
     return bag
+
+
+def saveFig(name):
+    """Save the fig in the bag directory."""
+    path = getDir() + "/" + name + ".svg"
+    plt.savefig(path)
 
 
 def autoscaleBasedOn(ax, lines):
@@ -81,6 +88,17 @@ if __name__ == '__main__':
     mean_error_theta_c_hat = np.array([])
     mean_f_c_hat = np.array([])
     mean_error_f_c_hat = np.array([])
+
+    if plot_all:
+        matplotlib.rcParams['figure.figsize'] = (10, 12)
+        matplotlib.rcParams['font.size'] = 14
+    else:
+        matplotlib.rcParams['figure.figsize'] = (6, 4)
+        matplotlib.rcParams['font.size'] = 10
+
+        matplotlib.rcParams['lines.linewidth'] = 1.5
+    matplotlib.rcParams['figure.subplot.wspace'] = 0.4
+    matplotlib.rcParams['figure.subplot.hspace'] = 0.25
 
     if loadParams():
 
@@ -167,34 +185,22 @@ if __name__ == '__main__':
                     plt.figure(1)
                     plt.subplot(321)
                     plt.plot(t, x_d - x_c, color=gray)
-                    plt.ylabel('[m]')
-                    plt.title('Translational error, $x_d - x_c$')
                     plt.grid(True)
 
-                    plt.subplot(222)
+                    plt.subplot(322)
                     plt.plot(t, x_c_hat - x_c, color=gray)
-                    plt.title('Translational estimation error, $\hat{x}_c - x_c$')
-                    plt.ylabel('[m]')
                     plt.grid(True)
 
                     plt.subplot(323)
                     plt.plot(t, theta_d - theta_c, color=gray)
-                    plt.ylabel('[rad]')
-                    plt.title('Orientation error, $\\theta_d - \\theta_c$')
                     plt.grid(True)
 
-                    plt.subplot(224)
+                    plt.subplot(324)
                     plt.plot(t, theta_c_hat - theta_c, color=gray)
-                    plt.ylabel('[rad]')
-                    plt.title('Angle estimation error, $\hat{\\theta}_c - \\theta_c$')
-                    plt.xlabel('Time [s]')
                     plt.grid(True)
 
                     plt.subplot(325)
                     plt.plot(t, f_d - f_c_hat, color=gray)
-                    plt.title('Force error, $f_d - \hat{f}_c$')
-                    plt.ylabel('[N]')
-                    plt.xlabel('Time [s]')
                     plt.grid(True)
 
                 # plt.subplot(313)
@@ -232,25 +238,40 @@ if __name__ == '__main__':
 
         plt.figure(1)
 
+        title_offset = 1.05
+
         if plot_all:
             plt.subplot(321)
             addLabelledPlot(t, mean_error_x_c_hat[0:len(t)], "$x_d - \hat{x}_c$", 'k')
-            plt.subplot(222)
+            plt.ylabel('[m]')
+            plt.title('Translational error, $x_d - x_c$', y=title_offset)
+            plt.subplot(322)
             addLabelledPlot(t, mean_x_c_hat[0:len(t)], '$\hat{x}_c$', 'k')
+            plt.title('Translational estimation error, $\hat{x}_c - x_c$', y=title_offset)
+            plt.ylabel('[m]')
             plt.subplot(323)
             addLabelledPlot(t, mean_error_theta_c_hat[0:len(t)], '$\\theta_d - \hat{\\theta}_c$', 'k')
-            plt.subplot(224)
+            plt.ylabel('[rad]')
+            plt.title('Orientation error, $\\theta_d - \\theta_c$', y=title_offset)
+            plt.subplot(324)
             addLabelledPlot(t, mean_theta_c_hat[0:len(t)], '$\hat{\\theta}_c$', 'k')
+            plt.ylabel('[rad]')
+            plt.title('Angle estimation error, $\hat{\\theta}_c - \\theta_c$', y=title_offset)
+            plt.xlabel('Time [s]')
             plt.subplot(325)
             addLabelledPlot(t, mean_error_f_c_hat[0:len(t)], '$f_d - \hat{f}_c$', 'k')
+            plt.title('Force error, $f_d - \hat{f}_c$', y=title_offset)
+            plt.ylabel('[N]')
+            plt.xlabel('Time [s]')
         else:
             plt.plot(t, f_c, color=gray)
             plt.plot(t, f_c_hat, 'k')
-            plt.title('Force estimate')
+            plt.title('Force estimate', y=title_offset)
             plt.xlabel('Time [s]')
             plt.grid(True)
         #
         # plt.subplot(313)
         # addLabelledPlot(t, f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
         # plt.tight_layout()
+        saveFig(bag_prefix)
         plt.show()

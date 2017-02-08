@@ -410,7 +410,7 @@ namespace cartesian_controllers {
       fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
       x_hat_[1] = x_e_[1] + init_theta_offset_;
-      x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(-surface_normal_in_grasp);
+      x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
 
       if (estimate_k_s_)
       {
@@ -433,8 +433,8 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    torque_e = measured_wrench_.block<3,1>(3,0).dot(-computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
-    force_e = measured_wrench_.block<3,1>(0,0).dot(-surface_normal_in_grasp);
+    torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
+    force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
 
     if (debug_twist_)
     {

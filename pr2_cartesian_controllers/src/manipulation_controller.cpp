@@ -457,7 +457,7 @@ namespace cartesian_controllers {
     // compute the measurements vector
     if (estimate_k_s_)
     {
-      y << torque_e,
+      y << torque_e/force_e,
            x_e_[2] - theta_o_,
            force_e;
     }

@@ -132,7 +132,7 @@ namespace manipulation_algorithms{
     }
   }
 
-  void ManipulationEKF::computeC(Eigen::MatrixXd &C, const double f_c_hat, const double cos_theta, const double dx, const double tan_theta, const double xi, const double k_s)
+  void ManipulationEKF::computeC(Eigen::MatrixXd &C, const double f_c_hat, const double cos_theta, const double dx, const double tan_theta, const double xi, const double torque, const double k_s)
   {
     if (C.cols() == 3)
     {
@@ -146,7 +146,7 @@ namespace manipulation_algorithms{
       //       x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
       //       0, 0, 1, 0;
       C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
-            0, 1, 0, f_c_hat/(k_s*k_s),
+            0, 1, 0, torque/(k_s*k_s),
             0, 0, 1, 0;
     }
   }
@@ -216,7 +216,7 @@ namespace manipulation_algorithms{
     xi = 1/(cos_theta*k_s_);
 
     computeA(A, u[1], cos_theta, sin_theta, cos_theta_square, dx_square, gamma_1, gamma_2, k_s_);
-    computeC(C, x_hat_[2], cos_theta, dx, tan_theta, xi, k_s_);
+    computeC(C, x_hat_[2], cos_theta, dx, tan_theta, xi, y[0]*x_hat_[2], k_s_);
     computeG(G, cos_theta, tan_theta, dx, dx_square, k_s_);
 
     if (!estimate_k_s_)

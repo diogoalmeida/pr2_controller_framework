@@ -146,7 +146,7 @@ namespace manipulation_algorithms{
       //       x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
       //       0, 0, 1, 0;
       C << -1/cos_theta, tan_theta*dx/cos_theta, dx/cos_theta, 0,
-            0, 1, 0, -1/(k_s*k_s),
+            0, 1, 0, 1/(k_s*k_s),
             0, 0, 1, 0;
     }
   }

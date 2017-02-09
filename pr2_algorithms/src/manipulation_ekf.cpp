@@ -87,6 +87,34 @@ namespace manipulation_algorithms{
     return variances;
   }
 
+  void ManipulationEKF::initializeMatrices(int dim, Eigen::MatrixXd &A, Eigen::MatrixXd &C, Eigen::MatrixXd &G, Eigen::MatrixXd &I, Eigen::MatrixXd &K, Eigen::MatrixXd &P)
+  {
+    P = Eigen::MatrixXd(dim, dim);
+    A = Eigen::MatrixXd(dim, dim);
+    I = Eigen::MatrixXd(dim, dim);
+    for (int i = 0; i < dim*dim; i++)
+    {
+      I(i) = 0;
+    }
+    for (int i = 0; i < dim; i++)
+    {
+      I(i, i) = 1;
+    }
+
+    if (dim == 4)
+    {
+      C = Eigen::MatrixXd(3, 4);
+      G = Eigen::MatrixXd(4, 3);
+      K = Eigen::MatrixXd(4, 3);
+    }
+    else
+    {
+      C = Eigen::MatrixXd(dim, dim);
+      G = Eigen::MatrixXd(dim, dim);
+      K = Eigen::MatrixXd(dim, dim);
+    }
+  }
+
   Eigen::VectorXd ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
     Eigen::MatrixXd A, C, P, G, I, K;
@@ -96,42 +124,13 @@ namespace manipulation_algorithms{
 
     if (estimate_k_s_)
     {
-      C = Eigen::MatrixXd(3,4);
-      P = Eigen::MatrixXd(4,4);
-      G = Eigen::MatrixXd(4,3);
-      A = Eigen::MatrixXd(4,4);
-      K = Eigen::MatrixXd(4,3);
+      initializeMatrices(4, A, C, G, I, K, P);
       estimate = Eigen::VectorXd(4);
       estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
-      I = Eigen::MatrixXd(4,4);
-      for (int i = 0; i < 16; i++)
-      {
-        I(i) = 0;
-      }
-
-      for (int i = 0; i < 4; i++)
-      {
-        I(i, i) = 1;
-      }
     }
     else
     {
-      C = Eigen::MatrixXd(3,3);
-      P = Eigen::MatrixXd(3,3);
-      G = Eigen::MatrixXd(3,3);
-      I = Eigen::MatrixXd(3,3);
-      A = Eigen::MatrixXd(3,3);
-      K = Eigen::MatrixXd(3,3);
-
-      for (int i = 0; i < 9; i++)
-      {
-        I(i) = 0;
-      }
-
-      for (int i = 0; i < 3; i++)
-      {
-        I(i, i) = 1;
-      }
+      initializeMatrices(3, A, C, G, I, K, P);
       estimate = Eigen::VectorXd(3);
       estimate << x_hat_[0], x_hat_[1], x_hat_[2];
     }

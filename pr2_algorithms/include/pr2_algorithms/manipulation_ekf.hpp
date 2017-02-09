@@ -61,6 +61,8 @@ private:
   Eigen::MatrixXd P_, Q_, R_;
   double k_s_, theta_o_;
   bool estimate_k_s_;
+
+  void initializeMatrices(int dim, Eigen::MatrixXd &A, Eigen::MatrixXd &C, Eigen::MatrixXd &G, Eigen::MatrixXd &I, Eigen::MatrixXd &K, Eigen::MatrixXd &P);
 };
 }
 #endif

@@ -92,15 +92,13 @@ if __name__ == '__main__':
     mean_error_f_c_hat = np.array([])
 
     if pivot:
-        matplotlib.rcParams['figure.figsize'] = (10, 4)
-        matplotlib.rcParams['font.size'] = 10
+        matplotlib.rcParams['figure.figsize'] = (7, 6)
     elif plot_all:
-        matplotlib.rcParams['figure.figsize'] = (10, 12)
-        matplotlib.rcParams['font.size'] = 14
+        matplotlib.rcParams['figure.figsize'] = (7, 13.5)
     else:
-        matplotlib.rcParams['figure.figsize'] = (5, 4)
-        matplotlib.rcParams['font.size'] = 10
+        matplotlib.rcParams['figure.figsize'] = (7, 3.5)
 
+        matplotlib.rcParams['font.size'] = 14
     matplotlib.rcParams['lines.linewidth'] = 1
     matplotlib.rcParams['figure.subplot.wspace'] = 0.4
     matplotlib.rcParams['figure.subplot.hspace'] = 0.25
@@ -189,31 +187,31 @@ if __name__ == '__main__':
                 if plot_all:
                     if not pivot:
                         plt.figure(1)
-                        plt.subplot(321)
+                        plt.subplot(511)
                         plt.plot(t, x_d - x_c, color=gray)
                         plt.grid(True)
 
-                        plt.subplot(322)
+                        plt.subplot(512)
                         plt.plot(t, x_c_hat - x_c, color=gray)
                         plt.grid(True)
 
-                        plt.subplot(325)
+                        plt.subplot(515)
                         plt.plot(t, f_d - f_c_hat, color=gray)
                         plt.grid(True)
 
-                        plt.subplot(323)
+                        plt.subplot(513)
                         plt.plot(t, theta_d - theta_c, color=gray)
                         plt.grid(True)
 
-                        plt.subplot(324)
+                        plt.subplot(514)
                         plt.plot(t, theta_c_hat - theta_c, color=gray)
                         plt.grid(True)
                     else:
-                        plt.subplot(121)
+                        plt.subplot(211)
                         plt.plot(t, theta_d - theta_c, color=gray)
                         plt.grid(True)
 
-                        plt.subplot(122)
+                        plt.subplot(212)
                         plt.plot(t, theta_c_hat - theta_c, color=gray)
                         plt.grid(True)
 
@@ -256,42 +254,43 @@ if __name__ == '__main__':
 
         if plot_all:
             if not pivot:
-                plt.subplot(321)
+                plt.subplot(511)
                 addLabelledPlot(t, mean_error_x_c_hat[0:len(t)], "$x_d - \hat{x}_c$", 'k')
                 plt.ylabel('[m]')
                 plt.title('Translational error, $x_d - x_c$', y=title_offset)
-                plt.subplot(322)
 
+                plt.subplot(512)
                 # addLabelledPlot(t, mean_x_c_hat[0:len(t)], '$\hat{x}_c$', 'k')
                 plt.plot(t, mean_x_c_hat[0:len(t)], 'k')
                 plt.title('Translational estimation error, $\hat{x}_c - x_c$', y=title_offset)
                 plt.ylabel('[m]')
 
-                plt.subplot(325)
+                plt.subplot(515)
                 plt.plot(t, mean_error_f_c_hat[0:len(t)], 'k')
                 plt.ylim(-0.5, 0.5)
                 plt.title('Force error, $f_d - \hat{f}_c$', y=title_offset)
                 plt.ylabel('[N]')
                 plt.xlabel('Time [s]')
 
-                plt.subplot(323)
+                plt.subplot(513)
                 addLabelledPlot(t, mean_error_theta_c_hat[0:len(t)], '$\\theta_d - \hat{\\theta}_c$', 'k')
-                plt.ylim(-0.5, 0.5)
+                plt.ylim(-0.5, 0.05)
                 plt.ylabel('[rad]')
                 plt.title('Orientation error, $\\theta_d - \\theta_c$', y=title_offset)
-                plt.subplot(324)
+
+                plt.subplot(514)
                 addLabelledPlot(t, mean_theta_c_hat[0:len(t)], '$\hat{\\theta}_c$', 'k')
-                plt.ylim(-0.5, 0.5)
+                plt.ylim(-0.5, 0.4)
                 plt.ylabel('[rad]')
                 plt.title('Angle estimation error, $\hat{\\theta}_c - \\theta_c$', y=title_offset)
                 plt.xlabel('Time [s]')
             else:
-                plt.subplot(121)
+                plt.subplot(211)
                 addLabelledPlot(t, mean_error_theta_c_hat[0:len(t)], '$\\theta_d - \hat{\\theta}_c$', 'k')
                 plt.ylabel('[rad]')
                 plt.title('Orientation error, $\\theta_d - \\theta_c$', y=title_offset)
                 plt.ylim(-0.5, 0.05)
-                plt.subplot(122)
+                plt.subplot(212)
                 addLabelledPlot(t, mean_theta_c_hat[0:len(t)], '$\hat{\\theta}_c$', 'k')
                 plt.ylim(-0.2, 0.1)
                 plt.ylabel('[rad]')
@@ -301,11 +300,12 @@ if __name__ == '__main__':
             plt.plot(t, f_c, color=gray)
             plt.plot(t, f_c_hat, 'k')
             plt.title('Force estimate', y=title_offset)
+            plt.ylabel('[N]')
             plt.xlabel('Time [s]')
             plt.grid(True)
         #
         # plt.subplot(313)
         # addLabelledPlot(t, f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
-        # plt.tight_layout()
+        plt.tight_layout()
         saveFig(bag_prefix)
         plt.show()

@@ -38,4 +38,4 @@ experiment:
   logging:
     logging_topic: /realtime_loop/dexterous_manipulation/feedback
     toggle_logging_service: /data_logger/toggle
-    log_directory: no_spring_estimation_random_low_uncertain_pivot
+    log_directory: discard

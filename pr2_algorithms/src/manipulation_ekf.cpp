@@ -142,7 +142,7 @@ namespace manipulation_algorithms{
     }
     else
     {
-      C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
+      C << -1/cos_theta, tan_theta*dx/cos_theta, dx/cos_theta, 0,
             x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
             0, 0, 1, 0;
     }
@@ -222,7 +222,7 @@ namespace manipulation_algorithms{
     }
     else
     {
-      h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
+      h << dx*x_hat_[2]/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
     }
 
     innovation = y - h;

@@ -115,6 +115,56 @@ namespace manipulation_algorithms{
     }
   }
 
+  void ManipulationEKF::computeA(Eigen::MatrixXd &A, const double y_e_dot, const double cos_theta, const double sin_theta, const double cos_theta_square, const double dx_square, const double gamma_1, const double gamma_2, const double k_s)
+  {
+    if (A.rows() == 3)
+    {
+      A << 0                     , y_e_dot/cos_theta_square, 0,
+           y_e_dot/dx_square     , 0                       , 0,
+           k_s*cos_theta*gamma_1,  -k_s*sin_theta*gamma_2, 0;
+    }
+    else
+    {
+      A << 0                     , y_e_dot/cos_theta_square, 0, 0                ,
+           y_e_dot/dx_square     , 0                       , 0, 0                ,
+           k_s*cos_theta*gamma_1, -k_s*sin_theta*gamma_2 , 0, cos_theta*gamma_2,
+           0                     , 0                       , 0, 0;
+    }
+  }
+
+  void ManipulationEKF::computeC(Eigen::MatrixXd &C, const double f_c_hat, const double cos_theta, const double dx, const double tan_theta, const double xi, const double k_s)
+  {
+    if (C.cols() == 3)
+    {
+      C << -1/cos_theta, tan_theta*dx/cos_theta, 0,
+            0, 1, 0,
+            0, 0, 1;
+    }
+    else
+    {
+      C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
+            x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
+            0, 0, 1, 0;
+    }
+  }
+
+  void ManipulationEKF::computeG(Eigen::MatrixXd &G, const double cos_theta, const double tan_theta, const double dx, const double dx_square, const double k_s)
+  {
+    if (G.rows() == 3)
+    {
+      G << 1, tan_theta, 0,
+           0, 1/dx, 0,
+           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx;
+    }
+    else
+    {
+      G << 1, tan_theta, 0,
+           0, 1/dx, 0,
+           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx,
+           0, 0                       , 0;
+    }
+  }
+
   Eigen::VectorXd ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt)
   {
     Eigen::MatrixXd A, C, P, G, I, K;
@@ -162,38 +212,16 @@ namespace manipulation_algorithms{
     gamma_2 = (u[1] - u[2]*dx)/dx_square;
     xi = 1/(cos_theta*k_s_);
 
+    computeA(A, u[1], cos_theta, sin_theta, cos_theta_square, dx_square, gamma_1, gamma_2, k_s_);
+    computeC(C, x_hat_[2], cos_theta, dx, tan_theta, xi, k_s_);
+    computeG(G, cos_theta, tan_theta, dx, dx_square, k_s_);
+
     if (!estimate_k_s_)
     {
-      A << 0                         , u[1]/cos_theta_square, 0,
-           u[1]/dx_square, 0          , 0,
-           k_s_*cos_theta*gamma_1, -k_s_*sin_theta*gamma_2, 0;
-
-      C << -1/cos_theta, tan_theta*dx/cos_theta, 0,
-            0, 1, 0,
-            0, 0, 1;
-
-      G << 1, tan_theta, 0,
-           0, 1/dx, 0,
-           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx;
-
       h << dx/cos_theta, x_hat_[1], x_hat_[2];
     }
     else
     {
-      A << 0                         , u[1]/cos_theta_square, 0, 0,
-           u[1]/dx_square, 0          , 0, 0,
-           k_s_*cos_theta*gamma_1, -k_s_*sin_theta*gamma_2, 0, cos_theta*gamma_2,
-           0             , 0          , 0, 0;
-
-      C << -1/cos_theta, tan_theta*dx/cos_theta, 0, 0,
-            x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s_,
-            0, 0, 1, 0;
-
-      G << 1, tan_theta, 0,
-           0, 1/dx, 0,
-           0, k_s_*cos_theta/dx_square, -k_s_*cos_theta/dx,
-           0, 0, 0;
-
       h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
     }
 

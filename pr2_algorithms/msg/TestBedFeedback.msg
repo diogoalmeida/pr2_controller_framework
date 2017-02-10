@@ -13,3 +13,6 @@ float64 f_c_hat
 float64 var_x
 float64 var_theta
 float64 var_f
+
+float64 k_s_hat
+float64 k_s

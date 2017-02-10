@@ -6,7 +6,7 @@
 #include <random>
 
 using namespace manipulation_algorithms;
-const double k_s = 0.18;
+const double k_s = 0.2;
 const double L = 0.12;
 
 void getInitialState(Eigen::Vector3d &x_c, Eigen::Vector3d &x_e, double &spring)
@@ -49,6 +49,13 @@ Eigen::Matrix3d computeG(const double x_e, const double x_c, const double theta_
   return g;
 }
 
+void updateSpring(double &spring, const double d_theta_e, const double d_theta_c, const double dt)
+{
+  double spring_vel = d_theta_e - d_theta_c;
+
+  spring = spring + spring_vel*dt;
+}
+
 int main(int argc, char ** argv)
 {
   ros::init(argc, argv, "test_bed");
@@ -56,13 +63,14 @@ int main(int argc, char ** argv)
   ros::NodeHandle n;
   ManipulationAlgorithm control_alg;
   ManipulationEKF estimator_alg;
-  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, y, variances;
-  Eigen::VectorXd x_hat(4);
+  Eigen::Vector3d x_c, d_xc, x_e, u, x_d, variances;
+  Eigen::VectorXd x_hat, y;
   pr2_algorithms::TestBedFeedback feedback_msg;
   Eigen::Matrix3d G;
-  double k_s, max_time, epsilon, spring, force, torque;
+  bool spring_est = false;
+  double max_time, epsilon, spring, force, torque;
   ros::Time init_time, prev_time;
-  ros::Duration dt;
+  ros::Duration dt, elapsed;
   ros::Rate r(1000);
   std::default_random_engine generator;
   std::normal_distribution<double> obs_noise(0.0, 0.01);
@@ -76,35 +84,64 @@ int main(int argc, char ** argv)
   force = 0;
   torque = 0;
   getInitialState(x_c, x_e, spring);
-  x_hat << x_c[0], x_c[1], x_c[2], k_s;
   estimator_alg.getParams(n);
   control_alg.getParams(n);
-  estimator_alg.initialize(x_hat);
 
   if (argc > 1)
   {
     max_time = atof(argv[1]);
+
+    if (argc > 2)
+    {
+      spring_est = true;
+      x_hat = Eigen::VectorXd(4);
+      y = Eigen::VectorXd(4);
+      x_hat << x_c[0] + 0.4, x_c[1] - 0.4, x_c[2] - 0.1, k_s - 0.05;
+    }
+    else
+    {
+      x_hat = Eigen::VectorXd(3);
+      y = Eigen::VectorXd(3);
+      x_hat << x_c[0] + 0.1, x_c[1] + 0.2, x_c[2] + 0.5;
+    }
   }
   else
   {
     max_time = 10;
   }
 
+  estimator_alg.initialize(x_hat);
   init_time = ros::Time::now();
   prev_time = ros::Time::now();
+  elapsed = ros::Time::now() - init_time;
   epsilon = std::numeric_limits<double>::epsilon();
 
-  while ((ros::Time::now() - init_time).toSec() < max_time)
+  while (elapsed.toSec() < max_time)
   {
     // u = control_alg.compute(x_d, x_c, x_e);
-    u = control_alg.compute(x_d, x_hat, x_e);
-    // u = Eigen::Vector3d::Zero();
+    // u = control_alg.compute(x_d, x_hat, x_e);
+
     G = computeG(x_e[0], x_c[0], x_c[1]);
     dt = ros::Time::now() - prev_time;
+    elapsed = ros::Time::now() - init_time;
+
+    u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4);
+
+    if (elapsed.toSec() < max_time)
+    {
+      u[0] = 0.1*std::sin(2*M_PI*elapsed.toSec());
+    }
+    else
+    {
+      u[0] = -u[1]*x_e[1]/(x_e[0] - x_c[0]);
+    }
+    u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec());
+
     x_e = x_e + u*dt.toSec();
     d_xc = G*u;
     x_c = x_c + d_xc*dt.toSec();
-    spring = x_e[2] - x_c[1];
+
+    updateSpring(spring, u[2], d_xc[1], dt.toSec());
     torque = -k_s*spring;
     force = torque/L;
 
@@ -112,13 +149,20 @@ int main(int argc, char ** argv)
 
     if(std::abs(k_s*std::cos(x_c[1])) > epsilon)
     {
-      // y << torque/force + 0*obs_noise(generator),  x_e[1] + torque/k_s + 0*obs_noise(generator), force + 0*obs_noise(generator);
-      y << L + 0*obs_noise(generator), x_c[1] + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator);
-      // y << (x_e[0] - x_c[0])/std::cos(x_c[1]) + 0*obs_noise(generator), x_c[1] - x_c[2]*(x_e[0] - x_c[0])/(k_s*std::cos(x_c[1])) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator);
+      if (!spring_est)
+      {
+        y << torque/force,  x_e[2] + torque/k_s, force;
+        // y << (x_e[0] - x_c[0])/std::cos(x_c[1]) + 0*obs_noise(generator), x_c[1] - x_c[2]*(x_e[0] - x_c[0])/(k_s*std::cos(x_c[1])) + 0*obs_noise(generator), x_c[2] + 0*obs_noise(generator);
+      }
+      else
+      {
+        y << torque/force, x_e[2], x_c[2], torque;
+      }
     }
     else
     {
-      y << 0, x_c[1] + 0*obs_noise(generator), force + 0*obs_noise(generator);
+      ROS_WARN("Division by zero");
+      y << 0, x_e[2], force;
     }
 
     std::cout << "y:" << std::endl << y << std::endl;
@@ -144,6 +188,14 @@ int main(int argc, char ** argv)
     feedback_msg.var_theta = x_hat[1] + 3*variances[1];
     feedback_msg.var_f = x_hat[2] + 3*variances[2];
 
+    feedback_msg.k_s = k_s;
+
+    if (spring_est)
+    {
+      feedback_msg.k_s_hat = x_hat[3];
+    }
+
+    prev_time = ros::Time::now();
     pub.publish(feedback_msg);
     r.sleep();
   }

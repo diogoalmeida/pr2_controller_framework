@@ -38,7 +38,7 @@ public:
     @param dt The time-step since the last estimate update
     @return The new estimate values
   */
-  Eigen::VectorXd estimate(const Eigen::Vector3d &u, const Eigen::Vector3d &y, const Eigen::Vector3d &x_e, const double dt);
+  Eigen::VectorXd estimate(const Eigen::Vector3d &u, const Eigen::VectorXd &y, const Eigen::Vector3d &x_e, const double dt);
 
   /**
     Obtain the parameters relevant to the estimator from the parameter server.
@@ -64,7 +64,7 @@ private:
 
   void initializeMatrices(int dim, Eigen::MatrixXd &A, Eigen::MatrixXd &C, Eigen::MatrixXd &G, Eigen::MatrixXd &I, Eigen::MatrixXd &K, Eigen::MatrixXd &P);
   void computeA(Eigen::MatrixXd &A, const double y_e_dot, const double cos_theta, const double sin_theta, const double cos_theta_square, const double dx_square, const double gamma_1, const double gamma_2, const double k_s);
-  void computeC(Eigen::MatrixXd &C, const double f_c_hat, const double cos_theta, const double dx, const double tan_theta, const double xi, const double torque, const double k_s);
+  void computeC(Eigen::MatrixXd &C, const double f_c_hat, const double theta, const double cos_theta, const double dx, const double tan_theta, const double xi, const double torque, const double k_s);
   void computeG(Eigen::MatrixXd &G, const double cos_theta, const double tan_theta, const double dx, const double dx_square, const double k_s);
 };
 }

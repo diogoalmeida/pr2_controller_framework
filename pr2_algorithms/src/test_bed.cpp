@@ -95,7 +95,7 @@ int main(int argc, char ** argv)
     {
       spring_est = true;
       x_hat = Eigen::VectorXd(4);
-      y = Eigen::VectorXd(4);
+      y = Eigen::VectorXd(3);
       x_hat << x_c[0] + 0.4, x_c[1] - 0.4, x_c[2] - 0.1, k_s - 0.05;
     }
     else
@@ -125,17 +125,37 @@ int main(int argc, char ** argv)
     dt = ros::Time::now() - prev_time;
     elapsed = ros::Time::now() - init_time;
 
-    u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4);
 
-    if (elapsed.toSec() < max_time)
+    if (elapsed.toSec() < 0.25*max_time)
     {
-      u[0] = 0.1*std::sin(2*M_PI*elapsed.toSec());
+      u[0] = 0;
+      u[1] = 0;
+      u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec()) + 0.05*obs_noise(generator);
     }
     else
     {
-      u[0] = -u[1]*x_e[1]/(x_e[0] - x_c[0]);
+      if (elapsed.toSec() < 0.5*max_time)
+      {
+        u[0] = 0.1*std::sin(2*M_PI*elapsed.toSec()) + 0.01*obs_noise(generator);
+        u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4) + 0.01*obs_noise(generator);
+        u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec()) + 0.05*obs_noise(generator);
+      }
+      else
+      {
+        if (elapsed.toSec() < 0.75*max_time)
+        {
+          u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4) + 0.01*obs_noise(generator);
+          u[0] = -u[1]*x_e[1]/(x_e[0] - x_c[0]) + 0.01*obs_noise(generator);
+          u[2] = 0;
+        }
+        else
+        {
+          u[0] = 0;
+          u[1] = 0;
+          u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec()) + 0.05*obs_noise(generator);
+        }
+      }
     }
-    u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec());
 
     x_e = x_e + u*dt.toSec();
     d_xc = G*u;
@@ -143,7 +163,7 @@ int main(int argc, char ** argv)
 
     updateSpring(spring, u[2], d_xc[1], dt.toSec());
     torque = -k_s*spring;
-    force = torque/L;
+    force = -torque/L;
 
     // ROS_INFO("spring: %f\nforce: %f\ntorque: %f", spring, force, torque);
 
@@ -156,7 +176,8 @@ int main(int argc, char ** argv)
       }
       else
       {
-        y << torque/force, x_e[2], x_c[2], torque;
+        // y << torque/force + obs_noise(generator), x_e[2], x_c[2] + 0.1*obs_noise(generator), torque + 0.05*obs_noise(generator);
+        y << torque/force + obs_noise(generator), x_e[2], force + 0.1*obs_noise(generator);
       }
     }
     else
@@ -173,7 +194,7 @@ int main(int argc, char ** argv)
 
     feedback_msg.x_c = x_c[0];
     feedback_msg.theta_c = x_c[1];
-    feedback_msg.f_c = x_c[2];
+    feedback_msg.f_c = force;
 
 
     feedback_msg.x_e = x_e[0];
@@ -189,6 +210,7 @@ int main(int argc, char ** argv)
     feedback_msg.var_f = x_hat[2] + 3*variances[2];
 
     feedback_msg.k_s = k_s;
+    feedback_msg.tau_e = torque;
 
     if (spring_est)
     {

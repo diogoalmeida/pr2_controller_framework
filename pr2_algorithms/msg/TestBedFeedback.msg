@@ -16,3 +16,4 @@ float64 var_f
 
 float64 k_s_hat
 float64 k_s
+float64 tau_e

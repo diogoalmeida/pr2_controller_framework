@@ -105,9 +105,9 @@ namespace manipulation_algorithms{
 
     if (dim == 4)
     {
-      C = Eigen::MatrixXd(4, 4);
+      C = Eigen::MatrixXd(3, 4);
       G = Eigen::MatrixXd(4, 3);
-      K = Eigen::MatrixXd(4, 4);
+      K = Eigen::MatrixXd(4, 3);
     }
     else
     {
@@ -144,14 +144,14 @@ namespace manipulation_algorithms{
     }
     else
     {
-      // C << -1/cos_theta, tan_theta*dx/cos_theta, dx/cos_theta, 0,
-      //       x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
-      //       0, 0, 1, 0;
-
       C << -1/cos_theta, tan_theta*dx/cos_theta, dx/cos_theta, 0,
             x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
-            0, 0, 1, 0,
-            0, k_s, 0, theta;
+            0, 0, 1, 0;
+
+      // C << -1/cos_theta, tan_theta*dx/cos_theta, dx/cos_theta, 0,
+      //       x_hat_[2]*xi, 1 - tan_theta*dx*x_hat_[2]*xi, -dx*xi, x_hat_[2]*dx*xi/k_s,
+      //       0, 0, 1, 0,
+      //       0, k_s, 0, theta;
     }
   }
 
@@ -182,7 +182,7 @@ namespace manipulation_algorithms{
     {
       initializeMatrices(4, A, C, G, I, K, P);
       estimate = Eigen::VectorXd(4);
-      h = Eigen::VectorXd(4);
+      h = Eigen::VectorXd(3);
       estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
     }
     else
@@ -230,8 +230,8 @@ namespace manipulation_algorithms{
     }
     else
     {
-      // h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
-      h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2], k_s_*(x_hat_[1] - y[1]);
+      h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2];
+      // h << dx/cos_theta, x_hat_[1] - x_hat_[2]*dx/(k_s_*cos_theta), x_hat_[2], k_s_*(x_hat_[1] - y[1]);
     }
 
     innovation = y - h;

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>pr2_cartesian_controllers</name>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
   <description>
     Implements a cartesian controllers for the PR2, able to run at the realtime
     loop, each with their own actionlib interface for external communication.

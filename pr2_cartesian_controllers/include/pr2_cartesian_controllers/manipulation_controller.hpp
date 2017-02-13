@@ -11,10 +11,35 @@
 
 namespace cartesian_controllers{
 
+/**
+  Implements the dexterous manipulation controller for a grasp with torsional compliance.
+**/
 class ManipulationController : public cartesian_controllers::ControllerTemplate<pr2_cartesian_controllers::ManipulationControllerAction,
                                                                                 pr2_cartesian_controllers::ManipulationControllerFeedback,
                                                                                 pr2_cartesian_controllers::ManipulationControllerResult>
 {
+private:
+  /**
+    Computes the skew-symmetric matrix of the provided vector.
+
+    @param v The vector that will be used to build the skew-symmetric matrix.
+    @return The computed skew-symmetric matrix.
+  **/
+  Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
+
+  /**
+    Fills a marker with the given initial and end point. Clears existing points.
+
+    @param initial_point Initial marker point.
+    @param final_point Final marker point.
+    @param marker The marker object.
+  **/
+  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
+  virtual void publishFeedback();
+  virtual void goalCB();
+  virtual void preemptCB();
+  virtual bool loadParams();
+
 private:
   double wait_for_tf_time_;
   bool has_initial_, estimate_length_, estimate_k_s_;
@@ -39,22 +64,9 @@ private:
 
   ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_, ground_truth_pub_;
   tf::TransformBroadcaster broadcaster_;
-
-  Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
-
-  // For markers
-  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
-
-  virtual void publishFeedback();
-  virtual void goalCB();
-  virtual void preemptCB();
-  virtual bool loadParams();
-
 public:
   ManipulationController();
-
   virtual ~ManipulationController();
-  // Control topic: meant to be called in the realtime loop
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt);
 };
 }

@@ -27,15 +27,57 @@ namespace manipulation{
   public:
     ManipulationClient();
     ~ManipulationClient();
+
+    /**
+      Initializes the robot pose based on tag information. Commands the initial
+      approach. Monitors vision information to compute
+      ground truth data, and registers feedback.
+    **/
     void runExperiment();
 
   private:
+    /**
+      When receiving a new goal, initialize the action clients
+      and get vision information
+    **/
     void goalCB();
+
+    /**
+      Upon preemption, cancel all goals and destroy the action clients
+    **/
     void preemptCB();
+
+    /**
+      Get the client parameters and abort in case they are not found.
+    **/
     bool loadParams();
+
+    /**
+      Periodically publish feedback reporting the action being run.
+    **/
     void publishFeedback();
+
+    /*
+      Waits for the table frame to be available and saves the frame
+      data.
+
+      @param max_time The maximum wait time.
+      @return True if a table pose was found.
+    */
     bool waitForTablePose(ros::Duration max_time);
+
+    /**
+      Gets the initial eef pose, based on vision or a pre-set value.
+
+      @param pose The desired initial eef pose.
+      @return false if it takes more than vision_timeout_ seconds to obtain a valid
+      surface frame transform
+    **/
     bool getInitialEefPose(geometry_msgs::PoseStamped & pose);
+
+    /**
+      Makes sure the action clients cancel the goals and are properly deleted.
+    **/
     void destroyActionClients();
 
   private:

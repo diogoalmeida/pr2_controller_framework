@@ -35,9 +35,6 @@ ManipulationClient::~ManipulationClient()
   }
 }
 
-/*
-  Makes sure the action clients cancel the goals and are properly deleted
-*/
 void ManipulationClient::destroyActionClients()
 {
   if (manipulation_action_client_)
@@ -62,9 +59,6 @@ void ManipulationClient::destroyActionClients()
   }
 }
 
-/*
-  Get the client parameters and abort in case they are not found
-*/
 bool ManipulationClient::loadParams()
 {
   if(!nh_.getParam("vision/surface_frame_name", surface_frame_name_))
@@ -247,9 +241,6 @@ bool ManipulationClient::loadParams()
   return true;
 }
 
-/*
-  Periodically publish feedback reporting the action being run
-*/
 void ManipulationClient::publishFeedback()
 {
   try
@@ -273,9 +264,6 @@ void ManipulationClient::publishFeedback()
   }
 }
 
-/*
-  Upon preemption, cancel all goals and destroy the action clients
-*/
 void ManipulationClient::preemptCB()
 {
   ROS_WARN("The manipulation client was preempted!");
@@ -284,10 +272,6 @@ void ManipulationClient::preemptCB()
   current_action_.clear();
 }
 
-/*
-  When receiving a new goal, initialize the action clients
-  and get vision information
-*/
 void ManipulationClient::goalCB()
 {
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -349,11 +333,6 @@ void ManipulationClient::goalCB()
   }
 }
 
-/*
-  Initializes the robot pose based on tag information. Commands the initial
-  approach (another action? here?). Monitors vision information to compute
-  ground truth data, and registers feedback.
-*/
 void ManipulationClient::runExperiment()
 {
   geometry_msgs::PoseStamped initial_eef_pose;
@@ -556,11 +535,6 @@ void ManipulationClient::runExperiment()
   }
 }
 
-/*
-  Gets the initial eef pose, based on vision or a pre-set value.
-  Returns false if it takes more than vision_timeout_ seconds to obtain a valid
-  surface frame transform
-*/
 bool ManipulationClient::getInitialEefPose(geometry_msgs::PoseStamped & pose)
 {
   geometry_msgs::PoseStamped initial_eef_pose;
@@ -619,10 +593,6 @@ bool ManipulationClient::getInitialEefPose(geometry_msgs::PoseStamped & pose)
   return true;
 }
 
-/*
-  Waits for the table frame to be available and saves the frame
-  data.
-*/
 bool ManipulationClient::waitForTablePose(ros::Duration max_time)
 {
   if (!listener_.waitForTransform(surface_frame_name_, base_link_name_, ros::Time(0), max_time))

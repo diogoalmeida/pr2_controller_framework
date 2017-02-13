@@ -14,10 +14,6 @@ namespace pr2_cartesian_clients {
 
   ExclusiveControllerRunner::~ExclusiveControllerRunner() {}
 
-  /*
-    Makes sure the given controller runs in the PR2, stopping any other running
-    controller. Returns true if the controller starts running, false otherwise.
-  */
   bool ExclusiveControllerRunner::runController(std::string controller_name)
   {
     if (!controllerIsLoaded(controller_name))
@@ -41,9 +37,6 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  /*
-    Returns true if the given controller name is loaded in the PR2.
-  */
   bool ExclusiveControllerRunner::controllerIsLoaded(std::string controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
@@ -62,9 +55,6 @@ namespace pr2_cartesian_clients {
     return false;
   }
 
-  /*
-    Returns true if the controller is running in the PR2 realtime loop.
-  */
   bool ExclusiveControllerRunner::controllerIsRunning(std::string controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
@@ -89,9 +79,6 @@ namespace pr2_cartesian_clients {
     return false;
   }
 
-  /*
-    Starts the given controller in the PR2.
-  */
   bool ExclusiveControllerRunner::startController(std::string controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
@@ -156,9 +143,6 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  /*
-    Loads the given controller in the PR2
-  */
   bool ExclusiveControllerRunner::loadController(std::string controller_name)
   {
     pr2_mechanism_msgs::LoadController load_srv;
@@ -186,9 +170,6 @@ namespace pr2_cartesian_clients {
     }
   }
 
-  /*
-    Unloads all controllers in the pr2
-  */
   bool ExclusiveControllerRunner::unloadAll()
   {
     pr2_mechanism_msgs::ListControllers list_srv;
@@ -239,9 +220,6 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  /*
-    Unloads the given controller from the PR2
-  */
   bool ExclusiveControllerRunner::unloadController(std::string controller_name)
   {
     pr2_mechanism_msgs::UnloadController unload_srv;
@@ -274,10 +252,6 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  /*
-    Adds a controller name to the exception list. These controllers will never be
-    stopped or unloaded automatically and need to be explicitly chosen to be so.
-  */
   bool ExclusiveControllerRunner::addException(std::string controller_name)
   {
     exception_list_.push_back(controller_name);
@@ -285,9 +259,6 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  /*
-    Checks if an item is in the vector
-  */
   bool isInVector(std::string item, std::vector<std::string> v)
   {
     return std::find(v.begin(), v.end(), item) != v.end();

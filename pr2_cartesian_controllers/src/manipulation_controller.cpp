@@ -34,9 +34,6 @@ namespace cartesian_controllers {
     delete action_server_;
   }
 
-  /*
-    Preempt controller.
-  */
   void ManipulationController::preemptCB()
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -45,14 +42,6 @@ namespace cartesian_controllers {
     ROS_WARN("Manipulation controller preempted!");
   }
 
-  /*
-    Receive a new actiongoal: update controller input parameters.
-    Generates:
-
-    - rot_gains_ in the base frame
-    - surface_frame_ in the base frame
-    - end_effector_to_grasp_point_ in the end effector link frame
-  */
   void ManipulationController::goalCB()
   {
     boost::shared_ptr<const pr2_cartesian_controllers::ManipulationControllerGoal> goal = action_server_->acceptNewGoal();
@@ -147,9 +136,6 @@ namespace cartesian_controllers {
     ROS_INFO("Manipulation controller server received a goal!");
   }
 
-  /*
-    Asynchronously publish a feedback message on the control status
-  */
   void ManipulationController::publishFeedback()
   {
     visualization_msgs::Marker object_pose, desired_pose, ground_truth, eef_to_grasp_marker;
@@ -187,7 +173,6 @@ namespace cartesian_controllers {
     eef_to_grasp_marker.type = eef_to_grasp_marker.ARROW;
     eef_to_grasp_marker.scale.y = 0.01;
     eef_to_grasp_marker.scale.z = 0.01;
-
 
     try
     {
@@ -240,9 +225,6 @@ namespace cartesian_controllers {
     }
   }
 
-  /*
-    Fills a marker with the given initial and end point. Clears existing points.
-  */
   void ManipulationController::getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker)
   {
     geometry_msgs::Point point;
@@ -254,9 +236,6 @@ namespace cartesian_controllers {
     marker.points.push_back(point);
   }
 
-  /*
-    Search for controller relevant parameters in the parameter server
-  */
   bool ManipulationController::loadParams()
   {
     if (!nh_.getParam("/manipulation_controller/action_server_name", action_name_))
@@ -349,10 +328,6 @@ namespace cartesian_controllers {
     return true;
   }
 
-  /*
-    Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
-    take more than 1ms to execute.
-  */
   sensor_msgs::JointState ManipulationController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
@@ -572,9 +547,6 @@ namespace cartesian_controllers {
     return control_output;
   }
 
-  /*
-    Computes the skew-symmetric matrix of the provided vector
-  */
   Eigen::Matrix3d ManipulationController::computeSkewSymmetric(const Eigen::Vector3d &v)
   {
     Eigen::Matrix3d S;

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>pr2_algorithms</name>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
   <description>
     Implements algorithms to be used with the pr2_cartesian_controllers package.
   </description>

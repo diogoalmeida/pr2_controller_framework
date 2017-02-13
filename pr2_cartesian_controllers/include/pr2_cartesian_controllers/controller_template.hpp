@@ -23,17 +23,31 @@
 
 namespace cartesian_controllers{
 
-// Makes life easier for instantiating a pointer to a controller
+/**
+  Defines the basic cartesian controller interface to be instantiated in the
+  joint controller level.
+**/
 class ControllerBase
 {
 public:
   ControllerBase(){}
   virtual ~ControllerBase(){}
 
-  // Control topic: meant to be called in the realtime loop
+  /**
+    Method for computing the desired joint states given the control algorithm.
+
+    @param current_state Current joint states.
+    @param dt Elapsed time since last control loop.
+
+    @return Desired joint states.
+  **/
   virtual sensor_msgs::JointState updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt) = 0;
 };
 
+/**
+  Defines the interface for all the cartesian controllers, allowing for
+  an easier embedding in the PR2 realtime loop.
+**/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 class ControllerTemplate : public ControllerBase
 {
@@ -52,6 +66,62 @@ public:
       feedback_thread_.join();
     }
   }
+
+protected:
+  /**
+    Return the last controlled joint state. If the controller does not have
+    an active actionlib goal, it will set the references of the joint controller
+    to the last desired position (and null velocity).
+
+    @param current The current joint state.
+    @return The last commanded joint state before the actionlib goal was
+    preempted or completed.
+  **/
+  sensor_msgs::JointState lastState(const sensor_msgs::JointState current);
+
+  /**
+    Goal callback method to be implemented in the cartesian controllers.
+  **/
+  virtual void goalCB() = 0;
+
+  /**
+    Preempt callback method to be implemented in the cartesian controllers.
+  **/
+  virtual void preemptCB() = 0;
+
+  /**
+    Method that manages the starting of the actionlib server of each cartesian
+    controller.
+  **/
+  void startActionlib();
+
+  /**
+    Load the parameters that are common to all the cartesian controllers.
+
+    @return False if an error occurs, True otherwise.
+  **/
+  bool loadGenericParams();
+
+  /**
+    Method to be implemented in the cartesian controllers that loads controller
+    specific parameters.
+  **/
+  virtual bool loadParams() = 0;
+
+  /**
+    Obtains the wrench measurements from the robot.
+
+    @param msg The force torque message from the sensor node.
+  **/
+  void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
+
+  /**
+    Gets the actuated joint limits from the URDF description of the robot.
+
+    @param min_limits The minimum position limits of the joint.
+    @param max_limits The maximum position limits of the joint.
+  **/
+  void getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits);
 
 protected:
   // Robot related
@@ -74,17 +144,12 @@ protected:
   double feedback_hz_;
   bool has_state_;
   sensor_msgs::JointState last_state_;
-  sensor_msgs::JointState lastState(const sensor_msgs::JointState current);
 
   //Actionlib
   actionlib::SimpleActionServer<ActionClass> *action_server_;
   ActionFeedback feedback_;
   ActionResult result_;
   std::string action_name_;
-
-  virtual void goalCB() = 0;
-  virtual void preemptCB() = 0;
-  void startActionlib();
 
   boost::thread feedback_thread_;
   boost::mutex reference_mutex_;
@@ -95,10 +160,6 @@ protected:
   ros::Publisher ft_pub_;
   tf::TransformListener listener_;
 
-  bool loadGenericParams();
-  virtual bool loadParams() = 0;
-  void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
-  void getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits);
   Eigen::Matrix<double, 6, 1> measured_wrench_;
   double force_d_;
 
@@ -167,9 +228,6 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   ft_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name_ + "/converted", 1);
 }
 
-/*
-  Use the controller kinematic chain to obtain the joint limits of the manipulator
-*/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits)
 {
@@ -196,10 +254,6 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
   }
 }
 
-
-/*
-  Return last controlled joint state
-*/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState current)
 {
@@ -217,10 +271,6 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
   return last_state_;
 }
 
-/*
-  Update current force and torque values, and transform them to the
-  desired ft frame id.
-*/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
@@ -263,9 +313,6 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   ft_pub_.publish(converted_wrench);
 }
 
-/*
-  Code for starting the actionlib server
-*/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionlib()
 {
@@ -281,9 +328,6 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionl
   ROS_INFO("%s initialized successfully!", action_name_.c_str());
 }
 
-/*
-  Search for generic controller parameters
-*/
 template <class ActionClass, class ActionFeedback, class ActionResult>
 bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericParams()
 {

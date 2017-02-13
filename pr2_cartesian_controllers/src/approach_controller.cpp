@@ -1,9 +1,7 @@
 #include <pr2_cartesian_controllers/approach_controller.hpp>
 
 namespace cartesian_controllers {
-  /*
-    Receive a new actiongoal: update controller input parameters.
-  */
+
   void ApproachController::goalCB()
   {
     boost::shared_ptr<const pr2_cartesian_controllers::GuardedApproachGoal> goal = action_server_->acceptNewGoal();
@@ -30,9 +28,6 @@ namespace cartesian_controllers {
     ROS_INFO("Approach controller server received a goal!");
   }
 
-  /*
-    Preempt controller.
-  */
   void ApproachController::preemptCB()
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -41,9 +36,6 @@ namespace cartesian_controllers {
     ROS_WARN("Approach controller preempted!");
   }
 
-  /*
-    Asynchronously publish a feedback message on the control status
-  */
   void ApproachController::publishFeedback()
   {
     feedback_.current_wrench.header.frame_id = base_link_;
@@ -69,9 +61,6 @@ namespace cartesian_controllers {
     }
   }
 
-  /*
-    Search for controller relevant parameters in the parameter server
-  */
   bool ApproachController::loadParams()
   {
     if (!nh_.getParam("/approach_controller/action_server_name", action_name_))
@@ -104,10 +93,33 @@ namespace cartesian_controllers {
     return true;
   }
 
-  /*
-    Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
-    take more than 1ms to execute.
-  */
+  ApproachController::ApproachController() : ControllerTemplate<pr2_cartesian_controllers::GuardedApproachAction,
+                                            pr2_cartesian_controllers::GuardedApproachFeedback,
+                                            pr2_cartesian_controllers::GuardedApproachResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+
+    has_initial_ = false; // used to set the initial pose for one approach action run
+    startActionlib();
+    feedback_thread_ = boost::thread(boost::bind(&ApproachController::publishFeedback, this));
+  }
+
+  ApproachController::~ApproachController()
+  {
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+
+    action_server_->shutdown();
+    delete action_server_;
+  }
+
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;

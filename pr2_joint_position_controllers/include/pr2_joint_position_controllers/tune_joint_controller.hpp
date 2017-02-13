@@ -11,11 +11,46 @@
 
 namespace pr2_joint_controller{
 
-/*
-  Allows for tuning *one* PR2 joint with a nested position-velocity loop
-*/
+/**
+  Implements a controller that allows for tuning the nested PID control loop
+  that is provided by the template joint controller.
+
+  Exposes an actionlib interface that gives the user the ability to send a reference
+  to the joint controller and to adjust the controller gains.
+  Published the required feedback to monitor the controller response.
+**/
 class TuneJointController: public pr2_controller_interface::Controller
 {
+private:
+  /**
+    Apply position feedback, add it to the velocity reference (which acts as a
+    feedforward term) and then apply the velocity feedback.
+
+    @param joint_state The current state of the controlled joint.
+    @param desired_position The reference position for the joint.
+    @param desired_velocity The reference velocity for the joint.
+    @param dt The elapsed time since the last call.
+
+    @return The commanded effort to the joint.
+  **/
+  double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, ros::Duration dt); // applies the nested control strategy
+
+  /**
+    The actionlib goal callback thread. Accepts a new goal consisting of the
+    joint we want to tune and the desired PID parameters.
+  **/
+  void goalCallback();
+
+  /**
+    The actionlib preempt callback thread.
+  **/
+  void preemptCallback();
+
+  /**
+    The feedback thread, running at a non-realtime rate.
+  **/
+  void publishFeedback();
+
 private:
   // PR2 state class
   pr2_mechanism_model::RobotState *robot_;
@@ -28,7 +63,6 @@ private:
   std::string joint_name_;
   ros::Time start_time_, time_of_last_cycle_;
   ros::Duration max_time_;
-  double applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, ros::Duration dt); // applies the nested control strategy
   double modified_velocity_reference_;
   double ff_;
 
@@ -38,8 +72,6 @@ private:
   // Actionlib
   actionlib::SimpleActionServer<pr2_joint_position_controllers::PR2TuneJointAction> *action_server_;
   std::string action_name_;
-  void goalCallback();
-  void preemptCallback();
 
   // Feedback elements
   ros::Publisher feedback_pub_;
@@ -47,7 +79,6 @@ private:
   pr2_joint_position_controllers::PR2TuneJointResult result_;
   boost::thread feedback_thread_;
   double feedback_hz_;
-  void publishFeedback();
 
 public:
   ~TuneJointController()

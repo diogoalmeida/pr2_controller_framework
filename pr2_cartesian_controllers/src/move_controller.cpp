@@ -1,9 +1,35 @@
 #include <pr2_cartesian_controllers/move_controller.hpp>
 
 namespace cartesian_controllers {
-  /*
-    Preempt controller.
-  */
+  MoveController::MoveController() : ControllerTemplate<pr2_cartesian_controllers::MoveAction,
+                                        pr2_cartesian_controllers::MoveFeedback,
+                                        pr2_cartesian_controllers::MoveResult>()
+  {
+    if(!loadParams())
+    {
+      ros::shutdown();
+      exit(0);
+    }
+
+    finished_acquiring_goal_ = false;
+    startActionlib();
+    target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
+    current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
+    feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));
+  }
+
+  MoveController::~MoveController()
+  {
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
+
+    action_server_->shutdown();
+    delete action_server_;
+  }
+
   void MoveController::preemptCB()
   {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -11,9 +37,6 @@ namespace cartesian_controllers {
     ROS_WARN("Move controller preempted!");
   }
 
-  /*
-    Receive a new actiongoal: update controller input parameters.
-  */
   void MoveController::goalCB()
   {
     geometry_msgs::PoseStamped pose;
@@ -49,10 +72,6 @@ namespace cartesian_controllers {
     ROS_INFO("Move controller got a goal!");
   }
 
-  /*
-    Uses the pr2 inverse kinematics service to get the desired joint positions for the given pose.
-    Should not be used in the realtime loop.
-  */
   bool MoveController::getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions)
   {
     moveit_msgs::GetPositionIK ik_srv;
@@ -112,9 +131,6 @@ namespace cartesian_controllers {
     return true;
   }
 
-  /*
-    Search for controller relevant parameters in the parameter server
-  */
   bool MoveController::loadParams()
   {
     if (!nh_.getParam("/move_controller/action_server_name", action_name_))
@@ -156,9 +172,6 @@ namespace cartesian_controllers {
     return true;
   }
 
-  /*
-    Asynchronously publish a feedback message on the control status
-  */
   void MoveController::publishFeedback()
   {
     visualization_msgs::Marker reference_pose, current_pose;
@@ -214,10 +227,6 @@ namespace cartesian_controllers {
     }
   }
 
-  /*
-    Implements the control strategy. This method is expected to call at a rate of approximately 1000 Hz. It should never
-    take more than 1ms to execute.
-  */
   sensor_msgs::JointState MoveController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;

@@ -3,9 +3,6 @@
 
 namespace pr2_joint_controller {
 
-/*
-  Controller initialization
-*/
 bool TuneJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
   // copy robot pointer so we can access time
@@ -38,10 +35,6 @@ bool TuneJointController::init(pr2_mechanism_model::RobotState *robot, ros::Node
   return true;
 }
 
-/*
-  Accept a new goal consisting of the joint we want to tune and
-  desired PID parameters
-*/
 void TuneJointController::goalCallback()
 {
   ROS_INFO("%s action server received a new goal!", action_name_.c_str());
@@ -80,9 +73,6 @@ void TuneJointController::goalCallback()
   }
 }
 
-/*
-  Preempt controller.
-*/
 void TuneJointController::preemptCallback()
 {
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -97,13 +87,11 @@ void TuneJointController::preemptCallback()
   ROS_WARN("%s action server preempted!", action_name_.c_str());
 }
 
-/// Controller startup in realtime
 void TuneJointController::starting()
 {
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   action_server_->start();
   feedback_thread_ = boost::thread(boost::bind(&TuneJointController::publishFeedback, this));
-  // feedback_thread_.detach();
 }
 
 void TuneJointController::stopping()
@@ -127,7 +115,6 @@ void TuneJointController::stopping()
   ROS_INFO("Joint controller stopped successfully!");
 }
 
-/// Controller update loop in realtime
 void TuneJointController::update()
 {
   ros::Duration dt;
@@ -154,10 +141,6 @@ void TuneJointController::update()
   }
 }
 
-/*
-  Apply position feedback, add it to the velocity reference (which acts as a
-  feedforward term) and then apply the velocity feedback.
-*/
 double TuneJointController::applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, ros::Duration dt)
 {
   double current_position, position_error, position_feedback;
@@ -174,14 +157,9 @@ double TuneJointController::applyControlLoop(const pr2_mechanism_model::JointSta
   return velocity_joint_controller_->computeCommand(velocity_error, dt) + ff_*desired_velocity;
 }
 
-/*
-  Publish feedback at a (non-realtime) rate
-*/
 void TuneJointController::publishFeedback()
 {
   pr2_mechanism_model::JointState *joint_state;
-
-  ROS_INFO("FEEDBACK THREAD STARTED");
 
   try
   {
@@ -206,10 +184,9 @@ void TuneJointController::publishFeedback()
   }
   catch(const boost::thread_interrupted &)
   {
-    ROS_INFO("FEEDBACK THREAD DESTROYED");
+    ROS_DEBUG("FEEDBACK THREAD DESTROYED");
   }
 }
-} // namespace
+}
 
-/// Register controller to pluginlib
 PLUGINLIB_EXPORT_CLASS(pr2_joint_controller::TuneJointController, pr2_controller_interface::Controller)

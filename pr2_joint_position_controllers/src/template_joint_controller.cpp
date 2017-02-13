@@ -3,9 +3,6 @@
 
 namespace pr2_joint_controller {
 
-/*
-  Controller initialization
-*/
 bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::NodeHandle &n)
 {
   try
@@ -39,9 +36,6 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
   }
 }
 
-/*
-  Controller startup in realtime
-*/
 void TemplateJointController::starting()
 {
   if (velocity_joint_controllers_.size() == 0)
@@ -75,9 +69,6 @@ void TemplateJointController::stopping()
   ROS_INFO("Joint controller stopped successfully!");
 }
 
-/*
-  Controller update loop in realtime
-*/
 void TemplateJointController::update()
 {
   ros::Duration dt;
@@ -112,10 +103,6 @@ void TemplateJointController::update()
   }
 }
 
-/*
-  Verifies if the given joint state obeys all the joint limits, and modifies it
-  if not.
-*/
 bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
 {
   pr2_mechanism_model::JointState *joint_state;
@@ -174,10 +161,6 @@ bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
   return !hit_limit;
 }
 
-/*
-  Frees all the allocated memory and clears all the std vectors that are initialized
-  during the init() routine
-*/
 void TemplateJointController::resetAllocableVariables()
 {
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
@@ -197,9 +180,6 @@ void TemplateJointController::resetAllocableVariables()
   delete cartesian_controller_;
 }
 
-/*
-  Allocates memory and initializes relevant vectors.
-*/
 bool TemplateJointController::allocateVariables()
 {
   pr2_mechanism_model::JointState *joint;
@@ -270,10 +250,6 @@ bool TemplateJointController::allocateVariables()
   return true;
 }
 
-/*
-  Apply position feedback, add it to the velocity reference (which acts as a
-  feedforward term) and then apply the velocity feedback.
-*/
 double TemplateJointController::applyControlLoop(const pr2_mechanism_model::JointState *joint_state, double desired_position, double desired_velocity, int controller_num, ros::Duration dt)
 {
   double current_position, position_error, position_feedback;
@@ -290,9 +266,6 @@ double TemplateJointController::applyControlLoop(const pr2_mechanism_model::Join
   return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt) + ff_joint_controllers_[controller_num]*desired_velocity;
 }
 
-/*
-  Get the position value in the control references for the given joint
-*/
 double TemplateJointController::getReferencePosition(std::string joint_name)
 {
   for (int i = 0; i < control_references_.name.size(); i++)
@@ -307,9 +280,6 @@ double TemplateJointController::getReferencePosition(std::string joint_name)
   return 0.0;
 }
 
-/*
-  Get the velocity value in the control references for the given joint
-*/
 double TemplateJointController::getReferenceVelocity(std::string joint_name)
 {
   for (int i = 0; i < control_references_.name.size(); i++)
@@ -324,17 +294,11 @@ double TemplateJointController::getReferenceVelocity(std::string joint_name)
   return 0.0;
 }
 
-/*
-  Check if the given joint name is actuated by the controller
-*/
 bool TemplateJointController::isActuatedJoint(std::string joint_name)
 {
   return std::find(joint_names_.begin(), joint_names_.end(), joint_name) != joint_names_.end();
 }
 
-/*
-  Publish feedback at a (non-realtime) rate
-*/
 void TemplateJointController::publishFeedback()
 {
   pr2_mechanism_model::JointState *joint_state;

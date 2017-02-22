@@ -19,6 +19,11 @@ namespace manipulation_algorithms{
       x_hat_[i] = init_x[i];
     }
 
+    for (int i = 0; i < P_.rows()*P_.rows(); i++)
+    {
+      P_(i) = 0.0;
+    }
+
     for (int i = 0; i < P_.rows(); i++)
     {
       P_(i, i) = 0.01;

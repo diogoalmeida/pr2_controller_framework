@@ -79,17 +79,24 @@ if __name__ == '__main__':
     parser.add_argument("--directory", type=str, help="The bag directory")
     parser.add_argument("--all", action='store_true', help="True if meant to parse all")
     parser.add_argument("--pivot", action='store_true', help="True if meant to plot pivot")
+    parser.add_argument("--new", action='store_true', help="True if results are from latest action version")
 
     args = parser.parse_args()
     plot_all = args.all
     pivot = args.pivot
+    is_new = args.new
 
     mean_x_c_hat = np.array([])
     mean_error_x_c_hat = np.array([])
     mean_theta_c_hat = np.array([])
     mean_error_theta_c_hat = np.array([])
-    mean_f_c_hat = np.array([])
-    mean_error_f_c_hat = np.array([])
+    if not is_new:
+        mean_f_c_hat = np.array([])
+        mean_error_f_c_hat = np.array([])
+    else:
+        mean_f_c_x_hat = np.array([])
+        mean_f_c_y_hat = np.array([])
+        mean_error_f_c_y_hat = np.array([])
 
     if pivot:
         matplotlib.rcParams['figure.figsize'] = (7, 6)
@@ -121,14 +128,22 @@ if __name__ == '__main__':
             x_e = np.array([])
             y_e = np.array([])
             x_d = np.array([])
-            var_x = np.array([])
             theta_c_hat = np.array([])
             theta_c = np.array([])
             theta_d = np.array([])
-            var_theta = np.array([])
-            f_c = np.array([])
-            f_c_hat = np.array([])
-            var_f = np.array([])
+
+            if not is_new:
+                f_c = np.array([])
+                f_c_hat = np.array([])
+                var_f = np.array([])
+                var_x = np.array([])
+                var_theta = np.array([])
+            else:
+                f_c_x = np.array([])
+                f_c_x_hat = np.array([])
+                f_c_y = np.array([])
+                f_c_y_hat = np.array([])
+
             f_d = np.array([])
 
             bag_name = bag_prefix + str(num + 1)
@@ -145,16 +160,23 @@ if __name__ == '__main__':
                     x_e = np.append(x_e, [msg.feedback.x_e])
                     y_e = np.append(y_e, [msg.feedback.y_e])
                     x_d = np.append(x_d, [msg.feedback.x_d])
-                    var_x = np.append(var_x, [msg.feedback.var_x])
                     theta_c_hat = np.append(theta_c_hat, [msg.feedback.theta_c_hat])
                     theta_c = np.append(theta_c, [msg.feedback.theta_c_2])
                     theta_d = np.append(theta_d, [msg.feedback.theta_d])
-                    var_theta = np.append(var_theta, [msg.feedback.var_theta])
 
-                f_c = np.append(f_c, [msg.feedback.f_c])
-                f_c_hat = np.append(f_c_hat, [msg.feedback.f_c_hat])
+                if not is_new:
+                    f_c = np.append(f_c, [msg.feedback.f_c])
+                    f_c_hat = np.append(f_c_hat, [msg.feedback.f_c_hat])
+                    var_theta = np.append(var_theta, [msg.feedback.var_theta])
+                    var_x = np.append(var_x, [msg.feedback.var_x])
+                    var_f = np.append(var_f, [msg.feedback.var_f])
+                else:
+                    f_c_x = np.append(f_c_x, [msg.feedback.f_c_x])
+                    f_c_x_hat = np.append(f_c_x_hat, [msg.feedback.f_c_x_hat])
+                    f_c_y = np.append(f_c_y, [msg.feedback.f_c_y])
+                    f_c_y_hat = np.append(f_c_y_hat, [msg.feedback.f_c_y_hat])
+
                 f_d = np.append(f_d, [msg.feedback.f_d])
-                var_f = np.append(var_f, [msg.feedback.var_f])
 
                 if num == 0 or len(mean_x_c_hat) <= i:
                     if plot_all:
@@ -164,8 +186,15 @@ if __name__ == '__main__':
                         mean_theta_c_hat = np.append(mean_theta_c_hat, [msg.feedback.theta_c_hat - msg.feedback.theta_c_2])
                         # mean_error_theta_c_hat = np.append(mean_error_theta_c_hat, [msg.feedback.theta_d - msg.feedback.theta_c_hat])
                         mean_error_theta_c_hat = np.append(mean_error_theta_c_hat, [msg.feedback.theta_d - msg.feedback.theta_c_2])
-                    mean_f_c_hat = np.append(mean_f_c_hat, [msg.feedback.f_c_hat])
-                    mean_error_f_c_hat = np.append(mean_error_f_c_hat, [msg.feedback.f_d - msg.feedback.f_c_hat])
+
+                    if not is_new:
+                        mean_f_c_hat = np.append(mean_f_c_hat, [msg.feedback.f_c_hat])
+                        mean_error_f_c_hat = np.append(mean_error_f_c_hat, [msg.feedback.f_d - msg.feedback.f_c_hat])
+                    else:
+                        mean_f_c_x_hat = np.append(mean_f_c_x_hat, [msg.feedback.f_c_x_hat])
+                        mean_f_c_y_hat = np.append(mean_f_c_y_hat, [msg.feedback.f_c_y_hat])
+                        mean_error_f_c_y_hat = np.append(mean_error_f_c_y_hat, [msg.feedback.f_d - msg.feedback.f_c_y_hat])
+
                 else:
                     if plot_all:
                         mean_x_c_hat[i] = (mean_x_c_hat[i] + msg.feedback.x_c_hat - msg.feedback.x_c_2)
@@ -175,8 +204,14 @@ if __name__ == '__main__':
                         # mean_error_theta_c_hat[i] = mean_error_theta_c_hat[i] + msg.feedback.theta_d - msg.feedback.theta_c_hat
                         mean_error_theta_c_hat[i] = mean_error_theta_c_hat[i] + msg.feedback.theta_d - msg.feedback.theta_c_2
 
-                    mean_f_c_hat[i] = (mean_f_c_hat[i] + msg.feedback.f_c_hat)
-                    mean_error_f_c_hat[i] = mean_error_f_c_hat[i] + msg.feedback.f_d - msg.feedback.f_c_hat
+                    if not is_new:
+                        mean_f_c_hat[i] = (mean_f_c_hat[i] + msg.feedback.f_c_hat)
+                        mean_error_f_c_hat[i] = mean_error_f_c_hat[i] + msg.feedback.f_d - msg.feedback.f_c_hat
+                    else:
+                        mean_f_c_x_hat[i] = (mean_f_c_x_hat[i] + msg.feedback.f_c_x_hat)
+                        mean_f_c_y_hat[i] = (mean_f_c_y_hat[i] + msg.feedback.f_c_y_hat)
+                        mean_error_f_c_y_hat[i] = mean_error_f_c_y_hat[i] + msg.feedback.f_d - msg.feedback.f_c_y_hat
+
 
                     i = i + 1
 
@@ -196,8 +231,12 @@ if __name__ == '__main__':
                         plt.grid(True)
 
                         plt.subplot(515)
-                        plt.plot(t, f_d - f_c_hat, color=gray)
+                        if not is_new:
+                            plt.plot(t, f_d - f_c_hat, color=gray)
+                        else:
+                            plt.plot(t, f_d - f_c_y_hat, color=gray)
                         plt.grid(True)
+
 
                         plt.subplot(513)
                         plt.plot(t, theta_d - theta_c, color=gray)
@@ -243,10 +282,16 @@ if __name__ == '__main__':
         print(num)
         mean_x_c_hat = mean_x_c_hat/(num + 1)
         mean_theta_c_hat = mean_theta_c_hat/(num + 1)
-        mean_f_c_hat = mean_f_c_hat/(num + 1)
         mean_error_x_c_hat = mean_error_x_c_hat/(num + 1)
         mean_error_theta_c_hat = mean_error_theta_c_hat/(num + 1)
-        mean_error_f_c_hat = mean_error_f_c_hat/(num + 1)
+
+        if not is_new:
+            mean_f_c_hat = mean_f_c_hat/(num + 1)
+            mean_error_f_c_hat = mean_error_f_c_hat/(num + 1)
+        else:
+            mean_f_c_x_hat = mean_f_c_x_hat/(num + 1)
+            mean_f_c_y_hat = mean_f_c_y_hat/(num + 1)
+            mean_error_f_c_y_hat = mean_error_f_c_y_hat/(num + 1)
 
         plt.figure(1)
 
@@ -266,9 +311,14 @@ if __name__ == '__main__':
                 plt.ylabel('[m]')
 
                 plt.subplot(515)
-                plt.plot(t, mean_error_f_c_hat[0:len(t)], 'k')
+                if not is_new:
+                    plt.plot(t, mean_error_f_c_hat[0:len(t)], 'k')
+                    plt.title('Force error, $f_d - \hat{f}_{c_y}$', y=title_offset)
+                else:
+                    plt.plot(t, mean_error_f_c_y_hat[0:len(t)], 'k')
+                    plt.title('Force error, $f_d - \hat{f}_{c_y}$', y=title_offset)
+
                 plt.ylim(-0.5, 0.5)
-                plt.title('Force error, $f_d - \hat{f}_c$', y=title_offset)
                 plt.ylabel('[N]')
                 plt.xlabel('Time [s]')
 
@@ -297,8 +347,13 @@ if __name__ == '__main__':
                 plt.title('Angle estimation error, $\hat{\\theta}_c - \\theta_c$', y=title_offset)
                 plt.xlabel('Time [s]')
         else:
-            plt.plot(t, f_c, color=gray)
-            plt.plot(t, f_c_hat, 'k')
+            if not is_new:
+                plt.plot(t, f_c, color=gray)
+                plt.plot(t, f_c_hat, 'k')
+            else:
+                plt.plot(t, f_c_y, color=gray)
+                plt.plot(t, f_c_y_hat, 'k')
+
             plt.title('Force estimate', y=title_offset)
             plt.ylabel('[N]')
             plt.xlabel('Time [s]')

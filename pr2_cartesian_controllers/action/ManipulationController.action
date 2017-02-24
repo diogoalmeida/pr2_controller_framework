@@ -17,15 +17,14 @@ float64 x_c_hat
 float64 x_c_1
 float64 x_c_2
 float64 x_d
-float64 var_x
 float64 theta_c_hat
 float64 theta_c_1
 float64 theta_c_2
 float64 theta_d
-float64 var_theta
-float64 f_c_hat # estimated
-float64 f_c # computed from f_e
-float64 var_f
+float64 f_c_x_hat # estimated
+float64 f_c_y_hat # estimated
+float64 f_c_x # computed from f_e
+float64 f_c_y # computed from f_e
 float64 f_d
 float64 k_s # estimated
 float64 torque_c
@@ -40,6 +39,9 @@ float64 commanded_rot
 float64 x_e
 float64 y_e
 float64 theta_e
+float64 x_e_dot
+float64 y_e_dot
+float64 theta_e_dot
 geometry_msgs/Point f_e
 geometry_msgs/Point tau_e
 geometry_msgs/Point rot_gains

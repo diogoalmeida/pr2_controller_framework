@@ -275,12 +275,6 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/estimate_spring_constant", estimate_k_s_)) // if true, k_s_ will be taken as a state variable
-    {
-      ROS_ERROR("Missing estimate spring constant (/manipulation_controller/estimate_spring_constant)");
-      return false;
-    }
-
     if (!nh_.getParam("/manipulation_controller/estimator/initial_x_offset", init_x_offset_))
     {
       ROS_ERROR("Missing initial_x_offset (/manipulation_controller/estimator/initial_x_offset)");
@@ -325,6 +319,9 @@ namespace cartesian_controllers {
     rot_gains_.vector.y = rot_gains[1];
     rot_gains_.vector.z = rot_gains[2];
 
+    x_hat_ = Eigen::VectorXd(3);
+    x_hat_ << 0, 0, 0;
+
     return true;
   }
 
@@ -337,8 +334,9 @@ namespace cartesian_controllers {
     KDL::Twist input_twist, twist_error, actual_twist;
     Eigen::Affine3d surface_frame_to_grasp_eig;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef, actual_commands;
-    Eigen::Vector3d u, e, y, temp, surface_tangent_in_grasp, surface_normal_in_grasp;
-    double torque_e, force_e, x_c, theta_c;
+    Eigen::Vector3d u, e, temp, surface_tangent_in_grasp, surface_normal_in_grasp;
+    Eigen::VectorXd y(3);
+    double torque_e, f_e_y, f_e_x, x_c, theta_c;
     Eigen::Matrix3d inv_g, skew;
     Eigen::Matrix<double, 6, 1> twist_eig, actual_twist_eigen;
 
@@ -381,21 +379,11 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      Eigen::VectorXd init_estimate(4);
       fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
-      x_hat_[1] = x_e_[1] + init_theta_offset_;
+      x_hat_[1] = x_e_[2] + init_theta_offset_;
       x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
-
-      if (estimate_k_s_)
-      {
-        init_estimate << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
-        ekf_estimator_.initialize(init_estimate);
-      }
-      else
-      {
-        ekf_estimator_.initialize(x_hat_);
-      }
+      ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
     }
 
@@ -408,8 +396,10 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
-    force_e = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
+    // torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
+    torque_e = -measured_wrench_.block<3,1>(3,0).norm();
+    f_e_y = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
+    f_e_x = measured_wrench_.block<3,1>(0,0).dot(surface_tangent_in_grasp);
 
     if (debug_twist_)
     {
@@ -417,45 +407,19 @@ namespace cartesian_controllers {
     }
     else
     {
-      if (estimate_k_s_)
-      {
-        Eigen::VectorXd x_c_aug(4);
-        x_c_aug << x_hat_[0], x_hat_[1], x_hat_[2], k_s_;
-        commands = controller_.compute(x_d_, x_c_aug, x_e_);
-      }
-      else
-      {
-        commands = controller_.compute(x_d_, x_hat_, x_e_);
-      }
+      commands = controller_.compute(x_d_, x_hat_, x_e_);
     }
 
     // compute the measurements vector
-    if (estimate_k_s_)
-    {
-      y << torque_e/force_e,
-           x_e_[2] - theta_o_,
-           force_e;
-    }
-    else
-    {
-      y << torque_e/force_e,
-      x_e_[2] + torque_e/k_s_ - theta_o_,
-      force_e;
-    }
+    y << torque_e/f_e_y,
+         x_e_[2] + torque_e/k_s_ - theta_o_,
+         f_e_y;
 
     actual_twist = grasp_point_velocity_kdl.GetTwist();
     tf::twistKDLToEigen(actual_twist, actual_twist_eigen);
 
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
-    Eigen::Vector3d variances = ekf_estimator_.getVariance();
-    Eigen::VectorXd estimate = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
-
-    x_hat_ << estimate[0], estimate[1], estimate[2];
-
-    if (estimate_k_s_)
-    {
-      k_s_ = estimate[3];
-    }
+    x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
 
     e = x_d_ - x_hat_;
 
@@ -481,14 +445,13 @@ namespace cartesian_controllers {
     feedback_.theta_c_2 = real_theta2;
     feedback_.x_c_hat = x_hat_[0];
     feedback_.x_d = x_d_[0];
-    feedback_.var_x = variances[0];
     feedback_.theta_c_hat = x_hat_[1];
     feedback_.theta_d = x_d_[1];
-    feedback_.var_theta = variances[1];
-    feedback_.f_c_hat = x_hat_[2];
-    feedback_.f_c = force_e;
+    feedback_.f_c_y_hat = x_hat_[2];
+    feedback_.f_c_y = f_e_y;
+    feedback_.f_c_x_hat = 0;
+    feedback_.f_c_x = f_e_x;
     feedback_.f_d = x_d_[2];
-    feedback_.var_f = variances[2];
     feedback_.k_s = k_s_;
     feedback_.torque_c = torque_e;
     feedback_.f_e.x = measured_wrench_[0];
@@ -509,6 +472,9 @@ namespace cartesian_controllers {
     feedback_.x_e = x_e_[0];
     feedback_.y_e = x_e_[1];
     feedback_.theta_e = x_e_[2];
+    feedback_.x_e_dot = actual_commands[0];
+    feedback_.y_e_dot = actual_commands[1];
+    feedback_.theta_e_dot = actual_commands[2];
 
     velocity_command = commands[0]*surface_tangent + commands[1]*surface_normal;
     skew = computeSkewSymmetric(commands[2]*rotation_axis);

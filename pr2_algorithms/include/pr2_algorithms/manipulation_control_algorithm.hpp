@@ -47,7 +47,7 @@ namespace manipulation_algorithms{
       @param theta_c The object orientation w.r.t the surface frame
       @return The inverse of the task jacobian
     */
-    Eigen::Matrix3d computeInvG(const double x_e, const double x_c, const double theta_c);
+    Eigen::Matrix3d computeInvG(const double x_e, const double x_c, const double theta_c, const double f_c_x, const double f_c_y);
   };
 }
 #endif

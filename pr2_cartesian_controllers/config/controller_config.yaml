@@ -17,15 +17,16 @@ manipulation_controller:
   gains:
     k_1: 0.7
     k_2: 0.7
-    k_3: 1.0
+    k_3: 0.0
   saturations:
     x: 0.1
     y: 0.1
-    theta: 0.05
+    theta: 0 #0.05
   rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
   estimate_length: false
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
-  initial_angle_offset: 0.0
+  initial_angle_offset: -0.18
+  x_offset: -0.02
   wait_for_tf_time: 1
   surface_frame_vertical_offset: -0.01
   surface_frame_horizontal_offset: 0.03
@@ -34,16 +35,20 @@ manipulation_controller:
       # data: [90, 0, 0, 0, 1, 0, 0, 0, 5]
       # data: [90, 0, 0, 0, 0.001, 0, 0, 0, 1]
       # data: [5, 0, 0, 0, 10.001, 0, 0, 0, 2.5]
-      data: [10000, 0, 0,
-             0, 10000, 0,
+      # data: [10000, 0, 0,
+      #        0, 10000, 0,
+      #        0, 0, 5000]
+      data: [100, 0, 0,
+             0, 10, 0,
              0, 0, 5000]
     R:
       # data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
       # data: [0.001, 0, 0, 0, 0.004, 0, 0, 0, 0.002]
       # data: [0.001, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0.001]
-      data: [0.001, 0, 0,
-             0, 0.001, 0,
-             0, 0, 0, 0.001]
+      data: [0.01, 0, 0, 0,
+             0, 0.01, 0, 0,
+             0, 0, 0.001, 0,
+             0, 0, 0, 0.00000]
 
     initial_x_offset: -0.2 #-0.15
     initial_theta_offset: -0.1

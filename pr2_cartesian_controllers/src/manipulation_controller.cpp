@@ -287,6 +287,12 @@ namespace cartesian_controllers {
       return false;
     }
 
+    if (!nh_.getParam("/manipulation_controller/x_offset", x_o_))
+    {
+      ROS_ERROR("Missing x offset (/manipulation_controller/x_offset)");
+      return false;
+    }
+
     if (!nh_.getParam("/manipulation_controller/surface_frame_vertical_offset", surface_frame_vertical_offset_))
     {
       ROS_ERROR("Missing surface_frame_vertical_offset (/manipulation_controller/surface_frame_vertical_offset)");
@@ -319,8 +325,8 @@ namespace cartesian_controllers {
     rot_gains_.vector.y = rot_gains[1];
     rot_gains_.vector.z = rot_gains[2];
 
-    x_hat_ = Eigen::VectorXd(3);
-    x_hat_ << 0, 0, 0;
+    x_hat_ = Eigen::VectorXd(4);
+    x_hat_ << 0, 0, 0, k_s_;
 
     return true;
   }
@@ -383,6 +389,7 @@ namespace cartesian_controllers {
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
       x_hat_[1] = x_e_[2] + init_theta_offset_;
       x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
+      x_hat_[3] = k_s_;
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
     }
@@ -396,8 +403,8 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    // torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
-    torque_e = -measured_wrench_.block<3,1>(3,0).norm();
+    torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
+    // torque_e = -measured_wrench_.block<3,1>(3,0).norm();
     f_e_y = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
     f_e_x = measured_wrench_.block<3,1>(0,0).dot(surface_tangent_in_grasp);
 
@@ -412,7 +419,7 @@ namespace cartesian_controllers {
 
     // compute the measurements vector
     y << torque_e/f_e_y,
-         x_e_[2] + torque_e/k_s_ - theta_o_,
+         x_e_[2] - theta_o_,
          f_e_y;
 
     actual_twist = grasp_point_velocity_kdl.GetTwist();
@@ -420,8 +427,12 @@ namespace cartesian_controllers {
 
     actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
     x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
+    x_hat_[0] += x_o_;
 
-    e = x_d_ - x_hat_;
+    k_s_ = x_hat_[3];
+    Eigen::Vector3d x_red;
+    x_red << x_hat_[0], x_hat_[1], x_hat_[2];
+    e = x_d_ - x_red;
 
     // Compute the ground truth from the known length and known surface
     double real_x1, real_x2, real_theta1, real_theta2;

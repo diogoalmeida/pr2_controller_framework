@@ -52,7 +52,7 @@ public:
 private:
   Eigen::VectorXd x_hat_;
   Eigen::MatrixXd P_, Q_, R_;
-  double k_s_, theta_o_;
+  double k_s_, theta_o_, x_o_;
 
   void initializeMatrices(int dim, Eigen::MatrixXd &A, Eigen::MatrixXd &C, Eigen::MatrixXd &G, Eigen::MatrixXd &I, Eigen::MatrixXd &K, Eigen::MatrixXd &P);
   void computeA(Eigen::MatrixXd &A, const double y_e_dot, const double theta_e_dot, const double x_e, const double x_c, const double theta_c, const double f_c_y, const double f_c_x, const double k_s);

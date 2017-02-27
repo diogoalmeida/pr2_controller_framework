@@ -7,7 +7,7 @@
 #include <random>
 
 using namespace manipulation_algorithms;
-const double k_s = 0.2;
+const double k_s = 0.17;
 const double L = 0.12;
 Eigen::Vector3d real_u, real_x_e, real_x_c;
 double real_f_y = 0;
@@ -119,7 +119,7 @@ int main(int argc, char ** argv)
 
   real_u = Eigen::Vector3d::Zero();
   real_x_e = Eigen::Vector3d::Zero();
-  x_hat = Eigen::VectorXd(3);
+  x_hat = Eigen::VectorXd(4);
   y = Eigen::VectorXd(3);
 
 
@@ -131,11 +131,11 @@ int main(int argc, char ** argv)
 
   if (!use_real_data)
   {
-    x_hat << x_c[0] - 0.1, x_c[1] - 0.1, x_c[2] - 1;
+    x_hat << x_c[0] - 0.1, x_c[1] - 0.3, x_c[2] - 0.3, k_s - 0.1;
   }
   else
   {
-    x_hat << real_x_e[0] - 0.1, real_x_e[2], real_f_y;
+    x_hat << real_x_e[0] - 0.1, real_x_e[2], real_f_y, k_s;
   }
 
   estimator_alg.initialize(x_hat);
@@ -148,7 +148,7 @@ int main(int argc, char ** argv)
 
   while (elapsed.toSec() < max_time)
   {
-    // u = control_alg.compute(x_d, x_hat, x_e);
+    u = control_alg.compute(x_d, x_hat, x_e);
 
     dt = ros::Time::now() - prev_time;
     elapsed = ros::Time::now() - init_time;
@@ -157,6 +157,7 @@ int main(int argc, char ** argv)
     {
       u[0] = 0.1*std::sin(2*M_PI*elapsed.toSec()) + 0.01*obs_noise(generator);
       u[1] = 0;
+      u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4) + 0.01*obs_noise(generator);
       u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec()) + 0.05*obs_noise(generator);
     }
     else
@@ -180,6 +181,7 @@ int main(int argc, char ** argv)
         {
           u[0] = 0.1*std::sin(2*M_PI*elapsed.toSec()) + 0.01*obs_noise(generator);
           u[1] = 0;
+          u[1] = 0.005*std::sin(2*M_PI*elapsed.toSec()/4) + 0.01*obs_noise(generator);
           u[2] = 0.1*std::sin(0.25*2*M_PI*elapsed.toSec()) + 0.05*obs_noise(generator);
         }
       }
@@ -208,20 +210,20 @@ int main(int argc, char ** argv)
 
     if (!use_real_data)
     {
-      y << torque + 0.05*obs_noise(generator), x_e[2], force + 10*obs_noise(generator);
+      y << torque/force + 0*0.05*obs_noise(generator), x_e[2], force + 0*10*obs_noise(generator);
       x_hat = estimator_alg.estimate(u, y, x_e, dt.toSec());
     }
     else
     {
       // y << real_torque, real_x_e[2] + real_torque/k_s, 0, -std::sqrt(real_f_y*real_f_y + real_f_x*real_f_x);
-      y << real_torque, real_x_e[2] + real_torque/k_s, real_f_y;
+      y << real_torque/real_f_y, real_x_e[2], real_f_y;
       // y << torque + 5*obs_noise(generator), x_e[2] + torque/k_s, 0, force + 10*obs_noise(generator);
       // x_hat = estimator_alg.estimate(real_u, y, x_e, dt.toSec());
       x_hat = estimator_alg.estimate(real_u, y, real_x_e, dt.toSec());
     }
 
     feedback_msg.f_x_sim = 0;
-    feedback_msg.f_y_sim = x_c[2] + 10*obs_noise(generator);
+    feedback_msg.f_y_sim = x_c[2] + 0*10*obs_noise(generator);
     feedback_msg.tau_e_sim = torque;
 
     feedback_msg.f_x_real = real_f_x;
@@ -247,7 +249,7 @@ int main(int argc, char ** argv)
     feedback_msg.f_y_hat = x_hat[2];
 
     feedback_msg.k_s = k_s;
-    feedback_msg.k_s_hat = k_s;
+    feedback_msg.k_s_hat = x_hat[3];
 
     prev_time = ros::Time::now();
     pub.publish(feedback_msg);

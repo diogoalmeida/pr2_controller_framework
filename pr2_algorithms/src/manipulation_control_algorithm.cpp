@@ -70,8 +70,12 @@ namespace manipulation_algorithms{
     Eigen::Matrix3d inv_G;
     Eigen::Vector3d e, u, control_state;
 
+    k_s_ = x_c[3];
     inv_G = computeInvG(x_e[0], x_c[0], x_c[1],0, x_c[2]);
-    e = x_d - x_c;
+
+    Eigen::Vector3d x_red;
+    x_red << x_c[0], x_c[1], x_c[2];
+    e = x_d - x_red;
 
     if (e.norm() > 0.001)
     {

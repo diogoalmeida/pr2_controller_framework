@@ -45,7 +45,7 @@ private:
   bool has_initial_, estimate_length_;
   bool finished_acquiring_goal_;
   double estimated_length_, estimated_orientation_, hardcoded_length_, k_s_, theta_o_, surface_frame_vertical_offset_, surface_frame_horizontal_offset_;
-  double init_x_offset_, init_theta_offset_; // to initialize the ekf estimator
+  double init_x_offset_, init_theta_offset_, x_o_; // to initialize the ekf estimator
   Eigen::Affine3d surface_frame_, grasp_point_pose_, end_effector_pose_;
   Eigen::Vector3d estimated_r_, x_d_, x_e_;
   Eigen::VectorXd x_hat_;

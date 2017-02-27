@@ -20,14 +20,17 @@ namespace manipulation_algorithms{
       x_hat_[i] = init_x[i];
     }
 
+    k_s_ = x_hat_[3];
+
     for (int i = 0; i < init_x.rows()*init_x.rows(); i++)
     {
       P_(i) = 0;
     }
 
-    P_(0, 0) = 0.001;
-    P_(1, 1) = 0.001;
-    P_(2, 2) = 0.001;
+    P_(0, 0) = 0.1;
+    P_(1, 1) = 0.1;
+    P_(2, 2) = 0.1;
+    P_(3, 3) = 0.00001;
   }
 
   bool ManipulationEKF::getParams(const ros::NodeHandle &n)
@@ -38,7 +41,7 @@ namespace manipulation_algorithms{
       return false;
     }
 
-    P_ = Eigen::MatrixXd(3,3);
+    P_ = Eigen::MatrixXd(4,4);
 
     if (!n.getParam("/manipulation_controller/initial_angle_offset", theta_o_))
     {
@@ -56,9 +59,9 @@ namespace manipulation_algorithms{
       return false;
     }
 
-    if (R_.rows() != 3)
+    if (R_.rows() != 4)
     {
-      ROS_ERROR("Incorrect size for R, must be 5x5, is %dx%d", (int)R_.rows(), (int)R_.cols());
+      ROS_ERROR("Incorrect size for R, must be %dx%d, is %dx%d", (int)P_.rows(), (int)P_.rows(), (int)R_.rows(), (int)R_.cols());
       return false;
     }
 
@@ -81,9 +84,9 @@ namespace manipulation_algorithms{
       P(i, i) = 1;
     }
 
-    C = Eigen::MatrixXd(3, 3);
-    G = Eigen::MatrixXd(3, 3);
-    K = Eigen::MatrixXd(3, 3);
+    C = Eigen::MatrixXd(3, 4);
+    G = Eigen::MatrixXd(4, 3);
+    K = Eigen::MatrixXd(4, 3);
   }
 
   void ManipulationEKF::computeA(Eigen::MatrixXd &A, const double y_e_dot, const double theta_e_dot, const double x_e, const double x_c, const double theta_c, const double f_c_y, const double f_c_x, const double k_s)
@@ -93,9 +96,10 @@ namespace manipulation_algorithms{
     double cos_theta = std::cos(theta_c);
     double dx = x_e - x_c;
 
-    A << 0, y_e_dot/(cos_theta*cos_theta), 0,
-         y_e_dot/(dx*dx), 0, 0,
-         (tan_theta*f_c_y - k_s*theta_e_dot)/(dx*dx) - k_s*y_e_dot/(dx*dx*dx), f_c_y*y_e_dot/(dx*cos_theta*cos_theta), tan_theta*y_e_dot/dx;
+    A << 0, y_e_dot/(cos_theta*cos_theta), 0, 0,
+         y_e_dot/(dx*dx), 0, 0, 0,
+         (tan_theta*f_c_y*y_e_dot - k_s*theta_e_dot)/(dx*dx) - k_s*y_e_dot/(dx*dx*dx), f_c_y*y_e_dot/(dx*cos_theta*cos_theta), tan_theta*y_e_dot/dx, y_e_dot/(dx*dx) - theta_e_dot/dx,
+         0, 0, 0, 0;
   }
 
   void ManipulationEKF::computeC(Eigen::MatrixXd &C, const double x_e, const double x_c, const double theta_c, const double f_c_y, const double f_c_x, const double k_s)
@@ -105,9 +109,9 @@ namespace manipulation_algorithms{
     double gamma = f_c_y - tan_theta*f_c_x;
     double dx = x_e - x_c;
 
-    C << -1, 0, 0,
-         0, 1, 0,
-         0, 0, 1;
+    C << -1, 0, 0, 0,
+         f_c_y/k_s, 1, -dx/k_s, dx*f_c_y/(k_s*k_s),
+         0, 0, 1, 0;
   }
 
   void ManipulationEKF::computeG(Eigen::MatrixXd &G, const double x_e, const double x_c, const double theta_c, const double theta_e, const double f_c_x, const double f_c_y, const double k_s)
@@ -120,7 +124,8 @@ namespace manipulation_algorithms{
 
     G << 1, std::tan(theta_c)              , 0                   ,
          0, 1/dx                     , 0                   ,
-         0, (k_s + dx*tan_theta*f_c_y)/(dx*dx), -k_s/dx;
+         0, (k_s + dx*tan_theta*f_c_y)/(dx*dx), -k_s/dx,
+         0, 0, 0;
   }
 
   Eigen::VectorXd ManipulationEKF::estimate(const Eigen::Vector3d &u, const Eigen::VectorXd &y, const Eigen::Vector3d &x_e, const double dt)
@@ -129,7 +134,7 @@ namespace manipulation_algorithms{
     Eigen::VectorXd h, innovation;
     double dx, dx_square, dx_cube, cos_theta, cos_theta_square, sin_theta, tan_theta, epsilon, xi, gamma_1, gamma_2;
 
-    initializeMatrices(3, A, C, G, I, K, P);
+    initializeMatrices(4, A, C, G, I, K, P);
     h = Eigen::VectorXd(3);
 
     dx = x_e[0] - x_hat_[0];
@@ -147,11 +152,11 @@ namespace manipulation_algorithms{
       return x_hat_;
     }
 
-    computeA(A, u[1], u[2], x_e[0], x_hat_[0], x_hat_[1], x_hat_[2], 0, k_s_);
-    computeC(C, x_e[0], x_hat_[0], x_hat_[1], x_hat_[2], 0, k_s_);
-    computeG(G, x_e[0], x_hat_[0], x_hat_[1], x_e[2], 0, x_hat_[2], k_s_);
+    computeA(A, u[1], u[2], x_e[0], x_hat_[0], x_hat_[1], x_hat_[2], 0, x_hat_[3]);
+    computeC(C, x_e[0], x_hat_[0], x_hat_[1], x_hat_[2], 0, x_hat_[3]);
+    computeG(G, x_e[0], x_hat_[0], x_hat_[1], x_e[2], 0, x_hat_[2], x_hat_[3]);
 
-    h << dx, x_hat_[1], x_hat_[2];
+    h << dx, x_hat_[1] - dx*x_hat_[2]/x_hat_[3], x_hat_[2];
 
     innovation = y - h;
 
@@ -169,7 +174,12 @@ namespace manipulation_algorithms{
     // P_.triangularView<Eigen::Upper>() = (I - K*C)*P_.selfadjointView<Eigen::Upper>();
     P_ = (I - K*C)*P_;
 
-    // k_s_ = k_s_;
+    k_s_ = x_hat_[3];
+
+    // std::cout << "innovation: " << std::endl << innovation << std::endl;
+    // std::cout << "A: " << std::endl << A << std::endl << std::endl;
+    // std::cout << "C: " << std::endl << C << std::endl << std::endl;
+    // std::cout << "K: " << std::endl << K << std::endl << std::endl;
 
     return x_hat_;
   }

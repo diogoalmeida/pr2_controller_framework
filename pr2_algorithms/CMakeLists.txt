@@ -39,6 +39,12 @@ target_link_libraries(manipulation_control_algorithm ${catkin_LIBRARIES})
 add_library(manipulation_ekf src/manipulation_ekf.cpp src/algorithm_base.cpp)
 target_link_libraries(manipulation_ekf ${catkin_LIBRARIES})
 
+add_library(folding_assembly_controller src/folding_assembly_controller.cpp src/algorithm_base.cpp)
+target_link_libraries(folding_assembly_controller ${catkin_LIBRARIES})
+
+add_library(folding_assembly_estimator src/folding_assembly_estimator.cpp src/algorithm_base.cpp)
+target_link_libraries(folding_assembly_estimator ${catkin_LIBRARIES})
+
 add_executable(test_bed src/test_bed.cpp)
 target_link_libraries(test_bed manipulation_ekf manipulation_control_algorithm ${catkin_LIBRARIES})
 add_dependencies(test_bed pr2_algorithms_generate_messages_cpp)

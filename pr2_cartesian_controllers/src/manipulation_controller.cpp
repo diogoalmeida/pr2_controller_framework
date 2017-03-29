@@ -417,15 +417,6 @@ namespace cartesian_controllers {
     actual_twist = grasp_point_velocity_kdl.GetTwist();
     tf::twistKDLToEigen(actual_twist, actual_twist_eigen);
 
-    actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
-    x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
-    x_hat_[0] += x_o_;
-
-    k_s_ = x_hat_[3];
-    Eigen::Vector3d x_red;
-    x_red << x_hat_[0], x_hat_[1], x_hat_[2];
-    e = x_d_ - x_red;
-
     // Compute the ground truth from the known length and known surface
     double real_x1, real_x2, real_theta1, real_theta2;
     double A, B, C, line_displacement, center_x, center_y;
@@ -441,7 +432,7 @@ namespace cartesian_controllers {
     real_theta1 = std::atan2(center_y, (center_x - real_x2));
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta2 = std::atan2(center_y, (center_x - real_x2));
-
+    
     if (debug_twist_)
     {
       commands << debug_x_, debug_y_, debug_rot_;
@@ -451,6 +442,15 @@ namespace cartesian_controllers {
       x_hat_ << real_x2, real_theta2, x_hat_[2];
       commands = controller_.compute(x_d_, x_hat_, x_e_);
     }
+
+    actual_commands << actual_twist_eigen.block<3,1>(0,0).dot(surface_tangent), actual_twist_eigen.block<3,1>(0,0).dot(surface_normal), actual_twist_eigen.block<3,1>(3,0).dot(rotation_axis);
+    x_hat_ = ekf_estimator_.estimate(actual_commands, y, x_e_, dt.toSec());
+    x_hat_[0] += x_o_;
+
+    k_s_ = x_hat_[3];
+    Eigen::Vector3d x_red;
+    x_red << x_hat_[0], x_hat_[1], x_hat_[2];
+    e = x_d_ - x_red;
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;

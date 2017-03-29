@@ -408,14 +408,6 @@ namespace cartesian_controllers {
     f_e_y = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
     f_e_x = measured_wrench_.block<3,1>(0,0).dot(surface_tangent_in_grasp);
 
-    if (debug_twist_)
-    {
-      commands << debug_x_, debug_y_, debug_rot_;
-    }
-    else
-    {
-      commands = controller_.compute(x_d_, x_hat_, x_e_);
-    }
 
     // compute the measurements vector
     y << torque_e/f_e_y,
@@ -449,6 +441,16 @@ namespace cartesian_controllers {
     real_theta1 = std::atan2(center_y, (center_x - real_x2));
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta2 = std::atan2(center_y, (center_x - real_x2));
+
+    if (debug_twist_)
+    {
+      commands << debug_x_, debug_y_, debug_rot_;
+    }
+    else
+    {
+      x_hat_ << real_x2, real_theta2, x_hat_[2];
+      commands = controller_.compute(x_d_, x_hat_, x_e_);
+    }
 
     feedback_.x_c_1 = real_x1;
     feedback_.theta_c_1 = real_theta1;

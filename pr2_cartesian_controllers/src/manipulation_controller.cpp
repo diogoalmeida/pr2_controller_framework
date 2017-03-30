@@ -432,14 +432,14 @@ namespace cartesian_controllers {
     real_theta1 = std::atan2(center_y, (center_x - real_x2));
     real_x2 = (-B - std::sqrt(B*B - 4*A*C))/(2*A);
     real_theta2 = std::atan2(center_y, (center_x - real_x2));
-    
+
     if (debug_twist_)
     {
       commands << debug_x_, debug_y_, debug_rot_;
     }
     else
     {
-      x_hat_ << real_x2, real_theta2, x_hat_[2];
+      x_hat_ << real_x2, real_theta2, x_hat_[2], x_hat_[3];
       commands = controller_.compute(x_d_, x_hat_, x_e_);
     }
 

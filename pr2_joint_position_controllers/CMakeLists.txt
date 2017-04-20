@@ -17,7 +17,7 @@ catkin REQUIRED COMPONENTS
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 add_message_files(
   FILES

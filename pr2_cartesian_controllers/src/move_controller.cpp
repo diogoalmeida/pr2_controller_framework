@@ -3,7 +3,9 @@
 namespace cartesian_controllers {
   MoveController::MoveController() : ControllerTemplate<pr2_cartesian_controllers::MoveAction,
                                         pr2_cartesian_controllers::MoveFeedback,
-                                        pr2_cartesian_controllers::MoveResult>()
+                                        pr2_cartesian_controllers::MoveResult>(),
+    ik_service_name_(NUM_ARMS),
+    ik_info_service_name_(NUM_ARMS)
   {
     if(!loadParams())
     {

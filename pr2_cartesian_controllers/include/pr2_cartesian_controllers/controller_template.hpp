@@ -172,6 +172,7 @@ protected:
   bool getParam(const std::string &param_name, double &var);
   bool getParam(const std::string &param_name, std::vector<double> &var);
   bool getParam(const std::string &param_name, int &var);
+  bool getParam(const std::string &param_name, bool &var);
 
 protected:
   // Robot related
@@ -457,6 +458,18 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(con
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
 bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, int &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, bool &var)
 {
   if (!nh_.getParam(param_name, var))
   {

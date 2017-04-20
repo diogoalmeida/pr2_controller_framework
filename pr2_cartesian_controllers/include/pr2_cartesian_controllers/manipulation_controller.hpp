@@ -52,6 +52,7 @@ private:
   geometry_msgs::Vector3Stamped rot_gains_;
   KDL::Frame initial_pose_, end_effector_to_grasp_point_;
   std::string grasp_point_frame_name_;
+  int arm_index_;
 
   // estimator
   manipulation_algorithms::ManipulationEKF ekf_estimator_;

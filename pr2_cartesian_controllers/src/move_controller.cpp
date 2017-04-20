@@ -253,7 +253,10 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_[arm_index_](i) = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+      }
     }
 
     control_output = current_state;
@@ -283,34 +286,40 @@ namespace cartesian_controllers {
     std::vector<double> error;
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        if (desired_joint_positions_(i) - current_state.position[i] > 0)
+        if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
         {
-          error.push_back(max_allowed_error_);
+          if (desired_joint_positions_(i) - current_state.position[i] > 0)
+          {
+            error.push_back(max_allowed_error_);
+          }
+          else
+          {
+            error.push_back(-max_allowed_error_);
+          }
         }
         else
         {
-          error.push_back(-max_allowed_error_);
+          error.push_back(desired_joint_positions_(i) - current_state.position[i]);
         }
-      }
-      else
-      {
-        error.push_back(desired_joint_positions_(i) - current_state.position[i]);
-      }
 
-      feedback_.joint_position_references.push_back(desired_joint_positions_(i));
-      feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
+        feedback_.joint_position_references.push_back(desired_joint_positions_(i));
+        feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
+      }
     }
 
     // 2 - send commands
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.velocity[i] = velocity_gain_ * error[i];
-      control_output.position[i] = current_state.position[i];
-      feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
-      feedback_.joint_velocity_errors.push_back(velocity_gain_ * error[i] - current_state.velocity[i]);
-      control_output.effort[i] = 0;
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.velocity[i] = velocity_gain_ * error[i];
+        control_output.position[i] = current_state.position[i];
+        feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
+        feedback_.joint_velocity_errors.push_back(velocity_gain_ * error[i] - current_state.velocity[i]);
+        control_output.effort[i] = 0;
+      }
     }
 
     return control_output;

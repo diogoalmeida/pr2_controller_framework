@@ -141,7 +141,10 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_[arm_index_](i) = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+      }
     }
 
     if (!has_initial_)
@@ -200,8 +203,11 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.velocity[i] = commanded_joint_velocities(i);
-      control_output.position[i] = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.velocity[i] = commanded_joint_velocities(i);
+        control_output.position[i] = current_state.position[i];
+      }
     }
 
     return control_output;

@@ -163,6 +163,14 @@ protected:
   void getJointLimits(const KDL::Chain &chain, KDL::JntArray &min_limits, KDL::JntArray &max_limits);
 
   /**
+    Check if a chain has the given joint_name.
+
+    @param chain The kinematic chain where to look for the joint.
+    @param joint_name The joint name we wish to check.
+  **/
+  bool hasJoint(const KDL::Chain &chain, const std::string &joint_name);
+  
+  /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
     @param param_name The name of the parameter address in the parameter server.
@@ -418,6 +426,20 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionl
   action_server_->start();
 
   ROS_INFO("%s initialized successfully!", action_name_.c_str());
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::hasJoint(const KDL::Chain &chain, const std::string &joint_name)
+{
+  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  {
+    if(chain.segments[i].getJoint().getName() == joint_name)
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

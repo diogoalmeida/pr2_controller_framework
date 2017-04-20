@@ -355,9 +355,12 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_[arm_index_](i) = current_state.position[i];
-      joint_velocities_[arm_index_].q(i) = current_state.position[i];
-      joint_velocities_[arm_index_].qdot(i) = current_state.velocity[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+        joint_velocities_[arm_index_].q(i) = current_state.position[i];
+        joint_velocities_[arm_index_].qdot(i) = current_state.velocity[i];
+      }
     }
 
     fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], end_effector_kdl);
@@ -514,8 +517,11 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.position[i] = joint_positions_[arm_index_](i) + commanded_joint_velocities(i)*dt.toSec();
-      control_output.velocity[i] = commanded_joint_velocities(i);
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.position[i] = joint_positions_[arm_index_](i) + commanded_joint_velocities(i)*dt.toSec();
+        control_output.velocity[i] = commanded_joint_velocities(i);
+      }
     }
 
     return control_output;

@@ -107,7 +107,7 @@ namespace manipulation{
     geometry_msgs::PoseStamped surface_frame_pose_;
     std::string base_link_name_, tool_frame_name_;
     std::string gravity_compensation_service_name_;
-    int num_of_experiments_, current_iter_;
+    int num_of_experiments_, current_iter_, arm_;
     bool use_vision_, sim_mode_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 

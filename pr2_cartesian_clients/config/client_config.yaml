@@ -23,6 +23,7 @@ initialization:
 
 experiment:
   feedback_rate: 1
+  arm: 0 # 0 - left; 1 - right
   tool_frame_name: l_gripper_tool_frame
   base_link_name: torso_lift_link
   num_of_experiments: 20

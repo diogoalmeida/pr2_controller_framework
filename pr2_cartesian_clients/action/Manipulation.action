@@ -1,4 +1,5 @@
 # Empty goal
+int32 arm
 bool use_goal # if false, will keep current values
 geometry_msgs/Vector3 initial_pose_offset # w.r.t camera frame
 float64 initial_approach_angle
@@ -14,6 +15,8 @@ float64 theta_max
 float64 f_min
 float64 f_max
 
+int32 LEFT = 0
+int32 RIGHT = 1
 ---
 # Empty result
 ---

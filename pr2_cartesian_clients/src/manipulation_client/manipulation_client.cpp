@@ -61,6 +61,12 @@ void ManipulationClient::destroyActionClients()
 
 bool ManipulationClient::loadParams()
 {
+  if(!nh_.getParam("experiment/arm", arm_))
+  {
+    ROS_ERROR("No arm chosen (experiment/arm)");
+    return false;
+  }
+
   if(!nh_.getParam("vision/surface_frame_name", surface_frame_name_))
   {
     ROS_ERROR("No surface frame name defined (vision/surface_frame_name)");
@@ -305,6 +311,7 @@ void ManipulationClient::goalCB()
       goal_x_ = goal->desired_state.x;
       goal_theta_ = goal->desired_state.y;
       goal_force_ = goal->desired_state.z;
+      arm_ = goal->arm;
 
       if (goal->randomize_desired_state)
       {
@@ -379,6 +386,7 @@ void ManipulationClient::runExperiment()
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = move_action_name_;
         }
+        move_goal.arm = arm_;
         move_goal.desired_pose = initial_eef_pose;
 
         if (!controller_runner_.runController(move_controller_name_))
@@ -425,6 +433,7 @@ void ManipulationClient::runExperiment()
           continue;
         }
 
+        approach_goal.arm = arm_;
         approach_goal.approach_command.twist.linear.z = approach_velocity_;
         approach_goal.contact_force = approach_force_;
 
@@ -478,6 +487,7 @@ void ManipulationClient::runExperiment()
 
         surface_pose_eigen = surface_pose_eigen*Eigen::AngleAxisd(0.5, rotation_axis);
 
+        manipulation_goal.arm = arm_;
         manipulation_goal.x_d = goal_x_ + noise_x_d_(noise_generator_);
         manipulation_goal.theta_d = goal_theta_ + noise_theta_d_(noise_generator_);
         manipulation_goal.desired_contact_force = goal_force_ + noise_f_d_(noise_generator_);

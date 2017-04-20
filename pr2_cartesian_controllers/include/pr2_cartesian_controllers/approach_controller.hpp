@@ -31,6 +31,7 @@ private:
   bool has_initial_, is_contact_;
   ros::Duration contact_detection_time_;
   ros::Time initial_contact_;
+  int arm_index_;
 
 public:
   ApproachController();

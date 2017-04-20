@@ -113,9 +113,8 @@ protected:
     @param ft_sub The ros subscriber for the sensor.
     @param ft_pub The ros publisher that allows for modified measurements to be published. The ros publisher will publish in ft_topic_name/corrected.
     @param ft_topic_name The ros topic where the original wrench measurements are published.
-    @param sensor_num The sensor number that identifies the wrench vector.
   **/
-  void initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name, int sensor_num);
+  void initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name);
 
   /**
     Goal callback method to be implemented in the cartesian controllers.
@@ -150,9 +149,8 @@ protected:
     Obtains wrench measurments for a force torque sensor.
 
     @param msg The force torque message from the sensor node.
-    @param sensor_num The sensor index
   **/
-  void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg, int sensor_num);
+  void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
 
   /**
     Gets the actuated joint limits from the URDF description of the robot
@@ -189,6 +187,7 @@ protected:
   std::vector<std::string> end_effector_link_ = std::vector<std::string>(NUM_ARMS);
   std::vector<std::string> ft_topic_name_ = std::vector<std::string>(NUM_ARMS);
   std::vector<std::string> ft_frame_id_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> ft_sensor_frame_ = std::vector<std::string>(NUM_ARMS);
   std::string base_link_;
   double eps_; // ikSolverVel epsilon
   double alpha_; // ikSolverVel alpha
@@ -321,11 +320,11 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name, int sensor_num)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name)
 {
   // Subscribe to force and torque measurements
   measured_wrench << 0, 0, 0, 0, 0, 0;
-  ft_sub = nh_.subscribe(ft_topic_name, 1, boost::bind(&ControllerTemplate::forceTorqueCB, _1, sensor_num), this); // we will pass the topic name to the subscriber to allow the proper wrench vector to be filled.
+  ft_sub = nh_.subscribe(ft_topic_name, 1, &ControllerTemplate::forceTorqueCB, this); // we will pass the topic name to the subscriber to allow the proper wrench vector to be filled.
   ft_pub = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name + "/converted", 1);
 }
 
@@ -347,16 +346,32 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg, int sensor_num)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
   KDL::Wrench wrench_kdl;
   KDL::Frame sensor_to_grasp_frame_kdl, sensor_frame_kdl, desired_kdl;
   geometry_msgs::PoseStamped sensor_to_grasp_frame, sensor_frame, desired;
   geometry_msgs::WrenchStamped converted_wrench;
   tf::Transform converted_wrench_frame;
+  int sensor_num = -1;
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
   tf::wrenchMsgToKDL(msg->wrench, wrench_kdl);
+
+  for (int i = 0; i < NUM_ARMS; i++)
+  {
+    if (msg->header.frame_id == ft_sensor_frame_[i])
+    {
+      sensor_num = i;
+      break;
+    }
+  }
+
+  if (sensor_num == -1)
+  {
+    ROS_ERROR("Got wrench message from sensor %s, which was not defined in the config file.", msg->header.frame_id.c_str());
+    return;
+  }
 
   converted_wrench = *msg;
   sensor_to_grasp_frame.header.frame_id = msg->header.frame_id;
@@ -450,6 +465,11 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
     }
 
     if (!getParam("/common/force_torque_frame_" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
+    {
+      return false;
+    }
+
+    if (!getParam("/common/force_torque_sensor_frame_" + std::to_string(i + 1), ft_sensor_frame_[i]))
     {
       return false;
     }

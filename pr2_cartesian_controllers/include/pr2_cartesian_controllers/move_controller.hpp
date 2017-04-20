@@ -40,7 +40,9 @@ private:
   KDL::JntArray desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;
-  std::string ik_service_name_, ik_info_service_name_;
+  std::vector<std::string> ik_service_name_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> ik_info_service_name_ = std::vector<std::string>(NUM_ARMS);
+  int arm_index_;
 
   // ROS
   ros::Publisher target_pub_, current_pub_;

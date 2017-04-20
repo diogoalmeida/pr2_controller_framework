@@ -144,12 +144,12 @@ namespace cartesian_controllers {
   {
     for (int i = 0; i < NUM_ARMS; i++)
     {
-      if (!getParam("/move_controller/ik_service_name_" + std::to_string(i + 1), ik_service_name_[i]))
+      if (!getParam("/move_controller/ik_service_name/" + std::to_string(i + 1), ik_service_name_[i]))
       {
         return false;
       }
 
-      if (!getParam("/move_controller/ik_info_service_name_" + std::to_string(i + 1), ik_info_service_name_[i]))
+      if (!getParam("/move_controller/ik_info_service_name/" + std::to_string(i + 1), ik_info_service_name_[i]))
       {
         return false;
       }

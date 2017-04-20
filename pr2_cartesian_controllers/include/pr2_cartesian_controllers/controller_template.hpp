@@ -169,7 +169,7 @@ protected:
     @param joint_name The joint name we wish to check.
   **/
   bool hasJoint(const KDL::Chain &chain, const std::string &joint_name);
-  
+
   /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
@@ -507,22 +507,22 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
 {
   for (int i = 0; i < NUM_ARMS; i++)
   {
-    if(!getParam("/common/end_effector_link_name_" + std::to_string(i + 1), end_effector_link_[i]))
+    if(!getParam("/common/end_effector_link_name/" + std::to_string(i + 1), end_effector_link_[i]))
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_frame_" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
+    if (!getParam("/common/force_torque_frame/" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_sensor_frame_" + std::to_string(i + 1), ft_sensor_frame_[i]))
+    if (!getParam("/common/force_torque_sensor_frame/" + std::to_string(i + 1), ft_sensor_frame_[i]))
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_topic_" + std::to_string(i + 1), ft_topic_name_[i]))
+    if (!getParam("/common/force_torque_topic/" + std::to_string(i + 1), ft_topic_name_[i]))
     {
       return false;
     }

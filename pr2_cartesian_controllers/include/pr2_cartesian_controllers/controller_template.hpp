@@ -169,7 +169,7 @@ protected:
     @param joint_name The joint name we wish to check.
   **/
   bool hasJoint(const KDL::Chain &chain, const std::string &joint_name);
-  
+
   /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
@@ -185,19 +185,19 @@ protected:
 protected:
   // Robot related
   sensor_msgs::JointState robot_state;
-  std::vector<KDL::JntArray> joint_positions_ = std::vector<KDL::JntArray>(NUM_ARMS);
-  std::vector<KDL::JntArrayVel> joint_velocities_ = std::vector<KDL::JntArrayVel>(NUM_ARMS);
+  std::vector<KDL::JntArray> joint_positions_;
+  std::vector<KDL::JntArrayVel> joint_velocities_;
   // KDL::ChainIkSolverVel_wdls *ikvel_;
-  std::vector<KDL::ChainIkSolverVel_pinv_nso*> ikvel_ = std::vector<KDL::ChainIkSolverVel_pinv_nso*>(NUM_ARMS);
-  std::vector<KDL::ChainIkSolverPos_LMA*> ikpos_ = std::vector<KDL::ChainIkSolverPos_LMA*>(NUM_ARMS);
-  std::vector<KDL::ChainFkSolverPos_recursive*> fkpos_ = std::vector<KDL::ChainFkSolverPos_recursive*>(NUM_ARMS);
-  std::vector<KDL::ChainFkSolverVel_recursive*> fkvel_ = std::vector<KDL::ChainFkSolverVel_recursive*>(NUM_ARMS);
-  std::vector<KDL::Chain> chain_ = std::vector<KDL::Chain>(NUM_ARMS);
+  std::vector<KDL::ChainIkSolverVel_pinv_nso*> ikvel_;
+  std::vector<KDL::ChainIkSolverPos_LMA*> ikpos_;
+  std::vector<KDL::ChainFkSolverPos_recursive*> fkpos_;
+  std::vector<KDL::ChainFkSolverVel_recursive*> fkvel_;
+  std::vector<KDL::Chain> chain_;
   urdf::Model model_;
-  std::vector<std::string> end_effector_link_ = std::vector<std::string>(NUM_ARMS);
-  std::vector<std::string> ft_topic_name_ = std::vector<std::string>(NUM_ARMS);
-  std::vector<std::string> ft_frame_id_ = std::vector<std::string>(NUM_ARMS);
-  std::vector<std::string> ft_sensor_frame_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> end_effector_link_;
+  std::vector<std::string> ft_topic_name_;
+  std::vector<std::string> ft_frame_id_;
+  std::vector<std::string> ft_sensor_frame_;
   std::string base_link_;
   double eps_; // ikSolverVel epsilon
   double alpha_; // ikSolverVel alpha
@@ -218,11 +218,11 @@ protected:
 
   // ROS
   ros::NodeHandle nh_;
-  std::vector<ros::Subscriber> ft_sub_ = std::vector<ros::Subscriber>(NUM_ARMS);
-  std::vector<ros::Publisher> ft_pub_ = std::vector<ros::Publisher>(NUM_ARMS);
+  std::vector<ros::Subscriber> ft_sub_;
+  std::vector<ros::Publisher> ft_pub_;
   tf::TransformListener listener_;
 
-  std::vector<Eigen::Matrix<double, 6, 1> > measured_wrench_ = std::vector<Eigen::Matrix<double, 6, 1> >(NUM_ARMS);
+  std::vector<Eigen::Matrix<double, 6, 1> > measured_wrench_;
   double force_d_;
 
 private:
@@ -233,7 +233,21 @@ private:
 // later on: http://stackoverflow.com/questions/8752837/undefined-reference-to-template-class-constructor
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplate()
+ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplate() :
+ joint_positions_(NUM_ARMS),
+ joint_velocities_(NUM_ARMS),
+ ikvel_(NUM_ARMS),
+ ikpos_(NUM_ARMS),
+ fkpos_(NUM_ARMS),
+ fkvel_(NUM_ARMS),
+ chain_(NUM_ARMS),
+ end_effector_link_(NUM_ARMS),
+ ft_topic_name_(NUM_ARMS),
+ ft_frame_id_(NUM_ARMS),
+ ft_sensor_frame_(NUM_ARMS),
+ ft_sub_(NUM_ARMS),
+ ft_pub_(NUM_ARMS),
+ measured_wrench_(NUM_ARMS)
 {
   nh_ = ros::NodeHandle("~");
 
@@ -507,22 +521,22 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
 {
   for (int i = 0; i < NUM_ARMS; i++)
   {
-    if(!getParam("/common/end_effector_link_name_" + std::to_string(i + 1), end_effector_link_[i]))
+    if(!getParam("/common/end_effector_link_name/" + std::to_string(i + 1), end_effector_link_[i]))
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_frame_" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
+    if (!getParam("/common/force_torque_frame/" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_sensor_frame_" + std::to_string(i + 1), ft_sensor_frame_[i]))
+    if (!getParam("/common/force_torque_sensor_frame/" + std::to_string(i + 1), ft_sensor_frame_[i]))
     {
       return false;
     }
 
-    if (!getParam("/common/force_torque_topic_" + std::to_string(i + 1), ft_topic_name_[i]))
+    if (!getParam("/common/force_torque_topic/" + std::to_string(i + 1), ft_topic_name_[i]))
     {
       return false;
     }

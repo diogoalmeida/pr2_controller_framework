@@ -17,7 +17,7 @@ catkin REQUIRED COMPONENTS
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 add_message_files(
   FILES
@@ -44,6 +44,10 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
+
+add_library(pr2_folding_joint_controller src/folding_joint_controller.cpp src/template_joint_controller.cpp)
+target_link_libraries(pr2_folding_joint_controller ${catkin_LIBRARIES})
+add_dependencies(pr2_folding_joint_controller pr2_joint_position_controllers_generate_messages_cpp)
 
 add_library(pr2_manipulation_joint_controller src/manipulation_joint_controller.cpp src/template_joint_controller.cpp)
 target_link_libraries(pr2_manipulation_joint_controller ${catkin_LIBRARIES})

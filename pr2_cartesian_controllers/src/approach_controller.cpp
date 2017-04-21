@@ -139,7 +139,7 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -201,7 +201,7 @@ namespace cartesian_controllers {
 
     control_output = current_state;
 
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {

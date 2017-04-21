@@ -67,6 +67,8 @@ namespace cartesian_controllers {
     arm_index_ = goal->arm;
     pose = goal->desired_pose;
 
+    ROS_INFO("Got arm %d", arm_index_);
+
     if(!getDesiredJointPositions(pose, temp_desired_joint_positions))
     {
       action_server_->setAborted();

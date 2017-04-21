@@ -1,14 +1,14 @@
 common:
   base_link_name: torso_lift_link
   end_effector_link_name:
-    1: l_wrist_roll_link
-    2: r_wrist_roll_link
+    arm_1: l_wrist_roll_link
+    arm_2: r_wrist_roll_link
   force_torque_frame:
-    1: l_gripper_tool_frame
-    2: r_gripper_tool_frame
+    arm_1: l_gripper_tool_frame
+    arm_2: r_gripper_tool_frame
   force_torque_sensor_frame:
-    1: l_ft_frame?
-    2: r_ft_frame?
+    arm_1: l_ft_frame?
+    arm_2: r_ft_frame?
   solver: # parameters used for the IkSolverVel algorithm
     epsilon: 0.0001
     alpha: 0.5
@@ -16,8 +16,8 @@ common:
     nso_weights: 1
   feedback_rate: 50
   force_torque_topic:
-    1: /l_ft_sensor/ft_compensated
-    2: /r_ft_sensor/ft_compensated
+    arm_1: /l_ft_sensor/ft_compensated
+    arm_2: /r_ft_sensor/ft_compensated
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
@@ -73,8 +73,8 @@ move_controller:
   velocity_gain: 1.0
   error_threshold: 0.01
   ik_service_name:
-    1: /pr2_left_arm_kinematics/get_ik
-    2: /pr2_right_arm_kinematics/get_ik
+    arm_1: /pr2_left_arm_kinematics/get_ik
+    arm_2: /pr2_right_arm_kinematics/get_ik
   ik_info_service_name:
-    1: /pr2_left_arm_kinematics/get_ik_solver_info
-    2: /pr2_right_arm_kinematics/get_ik_solver_info
+    arm_1: /pr2_left_arm_kinematics/get_ik_solver_info
+    arm_2: /pr2_right_arm_kinematics/get_ik_solver_info

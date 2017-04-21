@@ -127,7 +127,7 @@ namespace cartesian_controllers {
 
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
-    sensor_msgs::JointState control_output;
+    sensor_msgs::JointState control_output = current_state;
     KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
@@ -197,8 +197,6 @@ namespace cartesian_controllers {
     tf::twistKDLToMsg(twist_error, feedback_.error_twist.twist);
 
     ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], velocity_reference_, commanded_joint_velocities);
-
-    control_output = current_state;
 
     for (int i = 0; i < current_state.name.size(); i++)
     {

@@ -353,14 +353,11 @@ namespace cartesian_controllers {
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
-    for (int i = 0; i < current_state.name.size(); i++)
+    if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
     {
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
-      {
-        joint_positions_[arm_index_](i) = current_state.position[i];
-        joint_velocities_[arm_index_].q(i) = current_state.position[i];
-        joint_velocities_[arm_index_].qdot(i) = current_state.velocity[i];
-      }
+      ROS_ERROR("Failed to get the chain joint state. Aborting.");
+      action_server_->setAborted();
+      lastState(current_state);
     }
 
     fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], end_effector_kdl);

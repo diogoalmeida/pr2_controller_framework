@@ -74,7 +74,7 @@ namespace cartesian_controllers {
   sensor_msgs::JointState FoldingController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output = current_state;
-    
+
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
       return lastState(current_state);
@@ -85,22 +85,18 @@ namespace cartesian_controllers {
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
-    for (int i = 0; i < current_state.name.size(); i++) // assign joint states to the proper vector
+    if(!getChainJointState(current_state, chain_[surface_arm_], joint_positions_[surface_arm_], joint_velocities_[surface_arm_]))
     {
-      if (hasJoint(chain_[surface_arm_], current_state.name[i]))
-      {
-        joint_positions_[surface_arm_](i) = current_state.position[i];
-        joint_velocities_[surface_arm_].q(i) = current_state.position[i];
-        joint_velocities_[surface_arm_].qdot(i) = current_state.velocity[i];
-        continue;
-      }
+      ROS_ERROR("Failed to get the chain joint state for the surface arm. Aborting.");
+      action_server_->setAborted();
+      lastState(current_state);
+    }
 
-      if (hasJoint(chain_[rod_arm_], current_state.name[i]))
-      {
-        joint_positions_[rod_arm_](i) = current_state.position[i];
-        joint_velocities_[rod_arm_].q(i) = current_state.position[i];
-        joint_velocities_[rod_arm_].qdot(i) = current_state.velocity[i];
-      }
+    if(!getChainJointState(current_state, chain_[rod_arm_], joint_positions_[rod_arm_], joint_velocities_[rod_arm_]))
+    {
+      ROS_ERROR("Failed to get the chain joint state for the rod arm. Aborting.");
+      action_server_->setAborted();
+      lastState(current_state);
     }
 
     KDL::Frame end_effector_kdl, grasp_point_kdl;

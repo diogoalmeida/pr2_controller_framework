@@ -171,6 +171,19 @@ protected:
   bool hasJoint(const KDL::Chain &chain, const std::string &joint_name);
 
   /**
+    Fills in the joint arrays with the state of a given kinematic chain.
+    The joint state might include joints outside of the kinematic chain, so there is
+    the need to process it.
+
+    @param current_state The robot joint state.
+    @param chain The target kinematic chain.
+    @param positions The joint positions of the kinematic chain.
+    @param velocities The joint velocities of the kinematic chain.
+    @return True if the full joint chain was found in the current state, false otherwise.
+  **/
+  bool getChainJointState(const sensor_msgs::JointState &current_state, const KDL::Chain &chain, KDL::JntArray &positions, KDL::JntArrayVel &velocities);
+
+  /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
     @param param_name The name of the parameter address in the parameter server.
@@ -341,6 +354,29 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
     max_limits(j) = urdf_joint->limits->upper;
     j++;
   }
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getChainJointState(const sensor_msgs::JointState &current_state, const KDL::Chain &chain, KDL::JntArray &positions, KDL::JntArrayVel &velocities)
+{
+  int processed_joints = 0;
+  for (int i = 0; i < current_state.name.size(); i++)
+  {
+    if (hasJoint(chain, current_state.name[i]))
+    {
+      positions(i) = current_state.position[i];
+      velocities.q(i) = current_state.position[i];
+      velocities.qdot(i) = current_state.velocity[i];
+      processed_joints++;
+    }
+  }
+
+  if (processed_joints != chain.getNrOfJoints())
+  {
+    return false;
+  }
+
+  return true;
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

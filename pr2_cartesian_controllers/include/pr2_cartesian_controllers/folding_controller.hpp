@@ -1,5 +1,5 @@
-#ifndef __MANIPULATION_CONTROLLER__
-#define __MANIPULATION_CONTROLLER__
+#ifndef __FOLDING_CONTROLLER__
+#define __FOLDING_CONTROLLER__
 
 #include <pr2_cartesian_controllers/FoldingControllerAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>

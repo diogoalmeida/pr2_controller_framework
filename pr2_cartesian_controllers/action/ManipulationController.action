@@ -1,4 +1,5 @@
 # Goal: triggers the controller.
+int32 arm
 geometry_msgs/PoseStamped surface_frame
 float64 x_d # defined along the surface frame x axis
 float64 theta_d # defined around the surface frame y axis
@@ -9,6 +10,9 @@ bool use_debug_eef_to_grasp
 bool use_surface_rotation_axis
 geometry_msgs/Vector3 debug_eef_to_grasp
 geometry_msgs/Twist debug_twist
+
+int32 LEFT_ARM = 0
+int32 RIGHT_ARM = 1
 ---
 # Result:
 ---

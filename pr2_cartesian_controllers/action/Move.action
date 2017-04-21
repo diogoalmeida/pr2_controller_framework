@@ -1,5 +1,9 @@
 # Goal: triggers the controller.
+int32 arm
 geometry_msgs/PoseStamped desired_pose
+
+int32 LEFT_ARM = 0
+int32 RIGHT_ARM = 1
 ---
 # Result:
 

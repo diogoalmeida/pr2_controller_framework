@@ -51,6 +51,15 @@ namespace cartesian_controllers {
 
     finished_acquiring_goal_ = false;
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
+
+    if(goal->arm < 0 || goal->arm >= NUM_ARMS)
+    {
+      ROS_ERROR("Received a goal where the requested arm (%d) does not exist", goal->arm);
+      action_server_->setAborted();
+      return;
+    }
+
+    arm_index_ = goal->arm;
     debug_twist_ = false;
     use_debug_eef_to_grasp_ = false;
     surface_rotation_axis_ = false;
@@ -112,7 +121,7 @@ namespace cartesian_controllers {
 
       // get the relationship between kinematic chain end-effector and
       // tool-tip (grasping point)
-      pose_in.header.frame_id = ft_frame_id_;
+      pose_in.header.frame_id = ft_frame_id_[arm_index_];
       pose_in.header.stamp = ros::Time(0); // get latest available
 
       pose_in.pose.position.x = 0;
@@ -123,7 +132,7 @@ namespace cartesian_controllers {
       pose_in.pose.orientation.y = 0;
       pose_in.pose.orientation.z = 0;
       pose_in.pose.orientation.w = 1;
-      listener_.transformPose(end_effector_link_, pose_in, pose_out);
+      listener_.transformPose(end_effector_link_[arm_index_], pose_in, pose_out);
       tf::poseMsgToKDL(pose_out.pose, end_effector_to_grasp_point_);
     }
     catch (tf::TransformException ex)
@@ -238,76 +247,64 @@ namespace cartesian_controllers {
 
   bool ManipulationController::loadParams()
   {
-    if (!nh_.getParam("/manipulation_controller/action_server_name", action_name_))
+    if (!getParam("/manipulation_controller/action_server_name", action_name_))
     {
-      ROS_ERROR("Missing action server name parameter (/manipulation_controller/action_server_name)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/estimate_length", estimate_length_))
+    if (!getParam("/manipulation_controller/estimate_length", estimate_length_))
     {
-      ROS_ERROR("Missing estimate length (/manipulation_controller/estimate_length)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/hardcoded_length", hardcoded_length_))
+    if (!getParam("/manipulation_controller/hardcoded_length", hardcoded_length_))
     {
-      ROS_ERROR("Missing hardcoded length (/manipulation_controller/hardcoded_length)");
       return false;
     }
 
     std::vector<double> rot_gains;
-    if (!nh_.getParam("/manipulation_controller/rotational_gains", rot_gains))
+    if (!getParam("/manipulation_controller/rotational_gains", rot_gains))
     {
-      ROS_ERROR("Missing vector with rotational gains (/manipulation_controller/rotational_gains)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/wait_for_tf_time", wait_for_tf_time_))
+    if (!getParam("/manipulation_controller/wait_for_tf_time", wait_for_tf_time_))
     {
-      ROS_ERROR("Missing wait for tf time (/manipulation_controller/wait_for_tf_time)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/spring_constant", k_s_))
+    if (!getParam("/manipulation_controller/spring_constant", k_s_))
     {
-      ROS_ERROR("Missing spring constant (/manipulation_controller/spring_constant)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/estimator/initial_x_offset", init_x_offset_))
+    if (!getParam("/manipulation_controller/estimator/initial_x_offset", init_x_offset_))
     {
-      ROS_ERROR("Missing initial_x_offset (/manipulation_controller/estimator/initial_x_offset)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/estimator/initial_theta_offset", init_theta_offset_))
+    if (!getParam("/manipulation_controller/estimator/initial_theta_offset", init_theta_offset_))
     {
-      ROS_ERROR("Missing initial_theta_offset (/manipulation_controller/estimator/initial_theta_offset)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/x_offset", x_o_))
+    if (!getParam("/manipulation_controller/x_offset", x_o_))
     {
-      ROS_ERROR("Missing x offset (/manipulation_controller/x_offset)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/surface_frame_vertical_offset", surface_frame_vertical_offset_))
+    if (!getParam("/manipulation_controller/surface_frame_vertical_offset", surface_frame_vertical_offset_))
     {
-      ROS_ERROR("Missing surface_frame_vertical_offset (/manipulation_controller/surface_frame_vertical_offset)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/surface_frame_horizontal_offset", surface_frame_horizontal_offset_))
+    if (!getParam("/manipulation_controller/surface_frame_horizontal_offset", surface_frame_horizontal_offset_))
     {
-      ROS_ERROR("Missing surface_frame_horizontal_offset (/manipulation_controller/surface_frame_horizontal_offset)");
       return false;
     }
 
-    if (!nh_.getParam("/manipulation_controller/initial_angle_offset", theta_o_))
+    if (!getParam("/manipulation_controller/initial_angle_offset", theta_o_))
     {
-      ROS_ERROR("Missing initial angle offset (/manipulation_controller/initial_angle_offset)");
       return false;
     }
 
@@ -336,7 +333,7 @@ namespace cartesian_controllers {
     sensor_msgs::JointState control_output;
     KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl;
     KDL::FrameVel end_effector_velocity_kdl, grasp_point_velocity_kdl;
-    KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
+    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     KDL::Twist input_twist, twist_error, actual_twist;
     Eigen::Affine3d surface_frame_to_grasp_eig;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef, actual_commands;
@@ -356,15 +353,18 @@ namespace cartesian_controllers {
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_(i) = current_state.position[i];
-      joint_velocities_.q(i) = current_state.position[i];
-      joint_velocities_.qdot(i) = current_state.velocity[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+        joint_velocities_[arm_index_].q(i) = current_state.position[i];
+        joint_velocities_[arm_index_].qdot(i) = current_state.velocity[i];
+      }
     }
 
-    fkpos_->JntToCart(joint_positions_, end_effector_kdl);
-    fkvel_->JntToCart(joint_velocities_, end_effector_velocity_kdl);
+    fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], end_effector_kdl);
+    fkvel_[arm_index_]->JntToCart(joint_velocities_[arm_index_], end_effector_velocity_kdl);
     grasp_point_velocity_kdl = end_effector_velocity_kdl*end_effector_to_grasp_point_;
     grasp_point_kdl = end_effector_kdl*end_effector_to_grasp_point_;
     tf::transformEigenToKDL(surface_frame_, surface_frame_kdl);
@@ -385,10 +385,10 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      fkpos_->JntToCart(joint_positions_, initial_pose_); // base_link
+      fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], initial_pose_); // base_link
       x_hat_[0] = x_e_[0] + init_x_offset_; // initial x_c estimate, made different from x_e_ to avoid dx = 0
       x_hat_[1] = x_e_[2] + init_theta_offset_;
-      x_hat_[2] = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
+      x_hat_[2] = measured_wrench_[arm_index_].block<3,1>(0,0).dot(surface_normal_in_grasp);
       x_hat_[3] = k_s_;
       ekf_estimator_.initialize(x_hat_);
       has_initial_ = true;
@@ -403,10 +403,10 @@ namespace cartesian_controllers {
       rotation_axis = -grasp_point_pose_.matrix().block<3,1>(0,1); // base_link
     }
 
-    torque_e = measured_wrench_.block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
+    torque_e = measured_wrench_[arm_index_].block<3,1>(3,0).dot(computeSkewSymmetric(surface_normal_in_grasp)*surface_tangent_in_grasp);
     // torque_e = -measured_wrench_.block<3,1>(3,0).norm();
-    f_e_y = measured_wrench_.block<3,1>(0,0).dot(surface_normal_in_grasp);
-    f_e_x = measured_wrench_.block<3,1>(0,0).dot(surface_tangent_in_grasp);
+    f_e_y = measured_wrench_[arm_index_].block<3,1>(0,0).dot(surface_normal_in_grasp);
+    f_e_x = measured_wrench_[arm_index_].block<3,1>(0,0).dot(surface_tangent_in_grasp);
 
 
     // compute the measurements vector
@@ -467,12 +467,12 @@ namespace cartesian_controllers {
     feedback_.f_d = x_d_[2];
     feedback_.k_s = k_s_;
     feedback_.torque_c = torque_e;
-    feedback_.f_e.x = measured_wrench_[0];
-    feedback_.f_e.y = measured_wrench_[1];
-    feedback_.f_e.z = measured_wrench_[2];
-    feedback_.tau_e.x = measured_wrench_[3];
-    feedback_.tau_e.y = measured_wrench_[4];
-    feedback_.tau_e.z = measured_wrench_[5];
+    feedback_.f_e.x = measured_wrench_[arm_index_][0];
+    feedback_.f_e.y = measured_wrench_[arm_index_][1];
+    feedback_.f_e.z = measured_wrench_[arm_index_][2];
+    feedback_.tau_e.x = measured_wrench_[arm_index_][3];
+    feedback_.tau_e.y = measured_wrench_[arm_index_][4];
+    feedback_.tau_e.z = measured_wrench_[arm_index_][5];
     feedback_.error_x = e[0];
     feedback_.error_theta = e[1];
     feedback_.error_force = e[2];
@@ -514,13 +514,16 @@ namespace cartesian_controllers {
 
     tf::twistKDLToMsg(input_twist, feedback_.corrected_twist);
 
-    ikvel_->CartToJnt(joint_positions_, input_twist, commanded_joint_velocities);
+    ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], input_twist, commanded_joint_velocities);
     control_output = current_state;
 
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.position[i] = joint_positions_(i) + commanded_joint_velocities(i)*dt.toSec();
-      control_output.velocity[i] = commanded_joint_velocities(i);
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.position[i] = joint_positions_[arm_index_](i) + commanded_joint_velocities(i)*dt.toSec();
+        control_output.velocity[i] = commanded_joint_velocities(i);
+      }
     }
 
     return control_output;

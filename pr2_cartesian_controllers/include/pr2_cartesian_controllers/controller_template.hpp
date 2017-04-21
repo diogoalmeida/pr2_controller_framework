@@ -20,6 +20,7 @@
 #include <kdl/frames.hpp>
 #include <geometry_msgs/WrenchStamped.h>
 #include <actionlib/server/simple_action_server.h>
+#define NUM_ARMS 2
 
 namespace cartesian_controllers{
 
@@ -55,10 +56,13 @@ public:
   ControllerTemplate();
   virtual ~ControllerTemplate()
   {
-    delete fkpos_;
-    delete fkvel_;
-    delete ikpos_;
-    delete ikvel_;
+    for (int i = 0; i < NUM_ARMS; i++)
+    {
+      delete fkpos_[i];
+      delete fkvel_[i];
+      delete ikpos_[i];
+      delete ikvel_[i];
+    }
 
     if (feedback_thread_.joinable())
     {
@@ -77,7 +81,40 @@ protected:
     @return The last commanded joint state before the actionlib goal was
     preempted or completed.
   **/
-  sensor_msgs::JointState lastState(const sensor_msgs::JointState current);
+  sensor_msgs::JointState lastState(const sensor_msgs::JointState &current);
+
+
+  /**
+    Initialize the kinematic chain and joint arrays for an arm defined by its end-effector link.
+    The kinematic chain is assumed to start at base_link_.
+
+    @param end_effector_link The final link of the kinematic chain.
+    @param chain The kinematic chain to be initialized.
+    @param joint_positions The joint positions array of the kinematic chain.
+    @param joint_velocities The joint velocities array of the kinematic chain.
+  **/
+  void initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities);
+
+  /**
+    Initialize the kinematic solvers to be used with a kinematic chain.
+
+    @param The chain for which we want to initialized the solvers.
+    @param fkpos Positional forward kinematics solver.
+    @param fkvel Velocity forward kinematics solver.
+    @param ikpos Positional inverse kinematics solver.
+    @param ikvel Velocity inverse kinematics solver.
+  **/
+  void initializeSolvers(const KDL::Chain &chain, KDL::ChainFkSolverPos_recursive *fkpos, KDL::ChainFkSolverVel_recursive *fkvel, KDL::ChainIkSolverVel_pinv_nso *ikvel, KDL::ChainIkSolverPos_LMA *ikpos);
+
+  /**
+    Initializes the wrench vector, subscriber and publisher for a given wrench topic.
+
+    @param measured_wrench The eigen vector where the six-dimensional wrench is going to be stored.
+    @param ft_sub The ros subscriber for the sensor.
+    @param ft_pub The ros publisher that allows for modified measurements to be published. The ros publisher will publish in ft_topic_name/corrected.
+    @param ft_topic_name The ros topic where the original wrench measurements are published.
+  **/
+  void initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name);
 
   /**
     Goal callback method to be implemented in the cartesian controllers.
@@ -109,34 +146,59 @@ protected:
   virtual bool loadParams() = 0;
 
   /**
-    Obtains the wrench measurements from the robot.
+    Obtains wrench measurments for a force torque sensor.
 
     @param msg The force torque message from the sensor node.
   **/
   void forceTorqueCB(const geometry_msgs::WrenchStamped::ConstPtr &msg);
 
   /**
-    Gets the actuated joint limits from the URDF description of the robot.
+    Gets the actuated joint limits from the URDF description of the robot
+    for a given kinematic chain.
 
+    @param chain The kinematic chain for which the limits are going to be found.
     @param min_limits The minimum position limits of the joint.
     @param max_limits The maximum position limits of the joint.
   **/
-  void getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits);
+  void getJointLimits(const KDL::Chain &chain, KDL::JntArray &min_limits, KDL::JntArray &max_limits);
+
+  /**
+    Check if a chain has the given joint_name.
+
+    @param chain The kinematic chain where to look for the joint.
+    @param joint_name The joint name we wish to check.
+  **/
+  bool hasJoint(const KDL::Chain &chain, const std::string &joint_name);
+  
+  /**
+    Wraps the ROS NodeHandle getParam method with an error message.
+
+    @param param_name The name of the parameter address in the parameter server.
+    @param var The variable where to store the parameter.
+  **/
+  bool getParam(const std::string &param_name, std::string &var);
+  bool getParam(const std::string &param_name, double &var);
+  bool getParam(const std::string &param_name, std::vector<double> &var);
+  bool getParam(const std::string &param_name, int &var);
+  bool getParam(const std::string &param_name, bool &var);
 
 protected:
   // Robot related
   sensor_msgs::JointState robot_state;
-  KDL::JntArray joint_positions_;
-  KDL::JntArrayVel joint_velocities_;
+  std::vector<KDL::JntArray> joint_positions_ = std::vector<KDL::JntArray>(NUM_ARMS);
+  std::vector<KDL::JntArrayVel> joint_velocities_ = std::vector<KDL::JntArrayVel>(NUM_ARMS);
   // KDL::ChainIkSolverVel_wdls *ikvel_;
-  KDL::ChainIkSolverVel_pinv_nso *ikvel_;
-  KDL::ChainIkSolverPos_LMA *ikpos_;
-  KDL::ChainFkSolverPos_recursive *fkpos_;
-  KDL::ChainFkSolverVel_recursive *fkvel_;
-  KDL::Chain chain_;
-  KDL::Tree tree_;
+  std::vector<KDL::ChainIkSolverVel_pinv_nso*> ikvel_ = std::vector<KDL::ChainIkSolverVel_pinv_nso*>(NUM_ARMS);
+  std::vector<KDL::ChainIkSolverPos_LMA*> ikpos_ = std::vector<KDL::ChainIkSolverPos_LMA*>(NUM_ARMS);
+  std::vector<KDL::ChainFkSolverPos_recursive*> fkpos_ = std::vector<KDL::ChainFkSolverPos_recursive*>(NUM_ARMS);
+  std::vector<KDL::ChainFkSolverVel_recursive*> fkvel_ = std::vector<KDL::ChainFkSolverVel_recursive*>(NUM_ARMS);
+  std::vector<KDL::Chain> chain_ = std::vector<KDL::Chain>(NUM_ARMS);
   urdf::Model model_;
-  std::string end_effector_link_, base_link_, ft_topic_name_, ft_frame_id_;
+  std::vector<std::string> end_effector_link_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> ft_topic_name_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> ft_frame_id_ = std::vector<std::string>(NUM_ARMS);
+  std::vector<std::string> ft_sensor_frame_ = std::vector<std::string>(NUM_ARMS);
+  std::string base_link_;
   double eps_; // ikSolverVel epsilon
   double alpha_; // ikSolverVel alpha
   int maxiter_; // ikSolverVel maxiter
@@ -156,11 +218,11 @@ protected:
 
   // ROS
   ros::NodeHandle nh_;
-  ros::Subscriber ft_sub_;
-  ros::Publisher ft_pub_;
+  std::vector<ros::Subscriber> ft_sub_ = std::vector<ros::Subscriber>(NUM_ARMS);
+  std::vector<ros::Publisher> ft_pub_ = std::vector<ros::Publisher>(NUM_ARMS);
   tf::TransformListener listener_;
 
-  Eigen::Matrix<double, 6, 1> measured_wrench_;
+  std::vector<Eigen::Matrix<double, 6, 1> > measured_wrench_ = std::vector<Eigen::Matrix<double, 6, 1> >(NUM_ARMS);
   double force_d_;
 
 private:
@@ -173,9 +235,6 @@ private:
 template <class ActionClass, class ActionFeedback, class ActionResult>
 ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplate()
 {
-  KDL::JntArray min_limits, max_limits;
-  KDL::JntArray optimal_values, weights;
-
   nh_ = ros::NodeHandle("~");
 
   if(!loadGenericParams())
@@ -184,18 +243,40 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
     exit(0);
   }
 
-  kdl_parser::treeFromUrdfModel(model_, tree_); // convert URDF description of the robot into a KDL tree
-  tree_.getChain(base_link_, end_effector_link_, chain_);
-  getJointLimits(min_limits, max_limits);
+  for (int i = 0; i < NUM_ARMS; i++)
+  {
+    initializeArm(end_effector_link_[i], chain_[i], joint_positions_[i], joint_velocities_[i]);
+    initializeSolvers(chain_[i], fkpos_[i], fkvel_[i], ikvel_[i], ikpos_[i]);
+    initializeWrenchComms(measured_wrench_[i], ft_sub_[i], ft_pub_[i], ft_topic_name_[i]);
+  }
+
+  has_state_ = false;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities)
+{
+  KDL::Tree tree;
+  kdl_parser::treeFromUrdfModel(model_, tree); // convert URDF description of the robot into a KDL tree
+  tree.getChain(base_link_, end_effector_link, chain);
+  joint_positions.resize(chain.getNrOfJoints());
+  joint_velocities.q.resize(chain.getNrOfJoints());
+  joint_velocities.qdot.resize(chain.getNrOfJoints());
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, KDL::ChainFkSolverPos_recursive *fkpos, KDL::ChainFkSolverVel_recursive *fkvel, KDL::ChainIkSolverVel_pinv_nso *ikvel, KDL::ChainIkSolverPos_LMA *ikpos)
+{
+  KDL::JntArray min_limits, max_limits;
+  KDL::JntArray optimal_values, weights;
+
+  getJointLimits(chain, min_limits, max_limits);
   ROS_INFO("Min limits rows: %d, min limits columns: %d", min_limits.rows(), min_limits.columns());
-  joint_positions_.resize(chain_.getNrOfJoints());
-  joint_velocities_.q.resize(chain_.getNrOfJoints());
-  joint_velocities_.qdot.resize(chain_.getNrOfJoints());
-  optimal_values.resize(chain_.getNrOfJoints());
-  weights.resize(chain_.getNrOfJoints());
+  optimal_values.resize(chain.getNrOfJoints());
+  weights.resize(chain.getNrOfJoints());
 
   ROS_INFO("Joint limits: ");
-  for (int i = 0; i < chain_.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
+  for (int i = 0; i < chain.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
   {
     optimal_values(i) = (min_limits(i) + max_limits(i))/2;
 
@@ -214,33 +295,27 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   }
 
 
-  fkpos_ = new KDL::ChainFkSolverPos_recursive(chain_);
-  fkvel_ = new KDL::ChainFkSolverVel_recursive(chain_);
-  // ikvel_ = new KDL::ChainIkSolverVel_wdls(chain_, eps_);
-  // ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, eps_);
-  ikvel_ = new KDL::ChainIkSolverVel_pinv_nso(chain_, optimal_values, weights, eps_, maxiter_, alpha_);
-  ikpos_ = new KDL::ChainIkSolverPos_LMA(chain_);
-  has_state_ = false;
-
-  // Subscribe to force and torque measurements
-  measured_wrench_ << 0, 0, 0, 0, 0, 0;
-  ft_sub_ = nh_.subscribe(ft_topic_name_, 1, &ControllerTemplate::forceTorqueCB, this);
-  ft_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name_ + "/converted", 1);
+  fkpos = new KDL::ChainFkSolverPos_recursive(chain);
+  fkvel = new KDL::ChainFkSolverVel_recursive(chain);
+  // ikvel = new KDL::ChainIkSolverVel_wdls(chain, eps_);
+  // ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, eps_);
+  ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_);
+  ikpos = new KDL::ChainIkSolverPos_LMA(chain);
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimits(KDL::JntArray &min_limits, KDL::JntArray &max_limits)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimits(const KDL::Chain &chain, KDL::JntArray &min_limits, KDL::JntArray &max_limits)
 {
   KDL::Joint kdl_joint;
   boost::shared_ptr<const urdf::Joint> urdf_joint;
   int j = 0;
 
-  min_limits.resize(chain_.getNrOfJoints());
-  max_limits.resize(chain_.getNrOfJoints());
+  min_limits.resize(chain.getNrOfJoints());
+  max_limits.resize(chain.getNrOfJoints());
 
-  for (int i = 0; i < chain_.getNrOfSegments(); i++) // get joint limits
+  for (int i = 0; i < chain.getNrOfSegments(); i++) // get joint limits
   {
-    kdl_joint = chain_.getSegment(i).getJoint();
+    kdl_joint = chain.getSegment(i).getJoint();
 
     if (kdl_joint.getTypeName() == "None")
     {
@@ -255,7 +330,16 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState current)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name)
+{
+  // Subscribe to force and torque measurements
+  measured_wrench << 0, 0, 0, 0, 0, 0;
+  ft_sub = nh_.subscribe(ft_topic_name, 1, &ControllerTemplate::forceTorqueCB, this); // we will pass the topic name to the subscriber to allow the proper wrench vector to be filled.
+  ft_pub = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name + "/converted", 1);
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState &current)
 {
   if(!has_state_)
   {
@@ -279,9 +363,25 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   geometry_msgs::PoseStamped sensor_to_grasp_frame, sensor_frame, desired;
   geometry_msgs::WrenchStamped converted_wrench;
   tf::Transform converted_wrench_frame;
+  int sensor_num = -1;
 
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
   tf::wrenchMsgToKDL(msg->wrench, wrench_kdl);
+
+  for (int i = 0; i < NUM_ARMS; i++)
+  {
+    if (msg->header.frame_id == ft_sensor_frame_[i])
+    {
+      sensor_num = i;
+      break;
+    }
+  }
+
+  if (sensor_num == -1)
+  {
+    ROS_ERROR("Got wrench message from sensor %s, which was not defined in the config file.", msg->header.frame_id.c_str());
+    return;
+  }
 
   converted_wrench = *msg;
   sensor_to_grasp_frame.header.frame_id = msg->header.frame_id;
@@ -293,12 +393,12 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   sensor_to_grasp_frame.pose.orientation.y = 0;
   sensor_to_grasp_frame.pose.orientation.z = 0;
   sensor_to_grasp_frame.pose.orientation.w = 1;
-  converted_wrench.header.frame_id = ft_frame_id_;
+  converted_wrench.header.frame_id = ft_frame_id_[sensor_num];
 
   try
   {
     // obtain a vector from the wrench frame id to the desired ft frame
-    listener_.transformPose(ft_frame_id_, sensor_to_grasp_frame, sensor_to_grasp_frame);
+    listener_.transformPose(ft_frame_id_[sensor_num], sensor_to_grasp_frame, sensor_to_grasp_frame);
     // listener_.transformPose(base_link_, sensor_frame, sensor_frame);
   }
   catch (tf::TransformException ex)
@@ -309,8 +409,8 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   tf::poseMsgToKDL(sensor_to_grasp_frame.pose, sensor_to_grasp_frame_kdl);
   wrench_kdl = sensor_to_grasp_frame_kdl*wrench_kdl;
   tf::wrenchKDLToMsg(wrench_kdl, converted_wrench.wrench);
-  tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_);
-  ft_pub_.publish(converted_wrench);
+  tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_[sensor_num]);
+  ft_pub_[sensor_num].publish(converted_wrench);
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
@@ -329,59 +429,132 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionl
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::hasJoint(const KDL::Chain &chain, const std::string &joint_name)
+{
+  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  {
+    if(chain.segments[i].getJoint().getName() == joint_name)
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, std::string &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, double &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, std::vector<double> &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, int &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getParam(const std::string &param_name, bool &var)
+{
+  if (!nh_.getParam(param_name, var))
+  {
+    ROS_ERROR("Missing ROS parameter %s!", param_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
 bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericParams()
 {
-  if (!nh_.getParam("/common/end_effector_link_name", end_effector_link_))
+  for (int i = 0; i < NUM_ARMS; i++)
   {
-    ROS_ERROR("Missing end-effector link name (/common/end_effector_link_name)");
+    if(!getParam("/common/end_effector_link_name_" + std::to_string(i + 1), end_effector_link_[i]))
+    {
+      return false;
+    }
+
+    if (!getParam("/common/force_torque_frame_" + std::to_string(i + 1), ft_frame_id_[i])) // this is the frame where we want to transform the force/torque data
+    {
+      return false;
+    }
+
+    if (!getParam("/common/force_torque_sensor_frame_" + std::to_string(i + 1), ft_sensor_frame_[i]))
+    {
+      return false;
+    }
+
+    if (!getParam("/common/force_torque_topic_" + std::to_string(i + 1), ft_topic_name_[i]))
+    {
+      return false;
+    }
+  }
+
+  if (!getParam("/common/base_link_name", base_link_))
+  {
     return false;
   }
 
-  if (!nh_.getParam("/common/base_link_name", base_link_))
+  if (!getParam("/common/solver/epsilon", eps_))
   {
-    ROS_ERROR("Missing base link name (/common/base_link_name)");
     return false;
   }
 
-  if (!nh_.getParam("/common/force_torque_frame", ft_frame_id_)) // this is the frame where we want to transform the force/torque data
+  if (!getParam("/common/solver/alpha", alpha_))
   {
-    ROS_ERROR("Missing force torque frame name (/common/force_torque_frame)");
     return false;
   }
 
-  if (!nh_.getParam("/common/solver/epsilon", eps_))
+  if (!getParam("/common/solver/maxiter", maxiter_))
   {
-    ROS_ERROR("Missing solver epsilon (/common/solver/epsilon)");
     return false;
   }
 
-  if (!nh_.getParam("/common/solver/alpha", alpha_))
+  if (!getParam("/common/solver/nso_weights", nso_weights_))
   {
-    ROS_ERROR("Missing solver alpha (/common/solver/alpha)");
     return false;
   }
 
-  if (!nh_.getParam("/common/solver/maxiter", maxiter_))
+  if (!getParam("/common/feedback_rate", feedback_hz_))
   {
-    ROS_ERROR("Missing solver maxiter (/common/solver/maxiter)");
-    return false;
-  }
-
-  if (!nh_.getParam("/common/solver/nso_weights", nso_weights_))
-  {
-    ROS_ERROR("Missing solver nso_weights (/common/solver/nso_weights)");
-    return false;
-  }
-
-  if (!nh_.getParam("/common/feedback_rate", feedback_hz_))
-  {
-    ROS_ERROR("Missing feedback_rate (/common/feedback_rate)");
-    return false;
-  }
-
-  if (!nh_.getParam("/common/force_torque_topic", ft_topic_name_))
-  {
-    ROS_ERROR("Missing force torque topic name (/common/force_torque_topic)");
     return false;
   }
 

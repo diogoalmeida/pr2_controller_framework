@@ -10,7 +10,7 @@
 namespace manipulation_algorithms{
   /**
     Class that implements the dexterous manipulation control algorithm.
-  */
+  **/
   class ManipulationAlgorithm : public AlgorithmBase
   {
   public:
@@ -24,7 +24,7 @@ namespace manipulation_algorithms{
       @param x_c_aug The current system state.
       @param x_e The end-effector state.
       @return The computed control values
-    */
+    **/
     Eigen::Vector3d compute(const Eigen::Vector3d &x_d, const Eigen::VectorXd &x_c_aug, const Eigen::Vector3d &x_e);
 
     /**
@@ -32,7 +32,7 @@ namespace manipulation_algorithms{
 
       @param n The nodehandle that will be used to query the parameter server
       @return False in case of error
-    */
+    **/
     bool getParams(const ros::NodeHandle &n);
 
   private:
@@ -46,7 +46,7 @@ namespace manipulation_algorithms{
       @param x_c The contact point horizontal translation
       @param theta_c The object orientation w.r.t the surface frame
       @return The inverse of the task jacobian
-    */
+    **/
     Eigen::Matrix3d computeInvG(const double x_e, const double x_c, const double theta_c, const double f_c_x, const double f_c_y);
   };
 }

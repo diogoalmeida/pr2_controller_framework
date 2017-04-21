@@ -10,6 +10,14 @@ namespace cartesian_controllers {
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
+    if(goal->arm < 0 || goal->arm >= NUM_ARMS)
+    {
+      ROS_ERROR("Received a goal where the requested arm (%d) does not exist", goal->arm);
+      action_server_->setAborted();
+      return;
+    }
+
+    arm_index_ = goal->arm;
     is_contact_ = false;
     initial_contact_ = ros::Time(0);
     twist = goal->approach_command;
@@ -23,7 +31,7 @@ namespace cartesian_controllers {
 
     force_threshold_ = goal->contact_force;
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-    initial_force_ = measured_wrench_.block<3,1>(0,0).dot(approach_direction);
+    initial_force_ = measured_wrench_[arm_index_].block<3,1>(0,0).dot(approach_direction);
     loadParams();
     ROS_INFO("Approach controller server received a goal!");
   }
@@ -48,7 +56,7 @@ namespace cartesian_controllers {
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           feedback_.current_wrench.header.stamp = ros::Time::now();
-          tf::wrenchEigenToMsg(measured_wrench_, feedback_.current_wrench.wrench);
+          tf::wrenchEigenToMsg(measured_wrench_[arm_index_], feedback_.current_wrench.wrench);
           action_server_->publishFeedback(feedback_);
         }
 
@@ -63,22 +71,19 @@ namespace cartesian_controllers {
 
   bool ApproachController::loadParams()
   {
-    if (!nh_.getParam("/approach_controller/action_server_name", action_name_))
+    if (!getParam("/approach_controller/action_server_name", action_name_))
     {
-      ROS_ERROR("Missing action server name parameter (/approach_controller/action_server_name)");
       return false;
     }
 
-    if (!nh_.getParam("/approach_controller/rotational_gains", rot_gains_))
+    if (!getParam("/approach_controller/rotational_gains", rot_gains_))
     {
-      ROS_ERROR("Missing vector with rotational gains (/approach_controller/rotational_gains)");
       return false;
     }
 
     double t;
-    if (!nh_.getParam("/approach_controller/contact_detection_time", t))
+    if (!getParam("/approach_controller/contact_detection_time", t))
     {
-      ROS_ERROR("Missing contact_detection_time (/approach_controller/contact_detection_time)");
       return false;
     }
 
@@ -123,7 +128,7 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output;
-    KDL::JntArray commanded_joint_velocities(chain_.getNrOfJoints());
+    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
     KDL::Twist twist_error;
@@ -134,14 +139,17 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_(i) = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+      }
     }
 
     if (!has_initial_)
     {
-      fkpos_->JntToCart(joint_positions_, initial_pose_);
+      fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], initial_pose_);
       has_initial_ = true;
     }
 
@@ -152,7 +160,7 @@ namespace cartesian_controllers {
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
     approach_direction = approach_direction/approach_direction.norm();
 
-    double approach_direction_force = std::abs(measured_wrench_.block<3,1>(0,0).dot(approach_direction) - initial_force_);
+    double approach_direction_force = std::abs(measured_wrench_[arm_index_].block<3,1>(0,0).dot(approach_direction) - initial_force_);
     feedback_.approach_direction_force = approach_direction_force;
     if (approach_direction_force > force_threshold_)
     {
@@ -174,7 +182,7 @@ namespace cartesian_controllers {
       is_contact_ = false;
     }
 
-    fkpos_->JntToCart(joint_positions_, current_pose);
+    fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_pose);
     twist_error = KDL::diff(current_pose, initial_pose_);
 
     // Update the commanded rotational velocities based on the
@@ -189,14 +197,17 @@ namespace cartesian_controllers {
     tf::twistKDLToMsg(velocity_reference_, feedback_.commanded_twist.twist);
     tf::twistKDLToMsg(twist_error, feedback_.error_twist.twist);
 
-    ikvel_->CartToJnt(joint_positions_, velocity_reference_, commanded_joint_velocities);
+    ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], velocity_reference_, commanded_joint_velocities);
 
     control_output = current_state;
 
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.velocity[i] = commanded_joint_velocities(i);
-      control_output.position[i] = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.velocity[i] = commanded_joint_velocities(i);
+        control_output.position[i] = current_state.position[i];
+      }
     }
 
     return control_output;

@@ -54,6 +54,15 @@ namespace cartesian_controllers {
     }
 
     boost::shared_ptr<const pr2_cartesian_controllers::MoveGoal> goal = action_server_->acceptNewGoal();
+
+    if(goal->arm < 0 || goal->arm >= NUM_ARMS)
+    {
+      ROS_ERROR("Received a goal where the requested arm (%d) does not exist", goal->arm);
+      action_server_->setAborted();
+      return;
+    }
+
+    arm_index_ = goal->arm;
     pose = goal->desired_pose;
 
     if(!getDesiredJointPositions(pose, temp_desired_joint_positions))
@@ -78,28 +87,28 @@ namespace cartesian_controllers {
     moveit_msgs::GetKinematicSolverInfo::Request info_request;
     moveit_msgs::GetKinematicSolverInfo::Response info_response;
 
-    if (!ros::service::waitForService(ik_service_name_, ros::Duration(2.0)))
+    if (!ros::service::waitForService(ik_service_name_[arm_index_], ros::Duration(2.0)))
     {
-      ROS_ERROR("Could not connect to service %s", ik_service_name_.c_str());
+      ROS_ERROR("Could not connect to service %s", ik_service_name_[arm_index_].c_str());
       return false;
     }
 
-    if (!ros::service::waitForService(ik_info_service_name_, ros::Duration(2.0)))
+    if (!ros::service::waitForService(ik_info_service_name_[arm_index_], ros::Duration(2.0)))
     {
-      ROS_ERROR("Could not connect to service %s", ik_info_service_name_.c_str());
+      ROS_ERROR("Could not connect to service %s", ik_info_service_name_[arm_index_].c_str());
       return false;
     }
 
-    ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_);
-    ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_);
+    ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_[arm_index_]);
+    ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_[arm_index_]);
 
     if (!info_client.call(info_request, info_response))
     {
-      ROS_ERROR("Error calling service %s", ik_info_service_name_.c_str());
+      ROS_ERROR("Error calling service %s", ik_info_service_name_[arm_index_].c_str());
       return false;
     }
 
-    ik_srv.request.ik_request.ik_link_name = end_effector_link_;
+    ik_srv.request.ik_request.ik_link_name = end_effector_link_[arm_index_];
     ik_srv.request.ik_request.pose_stamped = pose;
     ik_srv.request.ik_request.robot_state.joint_state.name = info_response.kinematic_solver_info.joint_names;
     ik_srv.request.ik_request.timeout = ros::Duration(5.0);
@@ -111,13 +120,13 @@ namespace cartesian_controllers {
 
     if (!ik_client.call(ik_srv))
     {
-      ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_.c_str(), ik_srv.response.error_code.val);
+      ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
       return false;
     }
 
     if (ik_srv.response.error_code.val != ik_srv.response.error_code.SUCCESS)
     {
-      ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_.c_str(), ik_srv.response.error_code.val);
+      ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
       return false;
     }
 
@@ -133,39 +142,36 @@ namespace cartesian_controllers {
 
   bool MoveController::loadParams()
   {
-    if (!nh_.getParam("/move_controller/action_server_name", action_name_))
+    for (int i = 0; i < NUM_ARMS; i++)
     {
-      ROS_ERROR("Missing action server name parameter (/move_controller/action_server_name)");
+      if (!getParam("/move_controller/ik_service_name_" + std::to_string(i + 1), ik_service_name_[i]))
+      {
+        return false;
+      }
+
+      if (!getParam("/move_controller/ik_info_service_name_" + std::to_string(i + 1), ik_info_service_name_[i]))
+      {
+        return false;
+      }
+    }
+
+    if (!getParam("/move_controller/action_server_name", action_name_))
+    {
       return false;
     }
 
-    if (!nh_.getParam("/move_controller/max_allowed_error", max_allowed_error_))
+    if (!getParam("/move_controller/max_allowed_error", max_allowed_error_))
     {
-      ROS_ERROR("Move controller requires a maximum value for the joint error (/move_controller/max_allowed_error)");
       return false;
     }
 
-    if (!nh_.getParam("/move_controller/velocity_gain", velocity_gain_))
+    if (!getParam("/move_controller/velocity_gain", velocity_gain_))
     {
-      ROS_ERROR("Move controller requires a velocity gain (/move_controller/velocity_gain)");
       return false;
     }
 
-    if (!nh_.getParam("/move_controller/error_threshold", error_threshold_))
+    if (!getParam("/move_controller/error_threshold", error_threshold_))
     {
-      ROS_ERROR("Move controller requires an error threshold (/move_controller/error_threshold)");
-      return false;
-    }
-
-    if (!nh_.getParam("/move_controller/ik_service_name", ik_service_name_))
-    {
-      ROS_ERROR("Move controller requires the ik service name (/move_controller/ik_service_name)");
-      return false;
-    }
-
-    if (!nh_.getParam("/move_controller/ik_info_service_name", ik_info_service_name_))
-    {
-      ROS_ERROR("Move controller requires the ik info service name (/move_controller/ik_info_service_name)");
       return false;
     }
 
@@ -210,7 +216,7 @@ namespace cartesian_controllers {
         if (action_server_->isActive())
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          fkpos_->JntToCart(joint_positions_, current_eef);
+          fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_eef);
           tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
           tf::poseKDLToMsg(current_eef, current_pose.pose);
 
@@ -245,16 +251,19 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      joint_positions_(i) = current_state.position[i];
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        joint_positions_[arm_index_](i) = current_state.position[i];
+      }
     }
 
     control_output = current_state;
 
     // 0 - Check success
     int success = 0;
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
       if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > error_threshold_)
       {
@@ -266,7 +275,7 @@ namespace cartesian_controllers {
       }
     }
 
-    if (success == chain_.getNrOfJoints())
+    if (success == chain_[arm_index_].getNrOfJoints())
     {
       ROS_INFO("Move joint controller executed successfully!");
       action_server_->setSucceeded();
@@ -275,36 +284,42 @@ namespace cartesian_controllers {
 
     // 1 - Compute position error
     std::vector<double> error;
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        if (desired_joint_positions_(i) - current_state.position[i] > 0)
+        if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
         {
-          error.push_back(max_allowed_error_);
+          if (desired_joint_positions_(i) - current_state.position[i] > 0)
+          {
+            error.push_back(max_allowed_error_);
+          }
+          else
+          {
+            error.push_back(-max_allowed_error_);
+          }
         }
         else
         {
-          error.push_back(-max_allowed_error_);
+          error.push_back(desired_joint_positions_(i) - current_state.position[i]);
         }
-      }
-      else
-      {
-        error.push_back(desired_joint_positions_(i) - current_state.position[i]);
-      }
 
-      feedback_.joint_position_references.push_back(desired_joint_positions_(i));
-      feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
+        feedback_.joint_position_references.push_back(desired_joint_positions_(i));
+        feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
+      }
     }
 
     // 2 - send commands
-    for (int i = 0; i < chain_.getNrOfJoints(); i++)
+    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
     {
-      control_output.velocity[i] = velocity_gain_ * error[i];
-      control_output.position[i] = current_state.position[i];
-      feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
-      feedback_.joint_velocity_errors.push_back(velocity_gain_ * error[i] - current_state.velocity[i]);
-      control_output.effort[i] = 0;
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      {
+        control_output.velocity[i] = velocity_gain_ * error[i];
+        control_output.position[i] = current_state.position[i];
+        feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
+        feedback_.joint_velocity_errors.push_back(velocity_gain_ * error[i] - current_state.velocity[i]);
+        control_output.effort[i] = 0;
+      }
     }
 
     return control_output;

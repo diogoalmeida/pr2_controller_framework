@@ -115,7 +115,7 @@ bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
 
     if (!joint_state)
     {
-      ROS_WARN("Tried to verify sanity to an inexistent joint");
+      ROS_WARN("Tried to verify sanity to an inexistent joint: %s", state.name[i].c_str());
       continue;
     }
 

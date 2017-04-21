@@ -104,6 +104,8 @@ namespace cartesian_controllers {
     ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_[arm_index_]);
     ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_[arm_index_]);
 
+    ROS_INFO("Requesting info on the arm %d", arm_index_);
+
     if (!info_client.call(info_request, info_response))
     {
       ROS_ERROR("Error calling service %s", ik_info_service_name_[arm_index_].c_str());
@@ -120,6 +122,8 @@ namespace cartesian_controllers {
       ik_srv.request.ik_request.robot_state.joint_state.position.push_back((info_response.kinematic_solver_info.limits[i].min_position + info_response.kinematic_solver_info.limits[i].max_position)/2.0);
     }
 
+    ROS_INFO("Requesting ik for the arm %d", arm_index_);
+
     if (!ik_client.call(ik_srv))
     {
       ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
@@ -131,6 +135,8 @@ namespace cartesian_controllers {
       ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
       return false;
     }
+
+    ROS_INFO("Resizing joint positions");
 
     joint_positions.resize(ik_srv.response.solution.joint_state.position.size());
 

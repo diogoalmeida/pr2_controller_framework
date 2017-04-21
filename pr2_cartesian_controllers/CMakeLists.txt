@@ -22,7 +22,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 add_action_files(
 	DIRECTORY action
-	FILES ManipulationController.action GuardedApproach.action Move.action
+	FILES ManipulationController.action GuardedApproach.action Move.action FoldingController.action
 )
 
 generate_messages(
@@ -32,7 +32,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs moveit_msgs pr2_algorithms
   INCLUDE_DIRS include
-  LIBRARIES manipulation_controller approach_controller move_controller
+  LIBRARIES manipulation_controller approach_controller move_controller folding_controller
 )
 
 include_directories(
@@ -51,3 +51,7 @@ add_dependencies(approach_controller pr2_cartesian_controllers_generate_messages
 add_library(move_controller src/move_controller.cpp)
 target_link_libraries(move_controller ${catkin_LIBRARIES})
 add_dependencies(move_controller pr2_cartesian_controllers_generate_messages_cpp)
+
+add_library(folding_controller src/folding_controller.cpp)
+target_link_libraries(folding_controller ${catkin_LIBRARIES})
+add_dependencies(folding_controller pr2_cartesian_controllers_generate_messages_cpp)

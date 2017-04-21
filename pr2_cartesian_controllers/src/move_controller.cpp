@@ -251,7 +251,7 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -263,15 +263,18 @@ namespace cartesian_controllers {
 
     // 0 - Check success
     int success = 0;
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; current_state.name.size(); i++)
     {
-      if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > error_threshold_)
+      if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        break;
-      }
-      else
-      {
-        success++;
+        if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > error_threshold_)
+        {
+          break;
+        }
+        else
+        {
+          success++;
+        }
       }
     }
 
@@ -284,7 +287,7 @@ namespace cartesian_controllers {
 
     // 1 - Compute position error
     std::vector<double> error;
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -310,7 +313,7 @@ namespace cartesian_controllers {
     }
 
     // 2 - send commands
-    for (int i = 0; i < chain_[arm_index_].getNrOfJoints(); i++)
+    for (int i = 0; i < current_state.name[i].size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {

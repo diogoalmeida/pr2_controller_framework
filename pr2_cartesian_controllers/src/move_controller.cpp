@@ -253,12 +253,11 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
-    for (int i = 0; i < current_state.name.size(); i++)
+    if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
     {
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
-      {
-        joint_positions_[arm_index_](i) = current_state.position[i];
-      }
+      ROS_ERROR("Failed to get the chain joint state. Aborting.");
+      action_server_->setAborted();
+      lastState(current_state);
     }
 
     control_output = current_state;

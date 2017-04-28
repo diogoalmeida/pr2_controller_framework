@@ -17,16 +17,16 @@ namespace cartesian_controllers {
     startActionlib();
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
-    // feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));
+    feedback_thread_ = boost::thread(boost::bind(&MoveController::publishFeedback, this));
   }
 
   MoveController::~MoveController()
   {
-    // if (feedback_thread_.joinable())
-    // {
-    //   feedback_thread_.interrupt();
-    //   feedback_thread_.join();
-    // }
+    if (feedback_thread_.joinable())
+    {
+      feedback_thread_.interrupt();
+      feedback_thread_.join();
+    }
 
     action_server_->shutdown();
     ROS_INFO("Shut down action server %s", action_name_.c_str());

@@ -338,6 +338,7 @@ namespace cartesian_controllers {
         else
         {
           success++;
+          ROS_INFO("Joint success. Total joint success: %d", success);
         }
       }
     }

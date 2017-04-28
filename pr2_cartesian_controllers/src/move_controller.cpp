@@ -346,6 +346,7 @@ namespace cartesian_controllers {
     {
       ROS_INFO("Success");
       action_server_->setSucceeded();
+      ROS_INFO("Action server set succeeded");
       return lastState(current_state);
     }
 

@@ -64,11 +64,11 @@ public:
       delete ikvel_[i];
     }
 
-    if (feedback_thread_.joinable())
-    {
-      feedback_thread_.interrupt();
-      feedback_thread_.join();
-    }
+    // if (feedback_thread_.joinable())
+    // {
+    //   feedback_thread_.interrupt();
+    //   feedback_thread_.join();
+    // }
   }
 
 protected:
@@ -221,7 +221,7 @@ protected:
   sensor_msgs::JointState last_state_;
 
   //Actionlib
-  actionlib::SimpleActionServer<ActionClass> *action_server_;
+  boost::shared_ptr<actionlib::SimpleActionServer<ActionClass> > action_server_;
   ActionFeedback feedback_;
   ActionResult result_;
   std::string action_name_;
@@ -467,7 +467,7 @@ template <class ActionClass, class ActionFeedback, class ActionResult>
 void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionlib()
 {
   // Initialize actionlib server
-  action_server_ = new actionlib::SimpleActionServer<ActionClass>(nh_, action_name_, false);
+  action_server_ = boost::shared_ptr<actionlib::SimpleActionServer<ActionClass> >(new actionlib::SimpleActionServer<ActionClass>(nh_, action_name_, false));
 
   // Register callbacks
   action_server_->registerGoalCallback(boost::bind(&ControllerTemplate::goalCB, this));

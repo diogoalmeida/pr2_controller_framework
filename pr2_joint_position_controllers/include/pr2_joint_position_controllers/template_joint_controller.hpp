@@ -126,7 +126,7 @@ private:
   ros::Time time_of_last_reference_update_;
 
   // Cartesian controller
-  cartesian_controllers::ControllerBase *cartesian_controller_;
+  boost::shared_ptr<cartesian_controllers::ControllerBase > cartesian_controller_;
 
 public:
   /**
@@ -162,7 +162,7 @@ public:
 
     @return A pointer to the initialized controller.
   **/
-  virtual cartesian_controllers::ControllerBase *initializeController() = 0;
+  virtual boost::shared_ptr<cartesian_controllers::ControllerBase > initializeController() = 0;
 };
 }
 

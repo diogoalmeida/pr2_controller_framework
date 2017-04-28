@@ -27,7 +27,6 @@ namespace cartesian_controllers {
     }
 
     action_server_->shutdown();
-    delete action_server_;
   }
 
   void FoldingController::preemptCB()

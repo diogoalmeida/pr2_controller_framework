@@ -4,9 +4,9 @@
 
 namespace pr2_joint_controller {
 
-cartesian_controllers::ControllerBase * ApproachJointController::initializeController()
+boost::shared_ptr<cartesian_controllers::ControllerBase > ApproachJointController::initializeController()
 {
-  return new cartesian_controllers::ApproachController();
+  return boost::shared_ptr<cartesian_controllers::ControllerBase >(new cartesian_controllers::ApproachController());
 }
 }
 

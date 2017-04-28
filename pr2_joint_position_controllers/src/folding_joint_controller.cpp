@@ -3,9 +3,9 @@
 
 namespace pr2_joint_controller {
 
-cartesian_controllers::ControllerBase * FoldingJointController::initializeController()
+boost::shared_ptr<cartesian_controllers::ControllerBase > FoldingJointController::initializeController()
 {
-  return new cartesian_controllers::FoldingController();
+  return boost::shared_ptr<cartesian_controllers::ControllerBase >(new cartesian_controllers::FoldingController());
 }
 }
 

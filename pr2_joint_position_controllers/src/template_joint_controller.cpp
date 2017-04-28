@@ -10,12 +10,11 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     // copy robot pointer so we can access time
     robot_ = robot;
     n_ = n;
-    pr2_mechanism_model::JointState *joint;
     ROS_INFO("Initializing joint controller! Namespace: %s", n.getNamespace().c_str());
 
     if (!n.getParam("feedback_rate", feedback_hz_))
     {
-      ROS_WARN("Joint controller feedback rate not set. Using defaul 10 Hz (%s/feedback_rate)", n.getNamespace().c_str());
+      ROS_WARN("Joint controller feedback rate not set. Using default 10 Hz (%s/feedback_rate)", n.getNamespace().c_str());
       feedback_hz_ = 10.0;
     }
 
@@ -79,6 +78,11 @@ void TemplateJointController::update()
   for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     joint_state = robot_->getJointState(joint_names_[i]);
+    if (!joint_state)
+    {
+      ROS_ERROR("Joint %s state in robot mechanism didn't return. This should NEVER happen", joint_names_[i].c_str());
+      return; // skip a time step and hope for the best
+    }
     current_state.name.push_back(joint_names_[i]);
     current_state.position.push_back(joint_state->position_);
     current_state.velocity.push_back(joint_state->velocity_);
@@ -95,6 +99,11 @@ void TemplateJointController::update()
   for (int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
     joint_state = robot_->getJointState(joint_names_[i]); // sanity of joint_names_ has been verified in init()
+    if (!joint_state)
+    {
+      ROS_ERROR("Joint %s state in robot mechanism didn't return. This should NEVER happen", joint_names_[i].c_str());
+      return; // skip a time step and hope for the best
+    }
     dt = robot_->getTime() - time_of_last_cycle_[i];
     last_active_joint_position_[i] = joint_state->position_;
     joint_state->commanded_effort_ = applyControlLoop(joint_state, getReferencePosition(joint_names_[i]), getReferenceVelocity(joint_names_[i]), i, dt);
@@ -216,6 +225,10 @@ bool TemplateJointController::allocateVariables()
       ROS_ERROR("Joint %s does not exist in the robot mechanism model!", joint_names_[i].c_str());
       return false;
     }
+    else
+    {
+      ROS_INFO("Allocating a controller for joint %s.", joint_names_[i].c_str());
+    }
 
     last_active_joint_position_.push_back(joint->position_);
     position_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/position_loop_gains/" + joint_names_[i]));
@@ -307,10 +320,10 @@ void TemplateJointController::publishFeedback()
   {
     while(ros::ok())
     {
-      if (verifySanity(control_references_))
       {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_);
+        if (verifySanity(control_references_))
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
           feedback_.joint_name.clear();
           feedback_.commanded_effort.clear();
           feedback_.position_error.clear();
@@ -322,6 +335,11 @@ void TemplateJointController::publishFeedback()
           for (int i = 0; i < control_references_.name.size(); i++)
           {
             joint_state = robot_->getJointState(control_references_.name[i]);
+            if (!joint_state)
+            {
+              ROS_ERROR("Joint %s state in robot mechanism didn't return. This should NEVER happen", control_references_.name[i].c_str());
+              continue; // skip a time step and hope for the best
+            }
             feedback_.joint_name.push_back(control_references_.name[i]);
             feedback_.commanded_effort.push_back(joint_state->commanded_effort_);
             feedback_.position_error.push_back(joint_state->position_ - control_references_.position[i]);
@@ -332,11 +350,11 @@ void TemplateJointController::publishFeedback()
 
             feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
             feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
-            feedback_.effort_single =joint_state->commanded_effort_;
+            feedback_.effort_single = joint_state->commanded_effort_;
             feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
           }
-        }
         feedback_pub_.publish(feedback_);
+        }
       }
       boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
     }

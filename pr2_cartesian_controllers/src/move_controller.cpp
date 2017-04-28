@@ -88,9 +88,18 @@ namespace cartesian_controllers {
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
       tf::poseMsgToKDL(pose.pose, pose_reference_);
+      ROS_INFO("Assigning joint values");
+      for (int i = 0; i < temp_desired_joint_positions.rows(); i++)
+      {
+        ROS_INFO("%.2f", temp_desired_joint_positions(i));
+      }
       desired_joint_positions_ = temp_desired_joint_positions;
       finished_acquiring_goal_ = true;
       loadParams();
+      for (int i = 0; i < desired_joint_positions_.rows(); i++)
+      {
+        ROS_INFO("Position %d: %.2f", i, desired_joint_positions_(i));
+      }
     }
     ROS_INFO("Move controller got a goal!");
   }
@@ -157,6 +166,7 @@ namespace cartesian_controllers {
 
     for (int i = 0; i < ik_srv.response.solution.joint_state.position.size(); i++)
     {
+      // ROS_INFO("Assigning position %.2f", ik_srv.response.solution.joint_state.position[i]);
       joint_positions(i) = ik_srv.response.solution.joint_state.position[i];
     }
 
@@ -241,7 +251,7 @@ namespace cartesian_controllers {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           if(finished_acquiring_goal_) // prevent accessing the joint positions_ vector when it can be uninitialized
           {
-            fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_eef);
+            // fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_eef);
             tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
             tf::poseKDLToMsg(current_eef, current_pose.pose);
 
@@ -308,13 +318,15 @@ namespace cartesian_controllers {
 
     // 1 - Compute position error
     std::vector<double> error;
+    int j = 0;
     for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        if (std::abs(desired_joint_positions_(i) - current_state.position[i]) > max_allowed_error_)
+        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
+        if (std::abs(desired_joint_positions_(j) - current_state.position[i]) > max_allowed_error_)
         {
-          if (desired_joint_positions_(i) - current_state.position[i] > 0)
+          if (desired_joint_positions_(j) - current_state.position[i] > 0)
           {
             error.push_back(max_allowed_error_);
           }
@@ -325,19 +337,25 @@ namespace cartesian_controllers {
         }
         else
         {
-          error.push_back(desired_joint_positions_(i) - current_state.position[i]);
+          error.push_back(desired_joint_positions_(j) - current_state.position[i]);
         }
 
-        feedback_.joint_position_references.push_back(desired_joint_positions_(i));
-        feedback_.joint_position_errors.push_back(desired_joint_positions_(i) - current_state.position[i]);
+        feedback_.joint_position_references.push_back(desired_joint_positions_(j));
+        feedback_.joint_position_errors.push_back(desired_joint_positions_(j) - current_state.position[i]);
+        j++;
       }
     }
 
     // 2 - send commands
     for (int i = 0; i < current_state.name.size(); i++)
     {
+      // joints we don't care about won't move
+      control_output.velocity[i] = 0;
+      control_output.effort[i] = 0;
+
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
+        // ROS_INFO("Assigning joint %s; compared with state %s", control_output.name[i].c_str(), current_state.name[i].c_str());
         control_output.velocity[i] = velocity_gain_ * error[i];
         control_output.position[i] = current_state.position[i];
         feedback_.joint_velocity_references.push_back(velocity_gain_ * error[i]);
@@ -346,6 +364,14 @@ namespace cartesian_controllers {
       }
     }
 
+    // ROS_INFO("Outputing:");
+    // for(int i = 0; i < control_output.name.size(); i++)
+    // {
+    //   std::cout << control_output.name[i] << " ; " << control_output.position[i] << " ; " << control_output.velocity[i] << std::endl;
+    // }
+    // std::cout << std::endl;
+    // std::cout << std::endl;
+    // std::cout << std::endl;
     return control_output;
   }
 }

@@ -344,6 +344,7 @@ namespace cartesian_controllers {
 
     if (success == chain_[arm_index_].getNrOfJoints())
     {
+      ROS_INFO("Success");
       action_server_->setSucceeded();
       return lastState(current_state);
     }

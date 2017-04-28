@@ -343,6 +343,9 @@ namespace cartesian_controllers {
       }
     }
 
+    ROS_INFO("Total joint success: %d", success);
+    ROS_INFO("Total number of joints: %d", chain_[arm_index_].getNrOfJoints());
+
     if (success == chain_[arm_index_].getNrOfJoints())
     {
       ROS_INFO("Success");

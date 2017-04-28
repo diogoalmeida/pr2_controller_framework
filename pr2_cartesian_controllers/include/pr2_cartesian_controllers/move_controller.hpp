@@ -28,15 +28,35 @@ private:
 
     @param pose The desired cartesian pose
     @param joint_positions The joint positions that will allow the end-effector to attain the desired pose.
+    @param joint_names Vector of joint names for which we have a reference position.
 
     @return True if the service provides a valid response. False otherwise.
   **/
-  bool getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions);
+  bool getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names);
+
+  /**
+    Get the desired reference position by namespace
+
+    @param joint_name The query joint name.
+
+    @return The reference position for the joint value.
+  **/
+  double getDesiredPosition(const std::string &joint_name);
+
+  /**
+    Returns a value from a vector that can be indexed by joint.
+
+    @param v Vector of values.
+    @param joint_name The joint that will index the vector.
+    @return The value that relates to the given joint name.
+  **/
+  double getValue(const std::vector<double> &v, const std::string &joint_name);
 
 private:
   bool finished_acquiring_goal_;
   // Controller values
   KDL::Frame pose_reference_;
+  std::vector<std::string> actuated_joint_names_;
   KDL::JntArray desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;

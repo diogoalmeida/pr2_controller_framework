@@ -326,7 +326,7 @@ namespace cartesian_controllers {
 
     // 0 - Check success
     int success = 0;
-    for (int i = 0; current_state.name.size(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -338,19 +338,13 @@ namespace cartesian_controllers {
         else
         {
           success++;
-          ROS_INFO("Joint success. Total joint success: %d", success);
         }
       }
     }
 
-    ROS_INFO("Total joint success: %d", success);
-    ROS_INFO("Total number of joints: %d", chain_[arm_index_].getNrOfJoints());
-
     if (success == chain_[arm_index_].getNrOfJoints())
     {
-      ROS_INFO("Success");
       action_server_->setSucceeded();
-      ROS_INFO("Action server set succeeded");
       return lastState(current_state);
     }
 

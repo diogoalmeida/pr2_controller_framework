@@ -320,10 +320,10 @@ void TemplateJointController::publishFeedback()
   {
     while(ros::ok())
     {
-      if (verifySanity(control_references_))
       {
+        boost::lock_guard<boost::mutex> guard(reference_mutex_);
+        if (verifySanity(control_references_))
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
           feedback_.joint_name.clear();
           feedback_.commanded_effort.clear();
           feedback_.position_error.clear();
@@ -350,11 +350,11 @@ void TemplateJointController::publishFeedback()
 
             feedback_.velocity_error_norm = std::abs(joint_state->velocity_ - modified_velocity_references_[i]); // for now just keeping one value
             feedback_.position_error_norm = std::abs(joint_state->position_ - control_references_.position[i]);
-            feedback_.effort_single =joint_state->commanded_effort_;
+            feedback_.effort_single = joint_state->commanded_effort_;
             feedback_.position_feedback_norm = std::abs(modified_velocity_references_[i] - control_references_.velocity[i]);
           }
-        }
         feedback_pub_.publish(feedback_);
+        }
       }
       boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
     }

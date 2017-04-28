@@ -349,35 +349,6 @@ namespace cartesian_controllers {
     }
 
     // 1 - Compute position error
-    std::vector<double> error;
-    for (int i = 0; i < current_state.name.size(); i++)
-    {
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
-      {
-        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
-        double val = getDesiredPosition(current_state.name[i]);
-        if (std::abs(val - current_state.position[i]) > max_allowed_error_)
-        {
-          if (val - current_state.position[i] > 0)
-          {
-            error.push_back(max_allowed_error_);
-          }
-          else
-          {
-            error.push_back(-max_allowed_error_);
-          }
-        }
-        else
-        {
-          error.push_back(val - current_state.position[i]);
-        }
-
-        feedback_.joint_position_references.push_back(val);
-        feedback_.joint_position_errors.push_back(val - current_state.position[i]);
-      }
-    }
-
-    // 2 - send commands
     for (int i = 0; i < current_state.name.size(); i++)
     {
       // joints we don't care about won't move
@@ -386,10 +357,30 @@ namespace cartesian_controllers {
 
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        // ROS_INFO("Assigning joint %s; compared with state %s", control_output.name[i].c_str(), current_state.name[i].c_str());
-        double e = getValue(error, current_state.name[i]);
+        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
+        double val = getDesiredPosition(current_state.name[i]);
+        double e = 0;
+        if (std::abs(val - current_state.position[i]) > max_allowed_error_)
+        {
+          if (val - current_state.position[i] > 0)
+          {
+            e = max_allowed_error_;
+          }
+          else
+          {
+            e = -max_allowed_error_;
+          }
+        }
+        else
+        {
+          e = val - current_state.position[i];
+        }
+
         control_output.velocity[i] = velocity_gain_ * e;
         control_output.position[i] = current_state.position[i];
+
+        feedback_.joint_position_references.push_back(val);
+        feedback_.joint_position_errors.push_back(val - current_state.position[i]);
         feedback_.joint_velocity_references.push_back(velocity_gain_ * e);
         feedback_.joint_velocity_errors.push_back(velocity_gain_ * e - current_state.velocity[i]);
         control_output.effort[i] = 0;

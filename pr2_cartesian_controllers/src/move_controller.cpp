@@ -42,7 +42,6 @@ namespace cartesian_controllers {
   void MoveController::goalCB()
   {
     geometry_msgs::PoseStamped pose;
-    KDL::JntArray temp_desired_joint_positions;
 
     // It will take time to acquire the new joint positions, and I will have
     // accepted the goal already. This is a limitation of the goal callback
@@ -75,25 +74,24 @@ namespace cartesian_controllers {
       ROS_INFO("%s", ik_info_service_name_[i].c_str());
     }
 
-    if(!getDesiredJointPositions(pose, temp_desired_joint_positions, actuated_joint_names_))
-    {
-      action_server_->setAborted();
-      {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        finished_acquiring_goal_ = true;
-      }
-      return;
-    }
-
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      if(!getDesiredJointPositions(pose, desired_joint_positions_, actuated_joint_names_))
+      {
+        action_server_->setAborted();
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          finished_acquiring_goal_ = true;
+        }
+        return;
+      }
+
       tf::poseMsgToKDL(pose.pose, pose_reference_);
       ROS_INFO("Assigning joint values");
-      for (int i = 0; i < temp_desired_joint_positions.rows(); i++)
+      for (int i = 0; i < desired_joint_positions_.rows(); i++)
       {
-        ROS_INFO("%.2f", temp_desired_joint_positions(i));
+        ROS_INFO("%.2f", desired_joint_positions_(i));
       }
-      desired_joint_positions_ = temp_desired_joint_positions;
       finished_acquiring_goal_ = true;
       loadParams();
       for (int i = 0; i < desired_joint_positions_.rows(); i++)
@@ -104,7 +102,7 @@ namespace cartesian_controllers {
     ROS_INFO("Move controller got a goal!");
   }
 
-  bool MoveController::getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names)
+  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names)
   {
     moveit_msgs::GetPositionIK ik_srv;
     moveit_msgs::GetKinematicSolverInfo::Request info_request;

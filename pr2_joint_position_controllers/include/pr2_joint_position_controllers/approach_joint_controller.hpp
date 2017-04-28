@@ -10,7 +10,7 @@ class ApproachJointController: public TemplateJointController
 {
 public:
   ApproachJointController(){}
-  virtual cartesian_controllers::ControllerBase *initializeController();
+  virtual boost::shared_ptr<cartesian_controllers::ControllerBase > initializeController();
 };
 }
 

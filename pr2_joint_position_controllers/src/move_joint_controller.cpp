@@ -4,9 +4,9 @@
 
 namespace pr2_joint_controller {
 
-cartesian_controllers::ControllerBase * MoveJointController::initializeController()
+boost::shared_ptr<cartesian_controllers::ControllerBase > MoveJointController::initializeController()
 {
-  return new cartesian_controllers::MoveController();
+  return boost::shared_ptr<cartesian_controllers::ControllerBase >(new cartesian_controllers::MoveController());
 }
 }
 

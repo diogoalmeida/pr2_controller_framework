@@ -14,7 +14,7 @@ common:
     alpha: 0.5
     maxiter: 200
     nso_weights: 1
-  feedback_rate: 10
+  feedback_rate: 100
   force_torque_topic:
     arm_1: /l_ft_sensor/ft_compensated
     arm_2: /r_ft_sensor/ft_compensated
@@ -70,7 +70,7 @@ approach_controller:
 move_controller:
   action_server_name: move_controller
   max_allowed_error: 0.1
-  velocity_gain: 1
+  velocity_gain: 1.5
   error_threshold: 0.1
   ik_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik

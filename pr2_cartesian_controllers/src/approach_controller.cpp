@@ -122,7 +122,6 @@ namespace cartesian_controllers {
     }
 
     action_server_->shutdown();
-    delete action_server_;
   }
 
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)

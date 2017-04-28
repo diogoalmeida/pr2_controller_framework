@@ -10,7 +10,7 @@ class FoldingJointController: public TemplateJointController
 {
 public:
   FoldingJointController(){}
-  virtual cartesian_controllers::ControllerBase *initializeController();
+  virtual boost::shared_ptr<cartesian_controllers::ControllerBase > initializeController();
 };
 }
 

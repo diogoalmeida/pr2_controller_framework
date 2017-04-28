@@ -51,18 +51,20 @@ void TemplateJointController::starting()
   time_of_last_manipulation_call_ = robot_->getTime();
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
-  feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
+  // feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
 }
 
 void TemplateJointController::stopping()
 {
   ROS_INFO("Joint controller stopping!");
-  if(feedback_thread_.joinable())
-  {
-    feedback_thread_.interrupt();
-    feedback_thread_.join();
-  }
 
+  // if(feedback_thread_.joinable())
+  // {
+  //   feedback_thread_.interrupt();
+  //   feedback_thread_.join();
+  // }
+
+  ROS_INFO("Reseting allocable variables");
   resetAllocableVariables();
 
   ROS_INFO("Joint controller stopped successfully!");
@@ -185,8 +187,6 @@ void TemplateJointController::resetAllocableVariables()
   ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
-
-  delete cartesian_controller_;
 }
 
 bool TemplateJointController::allocateVariables()
@@ -361,6 +361,7 @@ void TemplateJointController::publishFeedback()
   }
   catch(const boost::thread_interrupted &)
   {
+    ROS_INFO("Joint controller thread interrupted :)");
     return;
   }
 }

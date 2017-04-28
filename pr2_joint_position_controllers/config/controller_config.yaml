@@ -215,7 +215,7 @@ approach_joint_controller:
 
 move_joint_controller:
   type: pr2_joint_position_controllers/MoveJointController
-  feedback_rate: 50
+  feedback_rate: 100
   receive_position_reference: True
   control_timeout: 1
 

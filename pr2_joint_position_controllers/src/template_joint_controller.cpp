@@ -51,18 +51,19 @@ void TemplateJointController::starting()
   time_of_last_manipulation_call_ = robot_->getTime();
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
-  // feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
+  feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
 }
 
 void TemplateJointController::stopping()
 {
+  boost::lock_guard<boost::mutex> guard(reference_mutex_);
   ROS_INFO("Joint controller stopping!");
 
-  // if(feedback_thread_.joinable())
-  // {
-  //   feedback_thread_.interrupt();
-  //   feedback_thread_.join();
-  // }
+  if(feedback_thread_.joinable())
+  {
+    feedback_thread_.interrupt();
+    feedback_thread_.join();
+  }
 
   ROS_INFO("Reseting allocable variables");
   resetAllocableVariables();
@@ -174,12 +175,6 @@ bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
 
 void TemplateJointController::resetAllocableVariables()
 {
-  for(int i = 0; i < velocity_joint_controllers_.size(); i++)
-  {
-    delete position_joint_controllers_[i];
-    delete velocity_joint_controllers_[i];
-  }
-
   position_joint_controllers_.clear();
   velocity_joint_controllers_.clear();
   joint_names_.clear();
@@ -187,6 +182,7 @@ void TemplateJointController::resetAllocableVariables()
   ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
+  cartesian_controller_.reset();
 }
 
 bool TemplateJointController::allocateVariables()
@@ -216,7 +212,7 @@ bool TemplateJointController::allocateVariables()
     }
 
     // create a controller instance and give it a unique namespace for setting the controller gains
-    position_joint_controllers_.push_back(new control_toolbox::Pid());
+    position_joint_controllers_.push_back(boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid()));
     modified_velocity_references_.push_back(0);
     joint = robot_->getJointState(joint_names_[i]);
 
@@ -250,7 +246,7 @@ bool TemplateJointController::allocateVariables()
     }
 
     // create a controller instance and give it a unique namespace for setting the controller gains
-    velocity_joint_controllers_.push_back(new control_toolbox::Pid());
+    velocity_joint_controllers_.push_back(boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid()));
     time_of_last_cycle_.push_back(robot_->getTime());
     ff_joint_controllers_.push_back(ff_gain);
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/velocity_loop_gains/" + joint_names_[i]));

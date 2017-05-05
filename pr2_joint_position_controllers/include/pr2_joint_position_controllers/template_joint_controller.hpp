@@ -102,8 +102,8 @@ private:
 
   // Control elements
   sensor_msgs::JointState control_references_;
-  std::vector<control_toolbox::Pid*> position_joint_controllers_;
-  std::vector<control_toolbox::Pid*> velocity_joint_controllers_;
+  std::vector<boost::shared_ptr<control_toolbox::Pid> > position_joint_controllers_;
+  std::vector<boost::shared_ptr<control_toolbox::Pid> > velocity_joint_controllers_;
   std::vector<std::string> joint_names_; // the controller will only accept a command that includes ALL the joint_names_ it's expecting to receive. It ignores all other names
   std::vector<ros::Time> time_of_last_cycle_; // Per controller
   ros::Time time_of_last_manipulation_call_;

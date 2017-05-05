@@ -56,19 +56,6 @@ public:
   ControllerTemplate();
   virtual ~ControllerTemplate()
   {
-    for (int i = 0; i < NUM_ARMS; i++)
-    {
-      delete fkpos_[i];
-      delete fkvel_[i];
-      delete ikpos_[i];
-      delete ikvel_[i];
-    }
-
-    // if (feedback_thread_.joinable())
-    // {
-    //   feedback_thread_.interrupt();
-    //   feedback_thread_.join();
-    // }
   }
 
 protected:
@@ -104,7 +91,7 @@ protected:
     @param ikpos Positional inverse kinematics solver.
     @param ikvel Velocity inverse kinematics solver.
   **/
-  void initializeSolvers(const KDL::Chain &chain, KDL::ChainFkSolverPos_recursive *fkpos, KDL::ChainFkSolverVel_recursive *fkvel, KDL::ChainIkSolverVel_pinv_nso *ikvel, KDL::ChainIkSolverPos_LMA *ikpos);
+  void initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ikpos);
 
   /**
     Initializes the wrench vector, subscriber and publisher for a given wrench topic.
@@ -201,10 +188,10 @@ protected:
   std::vector<KDL::JntArray> joint_positions_;
   std::vector<KDL::JntArrayVel> joint_velocities_;
   // KDL::ChainIkSolverVel_wdls *ikvel_;
-  std::vector<KDL::ChainIkSolverVel_pinv_nso*> ikvel_;
-  std::vector<KDL::ChainIkSolverPos_LMA*> ikpos_;
-  std::vector<KDL::ChainFkSolverPos_recursive*> fkpos_;
-  std::vector<KDL::ChainFkSolverVel_recursive*> fkvel_;
+  std::vector<boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> > ikvel_;
+  std::vector<boost::shared_ptr<KDL::ChainIkSolverPos_LMA> > ikpos_;
+  std::vector<boost::shared_ptr<KDL::ChainFkSolverPos_recursive> > fkpos_;
+  std::vector<boost::shared_ptr<KDL::ChainFkSolverVel_recursive> > fkvel_;
   std::vector<KDL::Chain> chain_;
   urdf::Model model_;
   std::vector<std::string> end_effector_link_;
@@ -292,7 +279,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeAr
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, KDL::ChainFkSolverPos_recursive *fkpos, KDL::ChainFkSolverVel_recursive *fkvel, KDL::ChainIkSolverVel_pinv_nso *ikvel, KDL::ChainIkSolverPos_LMA *ikpos)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ikpos)
 {
   KDL::JntArray min_limits, max_limits;
   KDL::JntArray optimal_values, weights;
@@ -322,12 +309,12 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSo
   }
 
 
-  fkpos = new KDL::ChainFkSolverPos_recursive(chain);
-  fkvel = new KDL::ChainFkSolverVel_recursive(chain);
+  fkpos = boost::shared_ptr<KDL::ChainFkSolverPos_recursive>(new KDL::ChainFkSolverPos_recursive(chain));
+  fkvel = boost::shared_ptr<KDL::ChainFkSolverVel_recursive>(new KDL::ChainFkSolverVel_recursive(chain));
   // ikvel = new KDL::ChainIkSolverVel_wdls(chain, eps_);
   // ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, eps_);
-  ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_);
-  ikpos = new KDL::ChainIkSolverPos_LMA(chain);
+  ikvel = boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso>(new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_));
+  ikpos = boost::shared_ptr<KDL::ChainIkSolverPos_LMA>(new KDL::ChainIkSolverPos_LMA(chain));
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
@@ -364,9 +351,9 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getChainJoin
   {
     if (hasJoint(chain, current_state.name[i]))
     {
-      positions(i) = current_state.position[i];
-      velocities.q(i) = current_state.position[i];
-      velocities.qdot(i) = current_state.velocity[i];
+      positions(processed_joints) = current_state.position[i];
+      velocities.q(processed_joints) = current_state.position[i];
+      velocities.qdot(processed_joints) = current_state.velocity[i];
       processed_joints++;
     }
   }

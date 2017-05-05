@@ -58,6 +58,7 @@ void TemplateJointController::stopping()
 {
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
   ROS_INFO("Joint controller stopping!");
+  robot_->zeroCommands();
 
   if(feedback_thread_.joinable())
   {
@@ -149,10 +150,6 @@ bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
         ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
       }
     }
-    else
-    {
-      state.position[i] = std::abs(state.position[i]);
-    }
 
     if (std::abs(state.velocity[i]) > limits->velocity)
     {
@@ -182,7 +179,6 @@ void TemplateJointController::resetAllocableVariables()
   ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
-  cartesian_controller_.reset();
 }
 
 bool TemplateJointController::allocateVariables()

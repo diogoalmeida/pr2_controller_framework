@@ -66,12 +66,12 @@ namespace cartesian_controllers {
     arm_index_ = goal->arm;
     pose = goal->desired_pose;
 
-    ROS_INFO("Got arm %d", arm_index_);
-    ROS_INFO("Available IK services:");
+    ROS_DEBUG("Got arm %d", arm_index_);
+    ROS_DEBUG("Available IK services:");
     for (int i = 0; i < NUM_ARMS; i++)
     {
-      ROS_INFO("%s", ik_service_name_[i].c_str());
-      ROS_INFO("%s", ik_info_service_name_[i].c_str());
+      ROS_DEBUG("%s", ik_service_name_[i].c_str());
+      ROS_DEBUG("%s", ik_info_service_name_[i].c_str());
     }
 
     {
@@ -87,16 +87,11 @@ namespace cartesian_controllers {
       }
 
       tf::poseMsgToKDL(pose.pose, pose_reference_);
-      ROS_INFO("Assigning joint values");
-      for (int i = 0; i < desired_joint_positions_.rows(); i++)
-      {
-        ROS_INFO("%.2f", desired_joint_positions_(i));
-      }
       finished_acquiring_goal_ = true;
       loadParams();
       for (int i = 0; i < desired_joint_positions_.rows(); i++)
       {
-        ROS_INFO("Position %d: %.2f", i, desired_joint_positions_(i));
+        ROS_DEBUG("Position %d: %.2f", i, desired_joint_positions_(i));
       }
     }
     ROS_INFO("Move controller got a goal!");
@@ -108,25 +103,25 @@ namespace cartesian_controllers {
     moveit_msgs::GetKinematicSolverInfo::Request info_request;
     moveit_msgs::GetKinematicSolverInfo::Response info_response;
 
-    ROS_INFO("Waiting for %s", ik_service_name_[arm_index_].c_str());
+    ROS_DEBUG("Waiting for %s", ik_service_name_[arm_index_].c_str());
     if (!ros::service::waitForService(ik_service_name_[arm_index_], ros::Duration(2.0)))
     {
       ROS_ERROR("Could not connect to service %s", ik_service_name_[arm_index_].c_str());
       return false;
     }
 
-    ROS_INFO("Waiting for %s", ik_info_service_name_[arm_index_].c_str());
+    ROS_DEBUG("Waiting for %s", ik_info_service_name_[arm_index_].c_str());
     if (!ros::service::waitForService(ik_info_service_name_[arm_index_], ros::Duration(2.0)))
     {
       ROS_ERROR("Could not connect to service %s", ik_info_service_name_[arm_index_].c_str());
       return false;
     }
 
-    ROS_INFO("Creating service clients");
+    ROS_DEBUG("Creating service clients");
     ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_[arm_index_]);
     ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_[arm_index_]);
 
-    ROS_INFO("Requesting info on the arm %d", arm_index_);
+    ROS_DEBUG("Requesting info on the arm %d", arm_index_);
 
     if (!info_client.call(info_request, info_response))
     {
@@ -144,7 +139,7 @@ namespace cartesian_controllers {
       ik_srv.request.ik_request.robot_state.joint_state.position.push_back((info_response.kinematic_solver_info.limits[i].min_position + info_response.kinematic_solver_info.limits[i].max_position)/2.0);
     }
 
-    ROS_INFO("Requesting ik for the arm %d", arm_index_);
+    ROS_DEBUG("Requesting ik for the arm %d", arm_index_);
 
     if (!ik_client.call(ik_srv))
     {
@@ -158,14 +153,14 @@ namespace cartesian_controllers {
       return false;
     }
 
-    ROS_INFO("Resizing joint positions");
+    ROS_DEBUG("Resizing joint positions");
 
     joint_names.clear();
     joint_positions.resize(ik_srv.response.solution.joint_state.position.size());
 
     for (int i = 0; i < ik_srv.response.solution.joint_state.position.size(); i++)
     {
-      // ROS_INFO("Assigning position %.2f", ik_srv.response.solution.joint_state.position[i]);
+      ROS_DEBUG("Assigning position %.2f", ik_srv.response.solution.joint_state.position[i]);
       joint_names.push_back(ik_srv.response.solution.joint_state.name[i]);
       joint_positions(i) = ik_srv.response.solution.joint_state.position[i];
     }
@@ -356,7 +351,6 @@ namespace cartesian_controllers {
 
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
         double val = getDesiredPosition(current_state.name[i]);
         double e = 0;
         if (std::abs(val - current_state.position[i]) > max_allowed_error_)

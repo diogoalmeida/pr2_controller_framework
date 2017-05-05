@@ -32,7 +32,7 @@ private:
 
     @return True if the service provides a valid response. False otherwise.
   **/
-  bool getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names);
+  bool getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names);
 
   /**
     Get the desired reference position by namespace

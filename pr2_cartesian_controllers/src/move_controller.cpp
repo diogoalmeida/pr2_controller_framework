@@ -42,7 +42,6 @@ namespace cartesian_controllers {
   void MoveController::goalCB()
   {
     geometry_msgs::PoseStamped pose;
-    KDL::JntArray temp_desired_joint_positions;
 
     // It will take time to acquire the new joint positions, and I will have
     // accepted the goal already. This is a limitation of the goal callback
@@ -75,25 +74,24 @@ namespace cartesian_controllers {
       ROS_INFO("%s", ik_info_service_name_[i].c_str());
     }
 
-    if(!getDesiredJointPositions(pose, temp_desired_joint_positions, actuated_joint_names_))
-    {
-      action_server_->setAborted();
-      {
-        boost::lock_guard<boost::mutex> guard(reference_mutex_);
-        finished_acquiring_goal_ = true;
-      }
-      return;
-    }
-
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      if(!getDesiredJointPositions(pose, desired_joint_positions_, actuated_joint_names_))
+      {
+        action_server_->setAborted();
+        {
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          finished_acquiring_goal_ = true;
+        }
+        return;
+      }
+
       tf::poseMsgToKDL(pose.pose, pose_reference_);
       ROS_INFO("Assigning joint values");
-      for (int i = 0; i < temp_desired_joint_positions.rows(); i++)
+      for (int i = 0; i < desired_joint_positions_.rows(); i++)
       {
-        ROS_INFO("%.2f", temp_desired_joint_positions(i));
+        ROS_INFO("%.2f", desired_joint_positions_(i));
       }
-      desired_joint_positions_ = temp_desired_joint_positions;
       finished_acquiring_goal_ = true;
       loadParams();
       for (int i = 0; i < desired_joint_positions_.rows(); i++)
@@ -104,7 +102,7 @@ namespace cartesian_controllers {
     ROS_INFO("Move controller got a goal!");
   }
 
-  bool MoveController::getDesiredJointPositions(geometry_msgs::PoseStamped pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names)
+  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names)
   {
     moveit_msgs::GetPositionIK ik_srv;
     moveit_msgs::GetKinematicSolverInfo::Request info_request;
@@ -327,7 +325,7 @@ namespace cartesian_controllers {
 
     // 0 - Check success
     int success = 0;
-    for (int i = 0; current_state.name.size(); i++)
+    for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -350,35 +348,6 @@ namespace cartesian_controllers {
     }
 
     // 1 - Compute position error
-    std::vector<double> error;
-    for (int i = 0; i < current_state.name.size(); i++)
-    {
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
-      {
-        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
-        double val = getDesiredPosition(current_state.name[i]);
-        if (std::abs(val - current_state.position[i]) > max_allowed_error_)
-        {
-          if (val - current_state.position[i] > 0)
-          {
-            error.push_back(max_allowed_error_);
-          }
-          else
-          {
-            error.push_back(-max_allowed_error_);
-          }
-        }
-        else
-        {
-          error.push_back(val - current_state.position[i]);
-        }
-
-        feedback_.joint_position_references.push_back(val);
-        feedback_.joint_position_errors.push_back(val - current_state.position[i]);
-      }
-    }
-
-    // 2 - send commands
     for (int i = 0; i < current_state.name.size(); i++)
     {
       // joints we don't care about won't move
@@ -387,10 +356,30 @@ namespace cartesian_controllers {
 
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        // ROS_INFO("Assigning joint %s; compared with state %s", control_output.name[i].c_str(), current_state.name[i].c_str());
-        double e = getValue(error, current_state.name[i]);
+        // ROS_INFO("Joint %s: j:%d; i:%d", current_state.name[i].c_str(), j, i);
+        double val = getDesiredPosition(current_state.name[i]);
+        double e = 0;
+        if (std::abs(val - current_state.position[i]) > max_allowed_error_)
+        {
+          if (val - current_state.position[i] > 0)
+          {
+            e = max_allowed_error_;
+          }
+          else
+          {
+            e = -max_allowed_error_;
+          }
+        }
+        else
+        {
+          e = val - current_state.position[i];
+        }
+
         control_output.velocity[i] = velocity_gain_ * e;
         control_output.position[i] = current_state.position[i];
+
+        feedback_.joint_position_references.push_back(val);
+        feedback_.joint_position_errors.push_back(val - current_state.position[i]);
         feedback_.joint_velocity_references.push_back(velocity_gain_ * e);
         feedback_.joint_velocity_errors.push_back(velocity_gain_ * e - current_state.velocity[i]);
         control_output.effort[i] = 0;

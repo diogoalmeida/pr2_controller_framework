@@ -48,4 +48,9 @@ namespace manipulation_algorithms{
 
     return r_;
   }
+
+  void FoldingAssemblyEstimator::initialize(const Eigen::Vector3d &r)
+  {
+    r_ = r;
+  }
 }

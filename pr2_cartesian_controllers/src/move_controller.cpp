@@ -76,7 +76,7 @@ namespace cartesian_controllers {
 
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
-      if(!getDesiredJointPositions(pose, desired_joint_positions_, actuated_joint_names_))
+      if(!getDesiredJointPositions(pose, desired_joint_positions_, actuated_joint_names_[arm_index_]))
       {
         action_server_->setAborted();
         {
@@ -269,27 +269,13 @@ namespace cartesian_controllers {
   {
     for (int i = 0; i < desired_joint_positions_.rows(); i++)
     {
-      if (actuated_joint_names_[i] == joint_name)
+      if (actuated_joint_names_[arm_index_][i] == joint_name)
       {
         return desired_joint_positions_(i);
       }
     }
 
     ROS_ERROR("Tried getting desired position for joint name %s, which should not be controlled.", joint_name.c_str());
-    return 0.0;
-  }
-
-  double MoveController::getValue(const std::vector<double> &v, const std::string &joint_name)
-  {
-    for (int i = 0; i < v.size(); i++)
-    {
-      if (actuated_joint_names_[i] == joint_name)
-      {
-        return v[i];
-      }
-    }
-
-    ROS_ERROR("Tried to retrive a value for joint name %s, which should not be controller", joint_name.c_str());
     return 0.0;
   }
 

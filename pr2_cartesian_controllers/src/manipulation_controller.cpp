@@ -332,7 +332,6 @@ namespace cartesian_controllers {
     sensor_msgs::JointState control_output;
     KDL::Frame end_effector_kdl, grasp_point_kdl, surface_frame_to_grasp, surface_frame_kdl;
     KDL::FrameVel end_effector_velocity_kdl, grasp_point_velocity_kdl;
-    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     KDL::Twist input_twist, twist_error, actual_twist;
     Eigen::Affine3d surface_frame_to_grasp_eig;
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef, actual_commands;
@@ -351,7 +350,7 @@ namespace cartesian_controllers {
     has_state_ = false;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
-
+    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
     {
       ROS_ERROR("Failed to get the chain joint state. Aborting.");

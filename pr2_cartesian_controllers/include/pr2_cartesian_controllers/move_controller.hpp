@@ -43,20 +43,10 @@ private:
   **/
   double getDesiredPosition(const std::string &joint_name);
 
-  /**
-    Returns a value from a vector that can be indexed by joint.
-
-    @param v Vector of values.
-    @param joint_name The joint that will index the vector.
-    @return The value that relates to the given joint name.
-  **/
-  double getValue(const std::vector<double> &v, const std::string &joint_name);
-
 private:
   bool finished_acquiring_goal_;
   // Controller values
   KDL::Frame pose_reference_;
-  std::vector<std::string> actuated_joint_names_;
   KDL::JntArray desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;

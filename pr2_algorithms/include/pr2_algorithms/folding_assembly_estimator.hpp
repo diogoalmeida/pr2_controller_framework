@@ -34,6 +34,13 @@ namespace manipulation_algorithms{
     **/
     Eigen::Vector3d estimate(const Eigen::Vector3d &omega, const Eigen::Vector3d &force, const Eigen::Vector3d &torque, const double dt);
 
+    /**
+      Initialize the estimator
+
+      @param r The initial virtual stick estimate.
+    **/
+    void initialize(const Eigen::Vector3d &r);
+
     virtual bool getParams(const ros::NodeHandle &n);
 
   private:

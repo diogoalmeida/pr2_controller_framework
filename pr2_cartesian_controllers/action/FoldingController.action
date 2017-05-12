@@ -1,6 +1,9 @@
 # Goal: triggers the controller.
 int32 rod_arm
 int32 surface_arm
+float64 position_offset
+float64 orientation_goal
+float64 force_goal
 
 int32 LEFT_ARM = 0
 int32 RIGHT_ARM = 1

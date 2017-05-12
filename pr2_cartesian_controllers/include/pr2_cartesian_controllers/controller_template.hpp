@@ -79,8 +79,9 @@ protected:
     @param chain The kinematic chain to be initialized.
     @param joint_positions The joint positions array of the kinematic chain.
     @param joint_velocities The joint velocities array of the kinematic chain.
+    @param actuated_joint_names The list of joint names of the kinematic chain.
   **/
-  void initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities);
+  void initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities, std::vector<std::string> &actuated_joint_names);
 
   /**
     Initialize the kinematic solvers to be used with a kinematic chain.
@@ -171,6 +172,16 @@ protected:
   bool getChainJointState(const sensor_msgs::JointState &current_state, const KDL::Chain &chain, KDL::JntArray &positions, KDL::JntArrayVel &velocities);
 
   /**
+    Get the value for indexing the joint positions for the given joint name.
+
+    @param joint_names The vector with the available joint names.
+    @param name The name of the query joint.
+    @return the index of the queried joint in the joint names vector.
+    @throws logic_error if the name does not exist in the joint_names vector.
+  **/
+  int getJointIndex(const std::vector<std::string> &joint_names, const std::string &name);
+
+  /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
     @param param_name The name of the parameter address in the parameter server.
@@ -187,6 +198,8 @@ protected:
   sensor_msgs::JointState robot_state;
   std::vector<KDL::JntArray> joint_positions_;
   std::vector<KDL::JntArrayVel> joint_velocities_;
+  std::vector<std::vector<std::string> > actuated_joint_names_; // list of actuated joints per arm
+
   // KDL::ChainIkSolverVel_wdls *ikvel_;
   std::vector<boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> > ikvel_;
   std::vector<boost::shared_ptr<KDL::ChainIkSolverPos_LMA> > ikpos_;
@@ -247,7 +260,8 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
  ft_sensor_frame_(NUM_ARMS),
  ft_sub_(NUM_ARMS),
  ft_pub_(NUM_ARMS),
- measured_wrench_(NUM_ARMS)
+ measured_wrench_(NUM_ARMS),
+ actuated_joint_names_(NUM_ARMS)
 {
   nh_ = ros::NodeHandle("~");
 
@@ -259,7 +273,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
 
   for (int i = 0; i < NUM_ARMS; i++)
   {
-    initializeArm(end_effector_link_[i], chain_[i], joint_positions_[i], joint_velocities_[i]);
+    initializeArm(end_effector_link_[i], chain_[i], joint_positions_[i], joint_velocities_[i], actuated_joint_names_[i]);
     initializeSolvers(chain_[i], fkpos_[i], fkvel_[i], ikvel_[i], ikpos_[i]);
     initializeWrenchComms(measured_wrench_[i], ft_sub_[i], ft_pub_[i], ft_topic_name_[i]);
   }
@@ -268,14 +282,27 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeArm(std::string end_effector_link, KDL::Chain &chain, KDL::JntArray &joint_positions, KDL::JntArrayVel &joint_velocities, std::vector<std::string> &actuated_joint_names)
 {
   KDL::Tree tree;
+  KDL::Joint kdl_joint;
   kdl_parser::treeFromUrdfModel(model_, tree); // convert URDF description of the robot into a KDL tree
   tree.getChain(base_link_, end_effector_link, chain);
   joint_positions.resize(chain.getNrOfJoints());
   joint_velocities.q.resize(chain.getNrOfJoints());
   joint_velocities.qdot.resize(chain.getNrOfJoints());
+
+  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  {
+    kdl_joint = chain.getSegment(i).getJoint();
+
+    if (kdl_joint.getTypeName() == "None")
+    {
+      continue;
+    }
+
+    actuated_joint_names.push_back(kdl_joint.getName());
+  }
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
@@ -360,6 +387,7 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getChainJoin
 
   if (processed_joints != chain.getNrOfJoints())
   {
+    ROS_ERROR("Failed to acquire chain joint state");
     return false;
   }
 
@@ -477,6 +505,20 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::hasJoint(con
   }
 
   return false;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+int ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointIndex(const std::vector<std::string> &joint_names, const std::string &name)
+{
+  for (int i = 0; i < joint_names.size(); i++)
+  {
+    if (joint_names[i] == name)
+    {
+      return i;
+    }
+  }
+
+  throw std::logic_error("getJointIndex: Tried to query a joint name that is not present in the joint names vector.");
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

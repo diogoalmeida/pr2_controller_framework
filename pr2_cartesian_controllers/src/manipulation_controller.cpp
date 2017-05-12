@@ -513,12 +513,14 @@ namespace cartesian_controllers {
     ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], input_twist, commanded_joint_velocities);
     control_output = current_state;
 
+    int joint_index;
     for (int i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        control_output.position[i] = joint_positions_[arm_index_](i) + commanded_joint_velocities(i)*dt.toSec();
-        control_output.velocity[i] = commanded_joint_velocities(i);
+        joint_index = getJointIndex(actuated_joint_names_[arm_index_], current_state.name[i]);
+        control_output.position[i] = joint_positions_[arm_index_](joint_index) + commanded_joint_velocities(joint_index)*dt.toSec();
+        control_output.velocity[i] = commanded_joint_velocities(joint_index);
       }
     }
 

@@ -92,7 +92,7 @@ protected:
     @param ikpos Positional inverse kinematics solver.
     @param ikvel Velocity inverse kinematics solver.
   **/
-  void initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ikpos);
+  void initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos);
 
   /**
     Initializes the wrench vector, subscriber and publisher for a given wrench topic.
@@ -306,7 +306,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeAr
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ikpos)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos)
 {
   KDL::JntArray min_limits, max_limits;
   KDL::JntArray optimal_values, weights;
@@ -336,12 +336,12 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSo
   }
 
 
-  fkpos = boost::shared_ptr<KDL::ChainFkSolverPos_recursive>(new KDL::ChainFkSolverPos_recursive(chain));
-  fkvel = boost::shared_ptr<KDL::ChainFkSolverVel_recursive>(new KDL::ChainFkSolverVel_recursive(chain));
+  fkpos.reset(new KDL::ChainFkSolverPos_recursive(chain));
+  fkvel.reset(new KDL::ChainFkSolverVel_recursive(chain));
   // ikvel = new KDL::ChainIkSolverVel_wdls(chain, eps_);
   // ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, eps_);
-  ikvel = boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso>(new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_));
-  ikpos = boost::shared_ptr<KDL::ChainIkSolverPos_LMA>(new KDL::ChainIkSolverPos_LMA(chain));
+  ikvel.reset(new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_));
+  ikpos.reset(new KDL::ChainIkSolverPos_LMA(chain));
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

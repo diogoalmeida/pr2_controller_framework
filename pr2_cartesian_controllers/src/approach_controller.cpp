@@ -127,7 +127,6 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output = current_state;
-    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
     KDL::Twist twist_error;
@@ -138,6 +137,11 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
+
+    // TODO: This should be handled in the template class
+    has_state_ = false;
+
+    boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
     {
       ROS_ERROR("Failed to get the chain joint state. Aborting.");
@@ -150,11 +154,7 @@ namespace cartesian_controllers {
       fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], initial_pose_);
       has_initial_ = true;
     }
-
-    // TODO: This should be handled in the template class
-    has_state_ = false;
-
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
     approach_direction = approach_direction/approach_direction.norm();
 
@@ -197,14 +197,17 @@ namespace cartesian_controllers {
 
     ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], velocity_reference_, commanded_joint_velocities);
 
-    int joint_index;
+    int joint_index = 0;
     for (int i = 0; i < current_state.name.size(); i++)
     {
+      control_output.velocity[i] = 0;
+      control_output.effort[i] = 0;
+      
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
-        joint_index = getJointIndex(actuated_joint_names_[arm_index_], current_state.name[i]);
         control_output.velocity[i] = commanded_joint_velocities(joint_index);
         control_output.position[i] = current_state.position[i];
+        joint_index++;
       }
     }
 

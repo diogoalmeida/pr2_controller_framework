@@ -6,6 +6,7 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::GuardedApproachGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::TwistStamped twist;
+    geometry_msgs::Vector3Stamped approach_direction_msg;
     Eigen::Vector3d approach_direction;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -20,7 +21,12 @@ namespace cartesian_controllers {
     arm_index_ = goal->arm;
     is_contact_ = false;
     initial_contact_ = ros::Time(0);
+    approach_direction_msg.header = goal->approach_command.header;
+    approach_direction_msg.vector = goal->approach_command.twist.linear;
+    listener_.transformVector (ft_frame_id_[arm_index_], approach_direction_msg, approach_direction_msg);
     twist = goal->approach_command;
+    twist.header = approach_direction_msg.header;
+    twist.twist.linear = approach_direction_msg.vector;
     tf::twistMsgToKDL(twist.twist, velocity_reference_);
 
     feedback_.velocity_reference.clear();
@@ -46,7 +52,7 @@ namespace cartesian_controllers {
 
   void ApproachController::publishFeedback()
   {
-    feedback_.current_wrench.header.frame_id = base_link_;
+    feedback_.current_wrench.header.frame_id = ft_frame_id_[arm_index_];
 
     try
     {
@@ -202,7 +208,7 @@ namespace cartesian_controllers {
     {
       control_output.velocity[i] = 0;
       control_output.effort[i] = 0;
-      
+
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
         control_output.velocity[i] = commanded_joint_velocities(joint_index);

@@ -73,7 +73,7 @@ protected:
 
   /**
     Initialize the kinematic chain and joint arrays for an arm defined by its end-effector link.
-    The kinematic chain is assumed to start at base_link_.
+    The kinematic chain is assumed to start at chain_base_link_.
 
     @param end_effector_link The final link of the kinematic chain.
     @param chain The kinematic chain to be initialized.
@@ -211,7 +211,7 @@ protected:
   std::vector<std::string> ft_topic_name_;
   std::vector<std::string> ft_frame_id_;
   std::vector<std::string> ft_sensor_frame_;
-  std::string base_link_;
+  std::string base_link_, chain_base_link_;
   double eps_; // ikSolverVel epsilon
   double alpha_; // ikSolverVel alpha
   int maxiter_; // ikSolverVel maxiter
@@ -287,7 +287,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeAr
   KDL::Tree tree;
   KDL::Joint kdl_joint;
   kdl_parser::treeFromUrdfModel(model_, tree); // convert URDF description of the robot into a KDL tree
-  tree.getChain(base_link_, end_effector_link, chain);
+  tree.getChain(chain_base_link_, end_effector_link, chain);
   joint_positions.resize(chain.getNrOfJoints());
   joint_velocities.q.resize(chain.getNrOfJoints());
   joint_velocities.qdot.resize(chain.getNrOfJoints());
@@ -608,6 +608,11 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::loadGenericP
   }
 
   if (!getParam("/common/base_link_name", base_link_))
+  {
+    return false;
+  }
+
+  if (!getParam("/common/chain_base_link_name", chain_base_link_))
   {
     return false;
   }

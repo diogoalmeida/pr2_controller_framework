@@ -46,6 +46,18 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = false;
     }
 
+    if(!controller_.getParams(nh_))
+    {
+      action_server_->setAborted(result_);
+      return;
+    }
+
+    if(!estimator_.getParams(nh_))
+    {
+      action_server_->setAborted(result_);
+      return;
+    }
+
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
     goal_p_ = goal->position_offset;

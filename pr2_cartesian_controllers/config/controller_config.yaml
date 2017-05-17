@@ -85,3 +85,14 @@ folding_controller:
   rotational_gains: [5, 5, 5]
   use_estimates: false
   rod_length: 0.1
+  k_omega: 0.01
+  k_v: 0.01
+  k_force: 0.0
+  estimator:
+    Q:
+      data: [100, 0, 0,
+             0, 10, 0,
+             0, 0, 5000]
+    R:
+      data: [0.01, 0,
+             0, 0.01]

@@ -46,9 +46,9 @@ private:
   // controller
   manipulation_algorithms::FoldingAssemblyController controller_;
 
-  bool has_initial_, finished_acquiring_goal_;
+  bool has_initial_, finished_acquiring_goal_, use_estimates_;
   int rod_arm_, surface_arm_;
-  double goal_p_, goal_theta_, goal_force_;
+  double goal_p_, goal_theta_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp;
 
 public:

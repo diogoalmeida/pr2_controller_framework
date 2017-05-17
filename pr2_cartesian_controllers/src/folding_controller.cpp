@@ -41,12 +41,21 @@ namespace cartesian_controllers {
   {
     boost::shared_ptr<const pr2_cartesian_controllers::FoldingControllerGoal> goal = action_server_->acceptNewGoal();
 
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
+    {
+      boost::lock_guard<boost::mutex>guard(reference_mutex_);
+      finished_acquiring_goal_ = false;
+    }
+
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
     goal_p_ = goal->position_offset;
     goal_theta_ = goal->orientation_goal;
     goal_force_ = goal->force_goal;
+
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      finished_acquiring_goal_ = true;
+    }
 
     ROS_INFO("Folding controller server received a goal!");
   }
@@ -72,6 +81,25 @@ namespace cartesian_controllers {
 
   bool FoldingController::loadParams()
   {
+    if (!getParam("/folding_controller/action_server_name", action_name_))
+    {
+      return false;
+    }
+
+    // if (!getParam("/folding_controller/rotational_gains", rot_gains_))
+    // {
+    //   return false;
+    // }
+
+    if (!getParam("/folding_controller/use_estimates", use_estimates_))
+    {
+      return false;
+    }
+
+    if (!getParam("/folding_controller/rod_length", rod_length_))
+    {
+      return false;
+    }
 
     return true;
   }
@@ -133,8 +161,8 @@ namespace cartesian_controllers {
     surface_tangent_in_grasp = eef_to_grasp_eig[surface_arm_].matrix().block<3,1>(0,0);
     rotation_axis = surface_normal.cross(surface_tangent);
     p1 = grasp_point_frame[rod_arm_].translation();
-    contact_force = measured_wrench_[surface_arm_].block<3,1>(0,0);
-    contact_torque = measured_wrench_[surface_arm_].block<3,1>(3,0);
+    contact_force = wrenchInFrame(surface_arm_, base_link_).block<3,1>(0,0);
+    contact_torque = wrenchInFrame(surface_arm_, base_link_).block<3,1>(3,0);
     omega << eef_twist_eig[rod_arm_].block<3,1>(3,0);
     pd = grasp_point_frame[surface_arm_].translation() + goal_p_*surface_tangent;
 
@@ -144,11 +172,20 @@ namespace cartesian_controllers {
       has_initial_ = true;
     }
 
-    r = estimator_.estimate(omega, contact_force, contact_torque, dt.toSec());
+    if (use_estimates_)
+    {
+      r = estimator_.estimate(omega, contact_force, contact_torque, dt.toSec());
+    }
+    else
+    {
+      r = rod_length_*grasp_point_frame[rod_arm_].matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+    }
+
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());
 
     eef_twist_eig[rod_arm_] << out_vel_lin, out_vel_ang;
     tf::twistEigenToKDL(eef_twist_eig[rod_arm_], command_twist[rod_arm_]);
+    tf::twistEigenToMsg(eef_twist_eig[rod_arm_], feedback_.controller_output.twist);
 
     ikvel_[rod_arm_]->CartToJnt(joint_positions_[rod_arm_], command_twist[rod_arm_], commanded_joint_velocities[rod_arm_]);
 

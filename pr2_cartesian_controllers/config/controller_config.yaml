@@ -79,3 +79,8 @@ move_controller:
   ik_info_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik_solver_info
     arm_2: /pr2_right_arm_kinematics/get_ik_solver_info
+
+folding_controller:
+  action_server_name: folding_controller
+  rotational_gains: [5, 5, 5]
+  

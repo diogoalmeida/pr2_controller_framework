@@ -24,7 +24,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp std_msgs message_generation
   INCLUDE_DIRS include
-  LIBRARIES manipulation_control_algorithm manipulation_ekf
+  LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator
 )
 
 include_directories(

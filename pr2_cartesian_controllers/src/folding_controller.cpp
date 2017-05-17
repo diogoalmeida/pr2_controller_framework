@@ -72,6 +72,15 @@ namespace cartesian_controllers {
 
   bool FoldingController::loadParams()
   {
+    if (!getParam("/folding_controller/action_server_name", action_name_))
+    {
+      return false;
+    }
+
+    // if (!getParam("/folding_controller/rotational_gains", rot_gains_))
+    // {
+    //   return false;
+    // }
 
     return true;
   }

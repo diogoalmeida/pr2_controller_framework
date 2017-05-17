@@ -16,6 +16,12 @@
          base_class_type="pr2_controller_interface::Controller" />
 </library>
 
+<library path="lib/libpr2_folding_joint_controller">
+  <class name="pr2_joint_position_controllers/FoldingJointController"
+         type="pr2_joint_controller::FoldingJointController"
+         base_class_type="pr2_controller_interface::Controller" />
+</library>
+
 <library path="lib/libpr2_tune_joint_controller">
   <class name="pr2_joint_position_controllers/TuneJointController"
          type="pr2_joint_controller::TuneJointController"

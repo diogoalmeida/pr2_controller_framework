@@ -3,6 +3,7 @@
 
 #include <pr2_cartesian_controllers/GuardedApproachAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
+#include <utils/TwistController.hpp>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <visualization_msgs/Marker.h>
@@ -27,11 +28,12 @@ private:
   double initial_force_, force_threshold_;
   KDL::Twist velocity_reference_;
   KDL::Frame initial_pose_;
-  std::vector<double> rot_gains_;
   bool has_initial_, is_contact_;
   ros::Duration contact_detection_time_;
   ros::Time initial_contact_;
   int arm_index_;
+
+  boost::shared_ptr<TwistController> twist_controller_;
 
 public:
   ApproachController();

@@ -21,10 +21,10 @@ namespace cartesian_controllers {
     arm_index_ = goal->arm;
     is_contact_ = false;
     initial_contact_ = ros::Time(0);
-    approach_direction_msg.header = goal->approach_command.header;
-    approach_direction_msg.vector = goal->approach_command.twist.linear;
-    listener_.transformVector (ft_frame_id_[arm_index_], approach_direction_msg, approach_direction_msg);
     twist = goal->approach_command;
+    approach_direction_msg.header = twist.header;
+    approach_direction_msg.vector = twist.twist.linear;
+    listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
     twist.header = approach_direction_msg.header;
     twist.twist.linear = approach_direction_msg.vector;
     tf::twistMsgToKDL(twist.twist, velocity_reference_);
@@ -37,7 +37,7 @@ namespace cartesian_controllers {
 
     force_threshold_ = goal->contact_force;
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-    initial_force_ = measured_wrench_[arm_index_].block<3,1>(0,0).dot(approach_direction);
+    initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction);
     loadParams();
     ROS_INFO("Approach controller server received a goal!");
   }
@@ -52,7 +52,7 @@ namespace cartesian_controllers {
 
   void ApproachController::publishFeedback()
   {
-    feedback_.current_wrench.header.frame_id = ft_frame_id_[arm_index_];
+    feedback_.current_wrench.header.frame_id = base_link_;
 
     try
     {
@@ -62,7 +62,7 @@ namespace cartesian_controllers {
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           feedback_.current_wrench.header.stamp = ros::Time::now();
-          tf::wrenchEigenToMsg(measured_wrench_[arm_index_], feedback_.current_wrench.wrench);
+          tf::wrenchEigenToMsg(wrenchInFrame(arm_index_, base_link_), feedback_.current_wrench.wrench);
           action_server_->publishFeedback(feedback_);
         }
 
@@ -143,7 +143,6 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
-
     // TODO: This should be handled in the template class
     has_state_ = false;
 
@@ -164,7 +163,7 @@ namespace cartesian_controllers {
     approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
     approach_direction = approach_direction/approach_direction.norm();
 
-    double approach_direction_force = std::abs(measured_wrench_[arm_index_].block<3,1>(0,0).dot(approach_direction) - initial_force_);
+    double approach_direction_force = std::abs(wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction) - initial_force_);
     feedback_.approach_direction_force = approach_direction_force;
     if (approach_direction_force > force_threshold_)
     {

@@ -105,6 +105,15 @@ protected:
   void initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name);
 
   /**
+    Provides access to the measured wrench in a given frame.
+
+    @param arm_index The index of the arm measuring the wrench.
+    @param frame The desired wrench frame.
+    @return The wrench in the given frame
+  **/
+  Eigen::Matrix<double, 6, 1> wrenchInFrame(int arm_index, const std::string &frame);
+
+  /**
     Goal callback method to be implemented in the cartesian controllers.
   **/
   virtual void goalCB() = 0;
@@ -476,6 +485,41 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   tf::wrenchKDLToMsg(wrench_kdl, converted_wrench.wrench);
   tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_[sensor_num]);
   ft_pub_[sensor_num].publish(converted_wrench);
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+Eigen::Matrix<double, 6, 1> ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::wrenchInFrame(int arm_index, const std::string &frame)
+{
+  KDL::Wrench wrench_kdl;
+  geometry_msgs::PoseStamped sensor_to_desired_frame;
+  KDL::Frame sensor_to_desired_frame_kdl;
+  Eigen::Matrix<double, 6, 1> converted_wrench;
+
+  tf::wrenchEigenToKDL(measured_wrench_[arm_index], wrench_kdl);
+  sensor_to_desired_frame.header.frame_id = ft_frame_id_[arm_index];
+  sensor_to_desired_frame.header.stamp = ros::Time(0);
+  sensor_to_desired_frame.pose.position.x = 0;
+  sensor_to_desired_frame.pose.position.y = 0;
+  sensor_to_desired_frame.pose.position.z = 0;
+  sensor_to_desired_frame.pose.orientation.x = 0;
+  sensor_to_desired_frame.pose.orientation.y = 0;
+  sensor_to_desired_frame.pose.orientation.z = 0;
+  sensor_to_desired_frame.pose.orientation.w = 1;
+
+  try
+  {
+    // obtain a vector from the wrench frame id to the desired ft frame
+    listener_.transformPose(frame, sensor_to_desired_frame, sensor_to_desired_frame);
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+  }
+
+  tf::poseMsgToKDL(sensor_to_desired_frame.pose, sensor_to_desired_frame_kdl);
+  wrench_kdl = sensor_to_desired_frame_kdl*wrench_kdl;
+  tf::wrenchKDLToEigen(wrench_kdl, converted_wrench);
+  return converted_wrench;
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

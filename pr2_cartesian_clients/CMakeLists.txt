@@ -31,7 +31,7 @@ add_service_files(
 
 add_action_files(
 	DIRECTORY action
-	FILES Manipulation.action
+	FILES Manipulation.action Folding.action
 )
 
 generate_messages(
@@ -52,5 +52,8 @@ include_directories(
 add_library(exclusive_controller_runner src/utils/ExclusiveControllerRunner.cpp src/utils/extra.cpp)
 target_link_libraries(exclusive_controller_runner ${catkin_LIBRARIES})
 
-add_executable(manipulation_client src/manipulation_client/manipulation_client.cpp src/utils/extra.cpp)
+add_executable(manipulation_client src/clients/manipulation_client.cpp src/utils/extra.cpp)
 target_link_libraries(manipulation_client exclusive_controller_runner ${catkin_LIBRARIES})
+
+add_executable(folding_client src/clients/folding_client.cpp src/utils/extra.cpp)
+target_link_libraries(folding_client exclusive_controller_runner ${catkin_LIBRARIES})

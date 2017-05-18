@@ -1,4 +1,4 @@
-#include <manipulation_client/manipulation_client.hpp>
+#include <clients/manipulation_client.hpp>
 
 using namespace pr2_cartesian_clients;
 namespace manipulation{

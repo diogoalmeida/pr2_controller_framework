@@ -24,7 +24,17 @@ namespace cartesian_controllers {
     twist = goal->approach_command;
     approach_direction_msg.header = twist.header;
     approach_direction_msg.vector = twist.twist.linear;
-    listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
+    try
+    {
+      listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+      action_server_->setAborted();
+      return;
+    }
+
     twist.header = approach_direction_msg.header;
     twist.twist.linear = approach_direction_msg.vector;
     tf::twistMsgToKDL(twist.twist, velocity_reference_);

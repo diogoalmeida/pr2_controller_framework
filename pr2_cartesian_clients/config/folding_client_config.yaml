@@ -1,0 +1,39 @@
+initialization:
+  initial_approach_angle: 2.0 # in radians
+  actionlib_server_names:
+    folding_action_name: /realtime_loop/folding_controller
+    approach_action_name: /realtime_loop/approach_controller
+    move_action_name: /realtime_loop/move_controller
+    client_action_name: folding_client
+  controller_names:
+    move_controller: move_joint_controller
+    approach_controller: approach_joint_controller
+    folding_controller: folding_joint_controller
+  controller_timeouts:
+    move_timeout: 30
+    approach_timeout: 20
+    folding_timeout: 5
+  gravity_compensation_service_name: /gravity_compensation/calibrate_bias
+  server_timeout: 2
+  exclude_controller_names: [l_gripper_controller, r_gripper_controller]
+
+experiment:
+  feedback_rate: 1
+  rod_arm: 1 # 0 - left; 1 - right
+  surface_arm: 0
+  base_link_name: base_link
+  surface_arm_tool_frame: l_gripper_tool_frame
+  num_of_experiments: 20
+  bag_prefix: garbage
+  approach_velocity: -0.03
+  approach_force: 0.2
+  goal_theta: 0.25
+  goal_x: 0.2
+  goal_force: 1.5
+  initial_pose:
+    rod: [0.498, -0.086, 0.153, 0.534, 0.539, -0.434, 0.485]
+    surface: [0.505, 0.218, -0.161, 0.722, -0.690, 0.023, -0.039]
+  logging:
+    logging_topic: /realtime_loop/dexterous_folding/feedback
+    toggle_logging_service: /data_logger/toggle
+    log_directory: folding_experiments

@@ -79,12 +79,6 @@ bool FoldingClient::loadParams()
     return false;
   }
 
-  if(!nh_.getParam("initialization/initial_pose_offset", initial_pose_offset_))
-  {
-    ROS_ERROR("No inital eef offset defined (initialization/initial_pose_offset)");
-    return false;
-  }
-
   if(!nh_.getParam("initialization/initial_approach_angle", initial_approach_angle_))
   {
     ROS_ERROR("No inital approach angle defined (initialization/initial_approach_angle)");
@@ -175,12 +169,6 @@ bool FoldingClient::loadParams()
     return false;
   }
 
-  if(!nh_.getParam("experiment/sim_mode", sim_mode_))
-  {
-    ROS_ERROR("Need to set sim_mode (experiment/sim_mode)");
-    return false;
-  }
-
   if(!nh_.getParam("experiment/approach_velocity", approach_velocity_))
   {
     ROS_ERROR("Need to set approach_velocity (experiment/approach_velocity)");
@@ -220,6 +208,24 @@ bool FoldingClient::loadParams()
   if(!nh_.getParam("experiment/goal_force", goal_force_))
   {
     ROS_ERROR("Need to set goal_force (experiment/goal_force)");
+    return false;
+  }
+
+  if(!getPose("experiment/initial_pose/rod", initial_rod_pose_))
+  {
+    ROS_ERROR("Failed to get initial rod pose (experiment/initial_pose/rod)");
+    return false;
+  }
+
+  if(!getPose("experiment/initial_pose/surface", initial_surface_pose_))
+  {
+    ROS_ERROR("Failed to get initial surface pose (experiment/initial_pose/surface)");
+    return false;
+  }
+
+  if(!nh_.getParam("experiment/surface_arm_tool_frame", surface_frame_name_))
+  {
+    ROS_ERROR("Failed to get initial surface_arm_tool_frame (experiment/surface_arm_tool_frame)");
     return false;
   }
 
@@ -279,9 +285,6 @@ void FoldingClient::goalCB()
     if (goal->use_goal)
     {
       ROS_INFO("Using goal");
-      initial_pose_offset_.push_back(goal->initial_pose_offset.x);
-      initial_pose_offset_.push_back(goal->initial_pose_offset.y);
-      initial_pose_offset_.push_back(goal->initial_pose_offset.z);
       initial_approach_angle_ = goal->initial_approach_angle;
       folding_action_time_limit_ = goal->folding_timeout;
       num_of_experiments_ = goal->num_of_experiments;
@@ -418,6 +421,8 @@ void FoldingClient::runExperiment()
         }
 
         approach_goal.arm = rod_arm_;
+        approach_goal.approach_command.header.frame_id = surface_frame_name_;
+        approach_goal.approach_command.header.stamp = ros::Time(0);
         approach_goal.approach_command.twist.linear.z = approach_velocity_; // TODO: Needs to be a surface frame vector in the base frame
         approach_goal.contact_force = approach_force_;
 
@@ -524,45 +529,32 @@ void FoldingClient::runExperiment()
   }
 }
 
-bool FoldingClient::getInitialEefPose(geometry_msgs::PoseStamped & pose)
+bool FoldingClient::getPose(const std::string &param, geometry_msgs::PoseStamped &pose)
 {
-  geometry_msgs::PoseStamped initial_eef_pose;
-  Eigen::Affine3d desired_initial_pose = Eigen::Affine3d::Identity();
+  std::vector<double> pose_std;
 
-  ROS_INFO("Getting initial orientation");
-  // Define the intended orientation of the end-effector in the surface frame
-  Eigen::AngleAxisd initial_orientation(initial_approach_angle_, Eigen::Vector3d::UnitY()); // need to check axis
+  if(!nh_.getParam(param, pose_std))
+  {
+    ROS_ERROR("Missing pose parameter (%s)", param.c_str());
+    return false;
+  }
 
-  // Set the intended offset
-  Eigen::Vector3d initial_offset;
-  initial_offset << initial_pose_offset_[0], initial_pose_offset_[1], initial_pose_offset_[2];
+  if (pose_std.size() != 7)
+  {
+    ROS_ERROR("Expected pose parameter with dimension 7, got %lu", pose_std.size());
+    return false;
+  }
 
-  ROS_INFO("Initial pose offset: ");
-  std::cout << initial_offset << std::endl;
+  pose.pose.position.x = pose_std[0];
+  pose.pose.position.y = pose_std[1];
+  pose.pose.position.z = pose_std[2];
+  pose.pose.orientation.x = pose_std[3];
+  pose.pose.orientation.y = pose_std[4];
+  pose.pose.orientation.z = pose_std[5];
+  pose.pose.orientation.w = pose_std[6];
 
-  // Compose the transform
-  desired_initial_pose = Eigen::Translation3d(initial_offset) * initial_orientation;
-  // desired_initial_pose.rotate(initial_orientation);
-  // desired_initial_pose.translate(initial_offset);
-
-  ROS_INFO("Transform:");
-  std::cout << desired_initial_pose.translation() << std::endl;
-  std::cout << desired_initial_pose.rotation();
-
-  ROS_INFO("Converting to message");
-  // Convert to pose
-  tf::poseEigenToMsg(desired_initial_pose, initial_eef_pose.pose);
-
-  // TODO: Get pre-set pose from config file
-  initial_eef_pose.header.frame_id = base_link_name_;
-  initial_eef_pose.pose.position.x = 0.804;
-  initial_eef_pose.pose.position.y = 0.2;
-  initial_eef_pose.pose.position.z = 0.1;
-
-  ROS_INFO("Going to:");
-  std::cout << initial_eef_pose.pose.position.x << " " << initial_eef_pose.pose.position.y << " " << initial_eef_pose.pose.position.z << " " << initial_eef_pose.pose.orientation.x << " " << initial_eef_pose.pose.orientation.y << " " << initial_eef_pose.pose.orientation.z << " " << initial_eef_pose.pose.orientation.w << std::endl;
-
-  pose = initial_eef_pose;
+  pose.header.frame_id = "torso_lift_link"; // Assumed
+  pose.header.stamp = ros::Time(0);
   return true;
 }
 }

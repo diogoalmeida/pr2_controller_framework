@@ -18,7 +18,7 @@ common:
   feedback_rate: 100
   force_torque_topic:
     arm_1: /l_ft_sensor/ft_compensated
-    arm_2: /r_ft_sensor/ft_compensated
+    arm_2: /l_ft_sensor/ft_compensated
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
@@ -31,8 +31,8 @@ manipulation_controller:
   saturations:
     x: 0.1
     y: 0.1
-    theta: 0.05
-  rotational_gains: [10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
+    theta: 0 #0.05
+  rotational_gains: [0, 0, 0, 10, 0.0, 10] #[5, 0, 5] # These should be IN THE SURFACE FRAME
   estimate_length: false
   hardcoded_length: 0.11 # from the gripper tool frame to the part tip
   initial_angle_offset: -0.18
@@ -65,7 +65,7 @@ manipulation_controller:
 
 approach_controller:
   action_server_name: approach_controller
-  rotational_gains: [5, 5, 5]
+  rotational_gains: [0, 0, 0, 5, 5, 5]
   contact_detection_time: 0.1
 
 move_controller:
@@ -82,7 +82,7 @@ move_controller:
 
 folding_controller:
   action_server_name: folding_controller
-  rotational_gains: [5, 5, 5]
+  rotational_gains: [0, 0, 0, 0, 0, 0]
   use_estimates: false
   rod_length: 0.1
   k_omega: 0.01

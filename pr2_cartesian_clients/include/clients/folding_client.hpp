@@ -53,18 +53,17 @@ namespace manipulation{
     bool loadParams();
 
     /**
+      Get a pose from the parameter serve. Assumed to be in the 'torso_lift_link' frame.
+
+      @param param The parameter server directory.
+      @param pose The pose.
+    **/
+    bool getPose(const std::string &param, geometry_msgs::PoseStamped &pose);
+
+    /**
       Periodically publish feedback reporting the action being run.
     **/
     void publishFeedback();
-
-    /**
-      Gets the initial eef pose, based on vision or a pre-set value.
-
-      @param pose The desired initial eef pose.
-      @return false if it takes more than vision_timeout_ seconds to obtain a valid
-      surface frame transform
-    **/
-    bool getInitialEefPose(geometry_msgs::PoseStamped & pose);
 
     /**
       Makes sure the action clients cancel the goals and are properly deleted.
@@ -89,11 +88,10 @@ namespace manipulation{
     double move_action_time_limit_, approach_action_time_limit_, folding_action_time_limit_;
     pr2_cartesian_clients::FoldingFeedback feedback_;
 
-    std::vector<double> initial_pose_offset_;
     double initial_approach_angle_, approach_velocity_, approach_force_;
     double goal_x_, goal_theta_, goal_force_;
     geometry_msgs::PoseStamped initial_rod_pose_, initial_surface_pose_;
-    std::string base_link_name_, tool_frame_name_;
+    std::string base_link_name_, surface_frame_name_;
     std::string gravity_compensation_service_name_;
     int num_of_experiments_, current_iter_, rod_arm_, surface_arm_;
     bool use_vision_, sim_mode_;

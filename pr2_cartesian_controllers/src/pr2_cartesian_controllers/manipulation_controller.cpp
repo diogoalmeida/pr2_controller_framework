@@ -102,13 +102,41 @@ namespace cartesian_controllers {
     }
 
     pose_in = goal->surface_frame;
-    rot_gains_.header.frame_id = pose_in.header.frame_id;
+
+    std::vector<double> linear_gains(3), ang_gains(3);
+
+    for (int i = 0; i < 3; i++)
+    {
+      linear_gains[i] = comp_gains_[i];
+      ang_gains[i] = comp_gains_ [i + 3];
+    }
+
+    geometry_msgs::Vector3Stamped lin_gains_msg, ang_gains_msg;
+
+    vectorStdToMsg(linear_gains, lin_gains_msg.vector);
+    vectorStdToMsg(ang_gains, ang_gains_msg.vector);
+
+    lin_gains_msg.header.frame_id = pose_in.header.frame_id;
+    ang_gains_msg.header.frame_id = pose_in.header.frame_id;
     listener_.waitForTransform(pose_in.header.frame_id, base_link_, ros::Time(0), ros::Duration(wait_for_tf_time_));
     try
     {
       // get surface frame
-      rot_gains_.header.stamp = ros::Time(0);
-      listener_.transformVector(base_link_, rot_gains_, rot_gains_);
+      lin_gains_msg.header.stamp = ros::Time(0);
+      ang_gains_msg.header.stamp = ros::Time(0);
+      listener_.transformVector(base_link_, lin_gains_msg, lin_gains_msg);
+      listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
+      vectorMsgToStd(lin_gains_msg.vector, linear_gains);
+      vectorMsgToStd(ang_gains_msg.vector, ang_gains);
+      Eigen::Matrix<double, 6, 1> gains;
+      for (int i = 0; i < 3; i++)
+      {
+        gains[i] = linear_gains[i];
+        gains[i + 3] = ang_gains[i];
+      }
+
+      twist_controller_.reset(new TwistController(gains));
+
       pose_in.header.stamp = ros::Time(0);
       listener_.transformPose(base_link_, pose_in, pose_out);
       tf::poseMsgToEigen(pose_out.pose, surface_frame_);
@@ -261,8 +289,7 @@ namespace cartesian_controllers {
       return false;
     }
 
-    std::vector<double> rot_gains;
-    if (!getParam("/manipulation_controller/rotational_gains", rot_gains))
+    if (!getParam("/manipulation_controller/compensation_gains", comp_gains_))
     {
       return false;
     }
@@ -307,19 +334,11 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (rot_gains.size() != 3)
+    if (comp_gains_.size() != 6)
     {
-      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains.size());
+      ROS_ERROR("The rotational gains vector must have length 6! (Has length %zu)", comp_gains_.size());
       return false;
     }
-
-    // convert to geometry msg. These gains are assumed to represent gains along
-    // the surface frame (which is the frame of the goal pose) x, y and z axis, respectively
-    rot_gains_.header.frame_id = base_link_; // these gains are expressed in the surface frame, which is given upon receiving a goal
-    rot_gains_.header.stamp = ros::Time::now();
-    rot_gains_.vector.x = rot_gains[0];
-    rot_gains_.vector.y = rot_gains[1];
-    rot_gains_.vector.z = rot_gains[2];
 
     x_hat_ = Eigen::VectorXd(4);
     x_hat_ << 0, 0, 0, k_s_;
@@ -474,9 +493,6 @@ namespace cartesian_controllers {
     feedback_.commanded_x = commands[0];
     feedback_.commanded_y = commands[1];
     feedback_.commanded_rot = commands[2];
-    feedback_.rot_gains.x = rot_gains_.vector.x;
-    feedback_.rot_gains.y = rot_gains_.vector.y;
-    feedback_.rot_gains.z = rot_gains_.vector.z;
     feedback_.x_e = x_e_[0];
     feedback_.y_e = x_e_[1];
     feedback_.theta_e = x_e_[2];
@@ -501,11 +517,7 @@ namespace cartesian_controllers {
     tf::twistEigenToKDL(twist_eig, input_twist);
     tf::twistEigenToMsg(twist_eig, feedback_.commanded_twist);
 
-    twist_error = KDL::diff(end_effector_kdl, initial_pose_); // to maintain the movement on the initial planar direction TODO: Implement this properly
-
-    // input_twist(3) += rot_gains_.vector.x*twist_error(3); // TODO: I have an issue with rotating around the world frame x
-    input_twist(4) += rot_gains_.vector.y*twist_error(4);
-    input_twist(5) += rot_gains_.vector.z*twist_error(5);
+    input_twist += twist_controller_->computeError(end_effector_kdl, initial_pose_);
 
     tf::twistKDLToMsg(input_twist, feedback_.corrected_twist);
 

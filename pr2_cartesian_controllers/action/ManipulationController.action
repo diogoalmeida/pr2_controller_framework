@@ -48,6 +48,5 @@ float64 y_e_dot
 float64 theta_e_dot
 geometry_msgs/Point f_e
 geometry_msgs/Point tau_e
-geometry_msgs/Point rot_gains
 geometry_msgs/Twist commanded_twist
 geometry_msgs/Twist corrected_twist

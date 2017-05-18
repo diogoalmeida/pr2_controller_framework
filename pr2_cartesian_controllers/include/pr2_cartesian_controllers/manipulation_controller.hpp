@@ -5,6 +5,7 @@
 #include <pr2_cartesian_controllers/controller_template.hpp>
 #include <pr2_algorithms/manipulation_ekf.hpp>
 #include <pr2_algorithms/manipulation_control_algorithm.hpp>
+#include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
 #include <limits>
@@ -49,8 +50,8 @@ private:
   Eigen::Affine3d surface_frame_, grasp_point_pose_, end_effector_pose_;
   Eigen::Vector3d estimated_r_, x_d_, x_e_;
   Eigen::VectorXd x_hat_;
-  geometry_msgs::Vector3Stamped rot_gains_;
   KDL::Frame initial_pose_, end_effector_to_grasp_point_;
+  std::vector<double> comp_gains_;
   std::string grasp_point_frame_name_;
   int arm_index_;
 
@@ -66,6 +67,8 @@ private:
 
   ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_, ground_truth_pub_;
   tf::TransformBroadcaster broadcaster_;
+
+  boost::shared_ptr<TwistController> twist_controller_;
 public:
   ManipulationController();
   virtual ~ManipulationController();

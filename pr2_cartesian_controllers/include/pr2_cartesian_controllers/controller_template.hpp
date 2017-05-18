@@ -191,6 +191,22 @@ protected:
   int getJointIndex(const std::vector<std::string> &joint_names, const std::string &name);
 
   /**
+    Convert a geometry msgs vector to an std vector.
+
+    @param in The geometry msgs vector.
+    @param out The converted std vector.
+  **/
+  void vectorMsgToStd(const geometry_msgs::Vector3 &in, std::vector<double> &out);
+
+  /**
+    Convert an std vector to a geometry msgs vector.
+
+    @param in The std vector.
+    @param out The converted geometry msgs vector.
+  **/
+  void vectorStdToMsg(const std::vector<double> &in, geometry_msgs::Vector3 &out);
+
+  /**
     Wraps the ROS NodeHandle getParam method with an error message.
 
     @param param_name The name of the parameter address in the parameter server.
@@ -563,6 +579,32 @@ int ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointIndex
   }
 
   throw std::logic_error("getJointIndex: Tried to query a joint name that is not present in the joint names vector.");
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::vectorMsgToStd(const geometry_msgs::Vector3 &in, std::vector<double> &out)
+{
+  if (out.size() != 3)
+  {
+    throw std::logic_error("vectorMsgToStd: out must be dimension 3");
+  }
+
+  out[0] = in.x;
+  out[1] = in.y;
+  out[2] = in.z;
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::vectorStdToMsg(const std::vector<double> &in, geometry_msgs::Vector3 &out)
+{
+  if (in.size() != 3)
+  {
+    throw std::logic_error("vectorStdToMsg: in must be dimension 3");
+  }
+
+  out.x = in[0];
+  out.y = in[1];
+  out.z = in[2];
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

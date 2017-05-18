@@ -77,12 +77,15 @@ namespace cartesian_controllers {
 
   bool ApproachController::loadParams()
   {
+    std::vector<double> rot_gains;
+    Eigen::Matrix<double, 6, 1> rot_gains_eig;
+
     if (!getParam("/approach_controller/action_server_name", action_name_))
     {
       return false;
     }
 
-    if (!getParam("/approach_controller/rotational_gains", rot_gains_))
+    if (!getParam("/approach_controller/rotational_gains", rot_gains))
     {
       return false;
     }
@@ -95,11 +98,18 @@ namespace cartesian_controllers {
 
     contact_detection_time_ = ros::Duration(t);
 
-    if (rot_gains_.size() != 3)
+    if (rot_gains.size() != 6)
     {
-      ROS_ERROR("The rotational gains vector must have length 3! (Has length %zu)", rot_gains_.size());
+      ROS_ERROR("The rotational gains vector must have length 6! (Has length %zu)", rot_gains.size());
       return false;
     }
+
+    for (int i = 0; i < 6; i++)
+    {
+      rot_gains_eig[i] = rot_gains[i];
+    }
+
+    twist_controller_.reset(new TwistController(rot_gains_eig));
 
     return true;
   }
@@ -135,7 +145,7 @@ namespace cartesian_controllers {
     sensor_msgs::JointState control_output = current_state;
     Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
-    KDL::Twist twist_error;
+    KDL::Twist twist_comp;
     double alpha, beta, gamma;
 
     if (!action_server_->isActive())
@@ -186,21 +196,17 @@ namespace cartesian_controllers {
     }
 
     fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_pose);
-    twist_error = KDL::diff(current_pose, initial_pose_);
 
     // Update the commanded rotational velocities based on the
     // angular error between the current frame and the initial one.
     // We want to keep the same orientation from start to finish.
-    // TODO: Make method
-    velocity_reference_(3) = rot_gains_[0]*twist_error(3);
-    velocity_reference_(4) = rot_gains_[1]*twist_error(4);
-    velocity_reference_(5) = rot_gains_[2]*twist_error(5);
+    twist_comp = twist_controller_->computeError(current_pose, initial_pose_);
+
     feedback_.commanded_twist.header.stamp = ros::Time::now();
     feedback_.error_twist.header.stamp = ros::Time::now();
-    tf::twistKDLToMsg(velocity_reference_, feedback_.commanded_twist.twist);
-    tf::twistKDLToMsg(twist_error, feedback_.error_twist.twist);
-
-    ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], velocity_reference_, commanded_joint_velocities);
+    tf::twistKDLToMsg(velocity_reference_ + twist_comp, feedback_.commanded_twist.twist);
+    tf::twistKDLToMsg(twist_comp, feedback_.error_twist.twist);
+    ikvel_[arm_index_]->CartToJnt(joint_positions_[arm_index_], velocity_reference_ + twist_comp, commanded_joint_velocities);
 
     int joint_index = 0;
     for (int i = 0; i < current_state.name.size(); i++)

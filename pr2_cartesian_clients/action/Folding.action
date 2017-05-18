@@ -1,0 +1,26 @@
+# Empty goal
+int32 rod_arm
+int32 surface_arm
+bool use_goal # if false, will keep current values
+geometry_msgs/Vector3 initial_pose_offset # w.r.t surface arm frame
+float64 initial_approach_angle
+float64 folding_timeout
+int32 num_of_experiments
+std_msgs/String bag_prefix
+geometry_msgs/Vector3 desired_state
+bool randomize_desired_state
+float64 x_min
+float64 x_max
+float64 theta_min
+float64 theta_max
+float64 f_min
+float64 f_max
+
+int32 LEFT = 0
+int32 RIGHT = 1
+---
+# Empty result
+---
+# Provide status of what's being run as feedback
+string current_action
+string progress

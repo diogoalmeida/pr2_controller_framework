@@ -40,18 +40,22 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(manipulation_controller src/manipulation_controller.cpp)
+set(utils
+    src/utils/TwistController.cpp
+)
+
+add_library(manipulation_controller src/pr2_cartesian_controllers/manipulation_controller.cpp)
 target_link_libraries(manipulation_controller ${catkin_LIBRARIES})
-add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_messages_cpp)
+add_dependencies(manipulation_controller pr2_cartesian_controllers_generate_messages_cpp ${utils})
 
-add_library(approach_controller src/approach_controller.cpp)
+add_library(approach_controller src/pr2_cartesian_controllers/approach_controller.cpp)
 target_link_libraries(approach_controller ${catkin_LIBRARIES})
-add_dependencies(approach_controller pr2_cartesian_controllers_generate_messages_cpp)
+add_dependencies(approach_controller pr2_cartesian_controllers_generate_messages_cpp ${utils})
 
-add_library(move_controller src/move_controller.cpp)
+add_library(move_controller src/pr2_cartesian_controllers/move_controller.cpp)
 target_link_libraries(move_controller ${catkin_LIBRARIES})
-add_dependencies(move_controller pr2_cartesian_controllers_generate_messages_cpp)
+add_dependencies(move_controller pr2_cartesian_controllers_generate_messages_cpp ${utils})
 
-add_library(folding_controller src/folding_controller.cpp)
+add_library(folding_controller src/pr2_cartesian_controllers/folding_controller.cpp)
 target_link_libraries(folding_controller ${catkin_LIBRARIES})
-add_dependencies(folding_controller pr2_cartesian_controllers_generate_messages_cpp)
+add_dependencies(folding_controller pr2_cartesian_controllers_generate_messages_cpp ${utils})

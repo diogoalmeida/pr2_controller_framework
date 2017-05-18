@@ -22,12 +22,12 @@ common:
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
-  spring_constant: 0.17
+  spring_constant: 10.17
   estimate_spring_constant: true
   gains:
     k_1: 0.7
     k_2: 0.7
-    k_3: 0.0
+    k_3: 0.7
   saturations:
     x: 0.1
     y: 0.1
@@ -48,8 +48,8 @@ manipulation_controller:
       # data: [10000, 0, 0,
       #        0, 10000, 0,
       #        0, 0, 5000]
-      data: [100, 0, 0,
-             0, 10, 0,
+      data: [10000000, 0, 0,
+             0, 10000000, 0,
              0, 0, 5000]
     R:
       # data: [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.002]
@@ -57,11 +57,11 @@ manipulation_controller:
       # data: [0.001, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0.001]
       data: [0.01, 0, 0, 0,
              0, 0.01, 0, 0,
-             0, 0, 0.001, 0,
+             0, 0, 10.001, 0,
              0, 0, 0, 0.00000]
 
-    initial_x_offset: -0.2 #-0.15
-    initial_theta_offset: -0.1
+    initial_x_offset: -0.15
+    initial_theta_offset: -0.0
 
 approach_controller:
   action_server_name: approach_controller

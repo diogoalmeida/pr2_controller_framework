@@ -18,7 +18,7 @@ common:
   feedback_rate: 100
   force_torque_topic:
     arm_1: /l_ft_sensor/ft_compensated
-    arm_2: /l_ft_sensor/ft_compensated
+    arm_2: /l_ft_sensor/ft_compensated_echo
 
 manipulation_controller:
   action_server_name: dexterous_manipulation
@@ -85,8 +85,8 @@ folding_controller:
   rotational_gains: [0, 0, 0, 0, 0, 0]
   use_estimates: false
   rod_length: 0.1
-  k_omega: 0.01
-  k_v: 0.01
+  k_omega: 0.1
+  k_v: 0.1
   k_force: 0.0
   estimator:
     Q:

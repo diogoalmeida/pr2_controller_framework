@@ -2,6 +2,7 @@
 #define __TWIST_CONTROLLER__
 
 #include <kdl/kdl.hpp>
+#include <kdl/frames.hpp>
 #include <Eigen/Dense>
 
 namespace cartesian_controllers{

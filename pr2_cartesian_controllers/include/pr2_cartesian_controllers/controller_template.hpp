@@ -501,6 +501,11 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::forceTorqueC
   tf::wrenchKDLToMsg(wrench_kdl, converted_wrench.wrench);
   tf::wrenchKDLToEigen(wrench_kdl, measured_wrench_[sensor_num]);
   ft_pub_[sensor_num].publish(converted_wrench);
+
+  // HACK: PR2 had a broken force torque sensor. To allow dual-arm operations to
+  // work smoothly, I'm doing this =x
+  measured_wrench_[0] = measured_wrench_[sensor_num];
+  measured_wrench_[1] = measured_wrench_[sensor_num];
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

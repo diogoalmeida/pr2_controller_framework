@@ -5,6 +5,7 @@
 #include <pr2_cartesian_controllers/controller_template.hpp>
 #include <pr2_algorithms/folding_assembly_controller.hpp>
 #include <pr2_algorithms/folding_assembly_estimator.hpp>
+#include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
 #include <limits>
@@ -50,6 +51,8 @@ private:
   int rod_arm_, surface_arm_;
   double goal_p_, goal_theta_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp;
+
+  boost::shared_ptr<TwistController> twist_controller_;
 
 public:
   FoldingController();

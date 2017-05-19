@@ -16,6 +16,7 @@ namespace cartesian_controllers {
     startActionlib();
     finished_acquiring_goal_ = false;
     pc_publisher_ = nh_.advertise<visualization_msgs::Marker>("contact_point_estimate", 1);
+    p1_publisher_ = nh_.advertise<visualization_msgs::Marker>("rod_eef", 1);
     feedback_thread_ = boost::thread(boost::bind(&FoldingController::publishFeedback, this));
   }
 
@@ -75,7 +76,7 @@ namespace cartesian_controllers {
 
   void FoldingController::publishFeedback()
   {
-    visualization_msgs::Marker contact_point;
+    visualization_msgs::Marker contact_point, p1;
 
     try
     {
@@ -96,7 +97,13 @@ namespace cartesian_controllers {
           contact_point.frame_locked = false;
           contact_point.color.r = 1.0;
           contact_point.color.a = 1.0;
+          p1 = contact_point;
+          p1.id = 2;
+          p1.color.r = 0.0;
+          p1.color.g = 1.0;
+          tf::poseEigenToMsg(p1_, p1.pose);
           pc_publisher_.publish(contact_point);
+          p1_publisher_.publish(p1);
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
@@ -210,6 +217,7 @@ namespace cartesian_controllers {
       r = rod_length_*grasp_point_frame[rod_arm_].matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
     }
 
+    p1_ = grasp_point_frame[rod_arm_];
     pc_.translation() = r + p1;
     pc_.linear() =  Eigen::Matrix<double, 3, 3>::Identity();
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());

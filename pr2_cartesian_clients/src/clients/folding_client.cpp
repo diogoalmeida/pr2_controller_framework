@@ -466,13 +466,6 @@ void FoldingClient::runExperiment()
           }
         }
 
-        Eigen::Affine3d surface_pose_eigen;
-        Eigen::Vector3d rotation_axis = -Eigen::Vector3d::UnitY();
-
-        // tf::poseMsgToEigen(surface_frame_pose_.pose, surface_pose_eigen);
-
-        // surface_pose_eigen = surface_pose_eigen*Eigen::AngleAxisd(0.5, rotation_axis);
-
         folding_goal.rod_arm = rod_arm_;
         folding_goal.surface_arm = surface_arm_;
         folding_goal.position_offset = goal_x_ + noise_x_d_(noise_generator_);

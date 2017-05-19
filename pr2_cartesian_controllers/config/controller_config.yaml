@@ -6,7 +6,7 @@ common:
     arm_2: r_wrist_roll_link
   force_torque_frame:
     arm_1: l_gripper_tool_frame
-    arm_2: l_gripper_tool_frame
+    arm_2: r_gripper_tool_frame
   force_torque_sensor_frame:
     arm_1: l_force_torque_link
     arm_2: l_force_torque_link

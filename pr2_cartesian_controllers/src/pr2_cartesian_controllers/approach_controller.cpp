@@ -27,6 +27,19 @@ namespace cartesian_controllers {
     try
     {
       listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
+      twist.header = approach_direction_msg.header;
+      twist.twist.linear = approach_direction_msg.vector;
+      tf::twistMsgToKDL(twist.twist, velocity_reference_);
+
+      feedback_.velocity_reference.clear();
+      for (int i = 0; i < 6; i++)
+      {
+        feedback_.velocity_reference.push_back(velocity_reference_(i));
+      }
+
+      force_threshold_ = goal->contact_force;
+      approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
+      initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction);
     }
     catch (tf::TransformException ex)
     {
@@ -35,19 +48,6 @@ namespace cartesian_controllers {
       return;
     }
 
-    twist.header = approach_direction_msg.header;
-    twist.twist.linear = approach_direction_msg.vector;
-    tf::twistMsgToKDL(twist.twist, velocity_reference_);
-
-    feedback_.velocity_reference.clear();
-    for (int i = 0; i < 6; i++)
-    {
-      feedback_.velocity_reference.push_back(velocity_reference_(i));
-    }
-
-    force_threshold_ = goal->contact_force;
-    approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-    initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction);
     loadParams();
     ROS_INFO("Approach controller server received a goal!");
   }

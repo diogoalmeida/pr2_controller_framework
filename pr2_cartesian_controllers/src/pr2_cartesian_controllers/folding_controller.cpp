@@ -84,7 +84,7 @@ namespace cartesian_controllers {
       {
         if (action_server_->isActive())
         {
-          contact_point.header.frame_id = base_link_;
+          contact_point.header.frame_id = chain_base_link_;
           contact_point.header.stamp = ros::Time::now();
           contact_point.ns = std::string("folding");
           contact_point.type = contact_point.SPHERE;

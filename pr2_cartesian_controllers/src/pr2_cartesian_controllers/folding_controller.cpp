@@ -15,6 +15,7 @@ namespace cartesian_controllers {
     has_initial_ = false; // used to set the initial pose for one approach action run
     startActionlib();
     finished_acquiring_goal_ = false;
+    pc_publisher_ = nh_.advertise<visualization_msgs::Marker>("contact_point_estimate", 1);
     feedback_thread_ = boost::thread(boost::bind(&FoldingController::publishFeedback, this));
   }
 
@@ -93,6 +94,7 @@ namespace cartesian_controllers {
           contact_point.scale.z = 0.01;
           contact_point.lifetime = ros::Duration(0);
           contact_point.frame_locked = false;
+          pc_publisher_.publish(contact_point);
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

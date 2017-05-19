@@ -52,6 +52,7 @@ private:
   double goal_p_, goal_theta_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp;
   Eigen::Affine3d pc_;
+  ros::Publisher pc_publisher_;
 
   boost::shared_ptr<TwistController> twist_controller_;
 

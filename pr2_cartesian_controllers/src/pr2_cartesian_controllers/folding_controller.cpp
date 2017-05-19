@@ -74,12 +74,25 @@ namespace cartesian_controllers {
 
   void FoldingController::publishFeedback()
   {
+    visualization_msgs::Marker contact_point;
+
     try
     {
       while(ros::ok())
       {
         if (action_server_->isActive())
         {
+          contact_point.header.frame_id = base_link_;
+          contact_point.header.stamp = ros::Time::now();
+          contact_point.ns = std::string("folding");
+          contact_point.type = contact_point.SPHERE;
+          contact_point.action = contact_point.ADD;
+          tf::poseEigenToMsg(pc_, contact_point.pose);
+          contact_point.scale.x = 0.01;
+          contact_point.scale.y = 0.01;
+          contact_point.scale.z = 0.01;
+          contact_point.lifetime = ros::Duration(0);
+          contact_point.frame_locked = false;
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
@@ -128,7 +141,7 @@ namespace cartesian_controllers {
     std::vector<KDL::JntArray> commanded_joint_velocities(2);
     Eigen::Vector3d surface_normal, surface_tangent, p1, omega, pd, surface_normal_in_grasp,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis, r,
-                    out_vel_lin, out_vel_ang;
+                    out_vel_lin, out_vel_ang; // all in the base_link frame
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
@@ -171,7 +184,7 @@ namespace cartesian_controllers {
     surface_tangent = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
     surface_normal_in_grasp = eef_to_grasp_eig[surface_arm_].matrix().block<3,1>(0,2);
     surface_tangent_in_grasp = eef_to_grasp_eig[surface_arm_].matrix().block<3,1>(0,0);
-    rotation_axis = surface_normal.cross(surface_tangent);
+    rotation_axis = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);;
     p1 = grasp_point_frame[rod_arm_].translation();
     contact_force = wrenchInFrame(surface_arm_, base_link_).block<3,1>(0,0);
     contact_torque = wrenchInFrame(surface_arm_, base_link_).block<3,1>(3,0);
@@ -193,6 +206,7 @@ namespace cartesian_controllers {
       r = rod_length_*grasp_point_frame[rod_arm_].matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
     }
 
+    pc_.translation() = r + p1;
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());
 
     eef_twist_eig[rod_arm_] << out_vel_lin, out_vel_ang;

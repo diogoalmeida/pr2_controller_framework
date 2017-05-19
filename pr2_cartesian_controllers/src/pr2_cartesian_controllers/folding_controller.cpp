@@ -95,6 +95,7 @@ namespace cartesian_controllers {
           contact_point.lifetime = ros::Duration(0);
           contact_point.frame_locked = false;
           contact_point.color.r = 1.0;
+          contact_point.color.a = 1.0;
           pc_publisher_.publish(contact_point);
           action_server_->publishFeedback(feedback_);
         }

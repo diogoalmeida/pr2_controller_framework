@@ -26,7 +26,7 @@ experiment:
   num_of_experiments: 20
   bag_prefix: garbage
   approach_velocity: 0.03
-  approach_force: 0.2
+  approach_force: 2.0
   goal_theta: 1.2
   goal_x: 0.2
   goal_force: 0.0

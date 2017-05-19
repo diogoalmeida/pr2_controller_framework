@@ -84,10 +84,10 @@ folding_controller:
   action_server_name: folding_controller
   rotational_gains: [0, 0, 0, 0, 0, 0]
   use_estimates: false
-  rod_length: 0.1
-  k_omega: 0.0
-  k_v: 0.0
-  k_force: 0.0
+  rod_length: 0.05
+  k_omega: -0.1
+  k_v: 0.5
+  k_force: -0.01
   estimator:
     Q:
       data: [100, 0, 0,

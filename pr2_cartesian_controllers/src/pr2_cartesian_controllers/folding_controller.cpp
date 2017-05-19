@@ -209,6 +209,7 @@ namespace cartesian_controllers {
     }
 
     pc_.translation() = r + p1;
+    pc_.linear() =  Eigen::Matrix<double, 3, 3>::Identity();
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());
 
     eef_twist_eig[rod_arm_] << out_vel_lin, out_vel_ang;

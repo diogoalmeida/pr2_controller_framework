@@ -2,7 +2,7 @@
 
 namespace cartesian_controllers {
 
-  FoldingController::FoldingController() : eef_to_grasp(2) , ControllerTemplate<pr2_cartesian_controllers::FoldingControllerAction,
+  FoldingController::FoldingController() : eef_to_grasp_(2) , ControllerTemplate<pr2_cartesian_controllers::FoldingControllerAction,
                                                 pr2_cartesian_controllers::FoldingControllerFeedback,
                                                 pr2_cartesian_controllers::FoldingControllerResult>()
   {
@@ -65,6 +65,35 @@ namespace cartesian_controllers {
     goal_p_ = goal->position_offset;
     goal_theta_ = goal->orientation_goal;
     goal_force_ = goal->force_goal;
+
+    geometry_msgs::PoseStamped pose_in, pose_out;
+    try
+    {
+      // get the relationship between kinematic chain end-effector and
+      // tool-tip (grasping point)
+      for (int i = 0; i < NUM_ARMS; i++)
+      {
+        pose_in.header.frame_id = ft_frame_id_[i];
+        pose_in.header.stamp = ros::Time(0); // get latest available
+
+        pose_in.pose.position.x = 0;
+        pose_in.pose.position.y = 0;
+        pose_in.pose.position.z = 0;
+
+        pose_in.pose.orientation.x = 0;
+        pose_in.pose.orientation.y = 0;
+        pose_in.pose.orientation.z = 0;
+        pose_in.pose.orientation.w = 1;
+        listener_.transformPose(end_effector_link_[i], pose_in, pose_out);
+        tf::poseMsgToKDL(pose_out.pose, eef_to_grasp_[i]);
+      }
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+      action_server_->setAborted();
+      return;
+    }
 
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -182,10 +211,10 @@ namespace cartesian_controllers {
     {
       fkpos_[arm]->JntToCart(joint_positions_[arm], eef_kdl[arm]);
       fkvel_[arm]->JntToCart(joint_velocities_[arm], eef_vel_kdl[arm]);
-      eef_grasp_kdl[arm] = eef_kdl[arm]*eef_to_grasp[arm];
-      eef_grasp_vel_kdl[arm] = eef_vel_kdl[arm]*eef_to_grasp[arm];
+      eef_grasp_kdl[arm] = eef_kdl[arm]*eef_to_grasp_[arm];
+      eef_grasp_vel_kdl[arm] = eef_vel_kdl[arm]*eef_to_grasp_[arm];
       eef_twist[arm] = eef_grasp_vel_kdl[arm].GetTwist();
-      tf::transformKDLToEigen(eef_to_grasp[arm], eef_to_grasp_eig[arm]);
+      tf::transformKDLToEigen(eef_to_grasp_[arm], eef_to_grasp_eig[arm]);
       tf::transformKDLToEigen(eef_grasp_kdl[arm], grasp_point_frame[arm]);
       tf::twistKDLToEigen(eef_twist[arm], eef_twist_eig[arm]);
       commanded_joint_velocities[arm] = KDL::JntArray(chain_[arm].getNrOfJoints());

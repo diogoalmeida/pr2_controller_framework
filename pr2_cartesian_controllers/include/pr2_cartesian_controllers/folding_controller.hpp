@@ -50,7 +50,7 @@ private:
   bool has_initial_, finished_acquiring_goal_, use_estimates_;
   int rod_arm_, surface_arm_;
   double goal_p_, goal_theta_, goal_force_, rod_length_;
-  std::vector<KDL::Frame> eef_to_grasp;
+  std::vector<KDL::Frame> eef_to_grasp_;
   Eigen::Affine3d pc_, p1_;
   ros::Publisher pc_publisher_, p1_publisher_;
 

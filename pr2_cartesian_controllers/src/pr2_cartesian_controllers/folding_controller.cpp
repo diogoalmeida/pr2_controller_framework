@@ -197,15 +197,17 @@ namespace cartesian_controllers {
     {
       ROS_ERROR("Failed to get the chain joint state for the surface arm. Aborting.");
       action_server_->setAborted();
-      lastState(current_state);
+      return lastState(current_state);
     }
 
     if(!getChainJointState(current_state, chain_[rod_arm_], joint_positions_[rod_arm_], joint_velocities_[rod_arm_]))
     {
       ROS_ERROR("Failed to get the chain joint state for the rod arm. Aborting.");
       action_server_->setAborted();
-      lastState(current_state);
+      return lastState(current_state);
     }
+
+    control_output = lastState(current_state, rod_arm_);
 
     for (int arm = 0; arm < 2; arm++) // Compute forward kinematics and convert to grasp frame
     {
@@ -261,7 +263,6 @@ namespace cartesian_controllers {
     for (int i = 0; i < current_state.name.size(); i++)
     {
       control_output.velocity[i] = 0;
-      control_output.effort[i] = 0;
 
       if (hasJoint(chain_[rod_arm_], current_state.name[i]))
       {

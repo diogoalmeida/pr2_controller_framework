@@ -548,8 +548,9 @@ Eigen::Matrix<double, 6, 1> ControllerTemplate<ActionClass, ActionFeedback, Acti
   KDL::Frame sensor_to_desired_frame_kdl;
   Eigen::Matrix<double, 6, 1> converted_wrench;
 
-  tf::wrenchEigenToKDL(measured_wrench_[arm_index], wrench_kdl);
-  sensor_to_desired_frame.header.frame_id = ft_frame_id_[arm_index];
+  // HACK: Always use arm 0, as arm 1 has a broken sensor
+  tf::wrenchEigenToKDL(measured_wrench_[0], wrench_kdl);
+  sensor_to_desired_frame.header.frame_id = ft_frame_id_[0];
   sensor_to_desired_frame.header.stamp = ros::Time(0);
   sensor_to_desired_frame.pose.position.x = 0;
   sensor_to_desired_frame.pose.position.y = 0;

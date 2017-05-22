@@ -53,6 +53,7 @@ private:
   std::vector<KDL::Frame> eef_to_grasp_;
   Eigen::Affine3d pc_, p1_;
   ros::Publisher pc_publisher_, p1_publisher_;
+  std::vector<double> comp_gains_;
 
   boost::shared_ptr<TwistController> twist_controller_;
 

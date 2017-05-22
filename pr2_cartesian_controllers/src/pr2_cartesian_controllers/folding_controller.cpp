@@ -66,9 +66,39 @@ namespace cartesian_controllers {
     goal_theta_ = goal->orientation_goal;
     goal_force_ = goal->force_goal;
 
+    std::vector<double> linear_gains(3), ang_gains(3);
+    for (int i = 0; i < 3; i++)
+    {
+      linear_gains[i] = comp_gains_[i];
+      ang_gains[i] = comp_gains_[i + 3];
+    }
+
+    geometry_msgs::Vector3Stamped lin_gains_msg, ang_gains_msg;
+
+    vectorStdToMsg(linear_gains, lin_gains_msg.vector);
+    vectorStdToMsg(ang_gains, ang_gains_msg.vector);
+
+    lin_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
+    ang_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
+
     geometry_msgs::PoseStamped pose_in, pose_out;
     try
     {
+      lin_gains_msg.header.stamp = ros::Time(0);
+      ang_gains_msg.header.stamp = ros::Time(0);
+      listener_.transformVector(base_link_, lin_gains_msg, lin_gains_msg);
+      listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
+      vectorMsgToStd(lin_gains_msg.vector, linear_gains);
+      vectorMsgToStd(ang_gains_msg.vector, ang_gains);
+      Eigen::Matrix<double, 6, 1> gains;
+      for (int i = 0; i < 3; i++)
+      {
+        gains[i] = linear_gains[i];
+        gains[i + 3] = ang_gains[i];
+      }
+
+      twist_controller_.reset(new TwistController(gains));
+
       // get the relationship between kinematic chain end-effector and
       // tool-tip (grasping point)
       for (int i = 0; i < NUM_ARMS; i++)
@@ -151,10 +181,10 @@ namespace cartesian_controllers {
       return false;
     }
 
-    // if (!getParam("/folding_controller/rotational_gains", rot_gains_))
-    // {
-    //   return false;
-    // }
+    if (!getParam("/folding_controller/rotational_gains", comp_gains_))
+    {
+      return false;
+    }
 
     if (!getParam("/folding_controller/use_estimates", use_estimates_))
     {
@@ -254,9 +284,11 @@ namespace cartesian_controllers {
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());
 
     eef_twist_eig[rod_arm_] << out_vel_lin, out_vel_ang;
+
     tf::twistEigenToKDL(eef_twist_eig[rod_arm_], command_twist[rod_arm_]);
     tf::twistEigenToMsg(eef_twist_eig[rod_arm_], feedback_.controller_output.twist);
 
+    command_twist[rod_arm_] += twist_controller_->computeError(eef_kdl[rod_arm_], eef_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     ikvel_[rod_arm_]->CartToJnt(joint_positions_[rod_arm_], command_twist[rod_arm_], commanded_joint_velocities[rod_arm_]);
 
     int joint_index = 0;

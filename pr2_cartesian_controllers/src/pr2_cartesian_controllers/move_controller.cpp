@@ -80,7 +80,6 @@ namespace cartesian_controllers {
       {
         action_server_->setAborted();
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
           finished_acquiring_goal_ = true;
         }
         return;
@@ -364,7 +363,6 @@ namespace cartesian_controllers {
         feedback_.joint_position_errors.push_back(val - current_state.position[i]);
         feedback_.joint_velocity_references.push_back(velocity_gain_ * e);
         feedback_.joint_velocity_errors.push_back(velocity_gain_ * e - current_state.velocity[i]);
-        control_output.effort[i] = 0;
       }
     }
 

@@ -71,8 +71,8 @@ protected:
   sensor_msgs::JointState lastState(const sensor_msgs::JointState &current);
 
   /**
-    Return the last controlled joint state for a single arm. If the controller does not have
-    an active actionlib goal, it will set the references of the joint controller
+    Return the last controlled joint state for the joints that are not in the given arm.
+    If the controller does not have an active actionlib goal, it will set the references of the joint controller
     to the last desired position (and null velocity). The current joint state will only be
     changed for the given arm.
 
@@ -449,7 +449,7 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 
   for (int j = 0; j < temp_state.velocity.size(); j++)
   {
-    if (!hasJoint(chain_[arm], temp_state.name[j]))
+    if (hasJoint(chain_[arm], temp_state.name[j]))
     {
       temp_state.position[j] = current.position[j];
       temp_state.velocity[j] = current.velocity[j];

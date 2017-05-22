@@ -334,7 +334,6 @@ namespace cartesian_controllers {
     {
       // joints we don't care about won't move
       control_output.velocity[i] = 0;
-      control_output.effort[i] = 0;
 
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {

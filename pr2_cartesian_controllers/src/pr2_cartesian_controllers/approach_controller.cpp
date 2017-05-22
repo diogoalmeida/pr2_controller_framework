@@ -196,7 +196,7 @@ namespace cartesian_controllers {
       {
         action_server_->setSucceeded(result_, "contact force achieved");
         has_initial_ = false;
-        return current_state;
+        return control_output;
       }
     }
     else
@@ -221,7 +221,6 @@ namespace cartesian_controllers {
     for (int i = 0; i < current_state.name.size(); i++)
     {
       control_output.velocity[i] = 0;
-      control_output.effort[i] = 0;
 
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {

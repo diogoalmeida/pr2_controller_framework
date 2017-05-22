@@ -445,7 +445,7 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 {
   sensor_msgs::JointState temp_state;
 
-  temp_state = lastState(current);
+  temp_state = last_state_;
 
   for (int j = 0; j < temp_state.velocity.size(); j++)
   {

@@ -70,6 +70,18 @@ protected:
   **/
   sensor_msgs::JointState lastState(const sensor_msgs::JointState &current);
 
+  /**
+    Return the last controlled joint state for a single arm. If the controller does not have
+    an active actionlib goal, it will set the references of the joint controller
+    to the last desired position (and null velocity). The current joint state will only be
+    changed for the given arm.
+
+    @param current The current joint state.
+    @param arm The index of the joint chain to be considered.
+    @return The last commanded joint state before the actionlib goal was
+    preempted or completed.
+  **/
+  sensor_msgs::JointState lastState(const sensor_msgs::JointState &current, int arm);
 
   /**
     Initialize the kinematic chain and joint arrays for an arm defined by its end-effector link.
@@ -427,6 +439,26 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeWr
   ft_sub = nh_.subscribe(ft_topic_name, 1, &ControllerTemplate::forceTorqueCB, this); // we will pass the topic name to the subscriber to allow the proper wrench vector to be filled.
   ft_pub = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name + "/converted", 1);
 }
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState &current, int arm)
+{
+  sensor_msgs::JointState temp_state;
+
+  temp_state = lastState(current);
+
+  for (int j = 0; j < temp_state.velocity.size(); j++)
+  {
+    if (!hasJoint(chain_[arm], temp_state.name[j]))
+    {
+      temp_state.position[j] = current.position[j];
+      temp_state.velocity[j] = current.velocity[j];
+    }
+  }
+
+  return temp_state;
+}
+
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
 sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::lastState(const sensor_msgs::JointState &current)

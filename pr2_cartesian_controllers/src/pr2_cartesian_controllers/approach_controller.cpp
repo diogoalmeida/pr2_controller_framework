@@ -179,6 +179,7 @@ namespace cartesian_controllers {
       has_initial_ = true;
     }
 
+    control_output = lastState(current_state, arm_index_);
     KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
 
     double approach_direction_force = std::abs(wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_) - initial_force_);

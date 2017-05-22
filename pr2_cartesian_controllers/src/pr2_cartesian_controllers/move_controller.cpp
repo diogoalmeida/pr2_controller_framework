@@ -304,6 +304,8 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
 
+    control_output = lastState(current_state, arm_index_);
+
     // 0 - Check success
     int success = 0;
     for (int i = 0; i < current_state.name.size(); i++)

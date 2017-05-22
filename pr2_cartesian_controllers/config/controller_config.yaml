@@ -90,9 +90,9 @@ folding_controller:
   k_force: -0.01
   estimator:
     Q:
-      data: [100, 0, 0,
+      data: [10, 0, 0,
              0, 10, 0,
-             0, 0, 5000]
+             0, 0, 10]
     R:
       data: [0.01, 0,
              0, 0.01]

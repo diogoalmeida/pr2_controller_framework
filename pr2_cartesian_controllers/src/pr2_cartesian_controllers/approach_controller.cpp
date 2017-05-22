@@ -7,7 +7,6 @@ namespace cartesian_controllers {
     boost::shared_ptr<const pr2_cartesian_controllers::GuardedApproachGoal> goal = action_server_->acceptNewGoal();
     geometry_msgs::TwistStamped twist;
     geometry_msgs::Vector3Stamped approach_direction_msg;
-    Eigen::Vector3d approach_direction;
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
@@ -38,8 +37,9 @@ namespace cartesian_controllers {
       }
 
       force_threshold_ = goal->contact_force;
-      approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-      initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction);
+      approach_direction_ << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
+      approach_direction_ = approach_direction_/approach_direction_.norm();
+      initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_);
     }
     catch (tf::TransformException ex)
     {
@@ -153,7 +153,6 @@ namespace cartesian_controllers {
   sensor_msgs::JointState ApproachController::updateControl(const sensor_msgs::JointState &current_state, ros::Duration dt)
   {
     sensor_msgs::JointState control_output = current_state;
-    Eigen::Vector3d approach_direction;
     KDL::Frame current_pose;
     KDL::Twist twist_comp;
     double alpha, beta, gamma;
@@ -179,11 +178,10 @@ namespace cartesian_controllers {
       fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], initial_pose_);
       has_initial_ = true;
     }
-    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
-    approach_direction << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-    approach_direction = approach_direction/approach_direction.norm();
 
-    double approach_direction_force = std::abs(wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction) - initial_force_);
+    KDL::JntArray commanded_joint_velocities(chain_[arm_index_].getNrOfJoints());
+
+    double approach_direction_force = std::abs(wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_) - initial_force_);
     feedback_.approach_direction_force = approach_direction_force;
     if (approach_direction_force > force_threshold_)
     {

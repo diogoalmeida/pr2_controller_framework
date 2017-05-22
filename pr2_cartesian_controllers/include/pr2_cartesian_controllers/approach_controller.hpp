@@ -28,6 +28,7 @@ private:
   double initial_force_, force_threshold_;
   KDL::Twist velocity_reference_;
   KDL::Frame initial_pose_;
+  Eigen::Vector3d approach_direction_;
   bool has_initial_, is_contact_;
   ros::Duration contact_detection_time_;
   ros::Time initial_contact_;

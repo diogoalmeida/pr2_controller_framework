@@ -33,17 +33,13 @@ namespace manipulation_algorithms{
     C = -computeSkewSymmetric(force);
 
     // process model
-    r_ = r_ + A*r_*dt;
-
     A = I + A*dt;
-
+    r_ = A*r_;
     P_ = A*P_ + P_*A.transpose() + R_;
-
     K = P_*C.transpose()*(C*P_*C.transpose() + Q_).inverse();
 
     // correct the process model value with the innovation (prediction error from the observation model)
     r_ = r_ + K*(torque - C*r_);
-
     P_ = (I - K*C)*P_;
 
     return r_;

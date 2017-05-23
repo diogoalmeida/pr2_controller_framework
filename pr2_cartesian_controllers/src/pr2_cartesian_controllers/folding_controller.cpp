@@ -136,6 +136,7 @@ namespace cartesian_controllers {
   void FoldingController::publishFeedback()
   {
     visualization_msgs::Marker contact_point, p1;
+    geometry_msgs::Vector3 r_vec;
 
     try
     {
@@ -158,9 +159,11 @@ namespace cartesian_controllers {
           contact_point.color.a = 1.0;
           p1 = contact_point;
           p1.id = 2;
+          p1.type = p1.ARROW;
           p1.color.r = 0.0;
           p1.color.g = 1.0;
           tf::poseEigenToMsg(p1_, p1.pose);
+          tf::vectorEigenToMsg (pc_.translation() - p1_.translation(), p1.scale);
           pc_publisher_.publish(contact_point);
           p1_publisher_.publish(p1);
           action_server_->publishFeedback(feedback_);

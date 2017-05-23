@@ -35,7 +35,8 @@ namespace manipulation_algorithms{
     // process model
     A = I + A*dt;
     r_ = A*r_;
-    P_ = A*P_ + P_*A.transpose() + R_;
+    // P_ = A*P_ + P_*A.transpose() + R_;
+    P_ = A*P_*A.transpose() + R_;
     K = P_*C.transpose()*(C*P_*C.transpose() + Q_).inverse();
 
     // correct the process model value with the innovation (prediction error from the observation model)

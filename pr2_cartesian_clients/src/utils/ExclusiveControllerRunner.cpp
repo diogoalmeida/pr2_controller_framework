@@ -14,7 +14,7 @@ namespace pr2_cartesian_clients {
 
   ExclusiveControllerRunner::~ExclusiveControllerRunner() {}
 
-  bool ExclusiveControllerRunner::runController(std::string controller_name)
+  bool ExclusiveControllerRunner::runController(const std::string &controller_name)
   {
     if (!controllerIsLoaded(controller_name))
     {
@@ -37,7 +37,50 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  bool ExclusiveControllerRunner::controllerIsLoaded(std::string controller_name)
+  bool ExclusiveControllerRunner::stopController(const std::string &controller_name)
+  {
+    pr2_mechanism_msgs::ListControllers list_srv;
+    pr2_mechanism_msgs::SwitchController switch_srv;
+
+    if (!list_controllers_client_.call(list_srv))
+    {
+      ROS_ERROR("Error calling the list controllers server!");
+      return false;
+    }
+
+    if (controllerIsRunning(controller_name))
+    {
+      for (int i = 0; i < list_srv.response.controllers.size(); i++)
+      {
+        if (list_srv.response.controllers[i] == controller_name)
+        {
+          if (list_srv.response.state[i] == "running")
+          {
+              ROS_INFO("Requesting stop: %s", list_srv.response.controllers[i].c_str());
+              switch_srv.request.stop_controllers.push_back(list_srv.response.controllers[i]);
+          }
+        }
+      }
+
+      switch_srv.request.strictness = switch_srv.request.BEST_EFFORT;
+
+      if (!switch_controllers_client_.call(switch_srv))
+      {
+        ROS_ERROR("Error calling the switch controllers server!");
+        return false;
+      }
+
+      if (!switch_srv.response.ok)
+      {
+        ROS_ERROR("Failed to switch to controller %s!", controller_name.c_str());
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool ExclusiveControllerRunner::controllerIsLoaded(const std::string &controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
 
@@ -55,7 +98,7 @@ namespace pr2_cartesian_clients {
     return false;
   }
 
-  bool ExclusiveControllerRunner::controllerIsRunning(std::string controller_name)
+  bool ExclusiveControllerRunner::controllerIsRunning(const std::string &controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
 
@@ -79,7 +122,7 @@ namespace pr2_cartesian_clients {
     return false;
   }
 
-  bool ExclusiveControllerRunner::startController(std::string controller_name)
+  bool ExclusiveControllerRunner::startController(const std::string &controller_name)
   {
     pr2_mechanism_msgs::ListControllers list_srv;
     pr2_mechanism_msgs::SwitchController switch_srv;
@@ -143,7 +186,7 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  bool ExclusiveControllerRunner::loadController(std::string controller_name)
+  bool ExclusiveControllerRunner::loadController(const std::string &controller_name)
   {
     pr2_mechanism_msgs::LoadController load_srv;
 
@@ -220,7 +263,7 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  bool ExclusiveControllerRunner::unloadController(std::string controller_name)
+  bool ExclusiveControllerRunner::unloadController(const std::string &controller_name)
   {
     pr2_mechanism_msgs::UnloadController unload_srv;
 
@@ -252,14 +295,14 @@ namespace pr2_cartesian_clients {
     return true;
   }
 
-  bool ExclusiveControllerRunner::addException(std::string controller_name)
+  bool ExclusiveControllerRunner::addException(const std::string &controller_name)
   {
     exception_list_.push_back(controller_name);
 
     return true;
   }
 
-  bool isInVector(std::string item, std::vector<std::string> v)
+  bool isInVector(const std::string &item, const std::vector<std::string> &v)
   {
     return std::find(v.begin(), v.end(), item) != v.end();
   }

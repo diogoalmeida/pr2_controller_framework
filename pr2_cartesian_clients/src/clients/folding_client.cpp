@@ -348,7 +348,7 @@ void FoldingClient::runExperiment()
 
       while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
-        controller_runner_.unloadAll();
+        // controller_runner_.unloadAll();
         // Send rod arm to right initial pose
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -413,12 +413,18 @@ void FoldingClient::runExperiment()
           current_action_ = approach_action_name_;
         }
 
+        controller_runner_.runController("l_arm_controller");
+        controller_runner_.runController("r_arm_controller");
+
         if (!controller_runner_.runController(approach_controller_name_))
         {
           ROS_ERROR("Failed to run the controller %s", approach_action_name_.c_str());
           action_server_->setAborted();
           continue;
         }
+
+        controller_runner_.stopController("l_arm_controller");
+        controller_runner_.stopController("r_arm_controller");
 
         approach_goal.arm = rod_arm_;
         approach_goal.approach_command.header.frame_id = surface_frame_name_;
@@ -444,12 +450,18 @@ void FoldingClient::runExperiment()
           current_iter_ = current_iter;
         }
 
+        controller_runner_.runController("l_arm_controller");
+        controller_runner_.runController("r_arm_controller");
+
         if (!controller_runner_.runController(folding_controller_name_))
         {
           ROS_ERROR("Failed to run the controller %s", folding_action_name_.c_str());
           action_server_->setAborted();
           continue;
         }
+
+        controller_runner_.stopController("l_arm_controller");
+        controller_runner_.stopController("r_arm_controller");
 
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
         std::string bag_name;

@@ -15,7 +15,7 @@ initialization:
     folding_timeout: 500
   gravity_compensation_service_name: /gravity_compensation/calibrate_bias
   server_timeout: 2
-  exclude_controller_names: [l_gripper_controller, r_gripper_controller]
+  exclude_controller_names: [l_gripper_controller, r_gripper_controller, l_arm_controller, r_arm_controller]
 
 experiment:
   feedback_rate: 1

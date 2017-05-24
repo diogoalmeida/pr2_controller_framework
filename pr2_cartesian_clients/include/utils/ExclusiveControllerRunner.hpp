@@ -26,7 +26,15 @@ namespace pr2_cartesian_clients{
       @param controller_name The realtime loop controller name.
       @return True if the controller starts running, false otherwise.
     **/
-    bool runController(std::string controller_name);
+    bool runController(const std::string &controller_name);
+
+    /**
+      Stops a controller, ignoring the exception list.
+
+      @param controller_name The realtime loop controller name.
+      @return True if the controller stops, false otherwise.
+    **/
+    bool stopController(const std::string &controller_name);
 
     /**
       Unloads all controllers in the pr2.
@@ -35,15 +43,15 @@ namespace pr2_cartesian_clients{
     **/
     bool unloadAll();
 
-    /*
+    /**
       Adds a controller name to the exception list. These controllers will never be
       stopped or unloaded automatically and need to be explicitly chosen to be so.
 
       @param controller_name The name of the controller in the realtime loop to be
       excluded from automatic unloading and stopping.
       @return
-    */
-    bool addException(std::string controller_name);
+    **/
+    bool addException(const std::string &controller_name);
 
   private:
     ros::NodeHandle nh_;
@@ -62,7 +70,7 @@ namespace pr2_cartesian_clients{
       @param controller_name
       @return
     **/
-    bool loadController(std::string controller_name);
+    bool loadController(const std::string &controller_name);
 
     /**
       Unloads the given controller from the PR2
@@ -70,7 +78,7 @@ namespace pr2_cartesian_clients{
       @param controller_name
       @return
     **/
-    bool unloadController(std::string controller_name);
+    bool unloadController(const std::string &controller_name);
 
     /**
       Starts the given controller in the PR2.
@@ -78,7 +86,7 @@ namespace pr2_cartesian_clients{
       @param controller_name
       @return
     **/
-    bool startController(std::string controller_name);
+    bool startController(const std::string &controller_name);
 
     /**
       Checks if a controller is running in the PR2 realtime loop.
@@ -86,7 +94,7 @@ namespace pr2_cartesian_clients{
       @param controller_name The realtime loop controller name.
       @return True if the controller is running, false otherwise.
     **/
-    bool controllerIsRunning(std::string controller_name);
+    bool controllerIsRunning(const std::string &controller_name);
 
     /**
       Checks if a controller is loaded in the PR2.
@@ -94,12 +102,12 @@ namespace pr2_cartesian_clients{
       @param controller name The realtime loop controller name.
       @return True if the controller is loaded, false otherwise.
     **/
-    bool controllerIsLoaded(std::string controller_name);
+    bool controllerIsLoaded(const std::string &controller_name);
   };
 
   /**
     Checks if an item is in the vector
   **/
-  bool isInVector(std::string item, std::vector<std::string> v);
+  bool isInVector(const std::string &item, const std::vector<std::string> &v);
 }
 #endif

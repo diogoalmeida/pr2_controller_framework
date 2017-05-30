@@ -25,13 +25,13 @@ experiment:
   surface_arm_tool_frame: l_gripper_tool_frame
   num_of_experiments: 20
   bag_prefix: garbage
-  approach_velocity: 0.03
+  approach_velocity: -0.03
   approach_force: 2.0
   goal_theta: 1.2
-  goal_x: 0.03
-  goal_force: -2.0
+  goal_x: 0.15
+  goal_force: 2.0
   initial_pose:
-    rod: [0.498, -0.086, 0.153, 0.534, 0.539, -0.434, 0.485]
+    rod: [0.455, -0.086, 0.23, 0.534, 0.539, -0.434, 0.485]
     surface: [0.505, 0.218, -0.161, 0.006, 0.006, -0.714, 0.700]
   logging:
     logging_topic: /realtime_loop/dexterous_folding/feedback

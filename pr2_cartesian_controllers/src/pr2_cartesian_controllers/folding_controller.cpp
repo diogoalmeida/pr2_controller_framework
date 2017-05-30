@@ -83,7 +83,7 @@ namespace cartesian_controllers {
     vectorStdToMsg(ang_gains, ang_gains_msg.vector);
 
     lin_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
-    ang_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
+    // ang_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
 
     geometry_msgs::PoseStamped pose_in, pose_out;
     try
@@ -91,9 +91,9 @@ namespace cartesian_controllers {
       lin_gains_msg.header.stamp = ros::Time(0);
       ang_gains_msg.header.stamp = ros::Time(0);
       listener_.transformVector(base_link_, lin_gains_msg, lin_gains_msg);
-      listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
+      // listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
       vectorMsgToStd(lin_gains_msg.vector, linear_gains);
-      vectorMsgToStd(ang_gains_msg.vector, ang_gains);
+      // vectorMsgToStd(ang_gains_msg.vector, ang_gains);
       Eigen::Matrix<double, 6, 1> gains;
       for (int i = 0; i < 3; i++)
       {
@@ -255,6 +255,7 @@ namespace cartesian_controllers {
     Eigen::Vector3d surface_normal, surface_tangent, p1, p2, omega, pd, surface_normal_in_grasp,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis, r,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
+    KDL::Twist comp_twist;
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
@@ -334,7 +335,9 @@ namespace cartesian_controllers {
     tf::twistEigenToKDL(eef_twist_eig[rod_arm_], command_twist[rod_arm_]);
     tf::twistEigenToMsg(eef_twist_eig[rod_arm_], feedback_.controller_output.twist);
 
-    command_twist[rod_arm_] += twist_controller_->computeError(eef_kdl[rod_arm_], eef_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+    command_twist[rod_arm_] += comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p);
+
     ikvel_[rod_arm_]->CartToJnt(joint_positions_[rod_arm_], command_twist[rod_arm_], commanded_joint_velocities[rod_arm_]);
 
     int joint_index = 0;

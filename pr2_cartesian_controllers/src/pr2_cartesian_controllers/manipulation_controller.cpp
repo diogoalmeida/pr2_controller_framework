@@ -261,17 +261,6 @@ namespace cartesian_controllers {
     }
   }
 
-  void ManipulationController::getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker)
-  {
-    geometry_msgs::Point point;
-
-    marker.points.clear();
-    tf::pointEigenToMsg(initial_point, point);
-    marker.points.push_back(point);
-    tf::pointEigenToMsg(final_point, point);
-    marker.points.push_back(point);
-  }
-
   bool ManipulationController::loadParams()
   {
     if (!getParam("/manipulation_controller/action_server_name", action_name_))

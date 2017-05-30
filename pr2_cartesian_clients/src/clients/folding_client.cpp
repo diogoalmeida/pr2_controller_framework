@@ -365,6 +365,9 @@ void FoldingClient::runExperiment()
           continue;
         }
 
+        controller_runner_.stopController("l_arm_controller");
+        controller_runner_.stopController("r_arm_controller");
+
         bool move_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
                               pr2_cartesian_controllers::MoveGoal,

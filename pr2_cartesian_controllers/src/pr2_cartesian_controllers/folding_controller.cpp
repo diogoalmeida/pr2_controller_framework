@@ -12,11 +12,15 @@ namespace cartesian_controllers {
       exit(0);
     }
 
-    has_initial_ = false; // used to set the initial pose for one approach action run
+    has_initial_ = false; // used to set the initial pose for one folding action run
     startActionlib();
     finished_acquiring_goal_ = false;
-    pc_publisher_ = nh_.advertise<visualization_msgs::Marker>("contact_point_estimate", 1);
-    p1_publisher_ = nh_.advertise<visualization_msgs::Marker>("rod_eef", 1);
+    pc_pub_ = nh_.advertise<visualization_msgs::Marker>("pc", 1);
+    p1_pub_ = nh_.advertise<visualization_msgs::Marker>("p1", 1);
+    p2_pub_ = nh_.advertise<visualization_msgs::Marker>("p2", 1);
+    r1_pub_ = nh_.advertise<visualization_msgs::Marker>("r1", 1);
+    r2_pub_ = nh_.advertise<visualization_msgs::Marker>("r2", 1);
+    wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     feedback_thread_ = boost::thread(boost::bind(&FoldingController::publishFeedback, this));
   }
 
@@ -135,37 +139,73 @@ namespace cartesian_controllers {
 
   void FoldingController::publishFeedback()
   {
-    visualization_msgs::Marker contact_point, p1;
+    visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker;
     geometry_msgs::Vector3 r_vec;
+    geometry_msgs::WrenchStamped surface_wrench;
+
+    pc_marker.header.frame_id = chain_base_link_;
+    pc_marker.ns = std::string("folding");
+    pc_marker.type = pc_marker.SPHERE;
+    pc_marker.action = pc_marker.ADD;
+    pc_marker.scale.x = 0.01;
+    pc_marker.scale.y = 0.01;
+    pc_marker.scale.z = 0.01;
+    pc_marker.lifetime = ros::Duration(0);
+    pc_marker.frame_locked = false;
+    pc_marker.color.r = 1.0;
+    pc_marker.color.a = 1.0;
+    p1_marker = pc_marker;
+    p1_marker.id = 1;
+    p2_marker = pc_marker;
+    p2_marker.id = 2;
+    p1_marker.color.r = 0.0;
+    p2_marker.color.r = 0.0;
+    p1_marker.color.g = 1.0;
+    p2_marker.color.g = 1.0;
+    r1_marker = p1_marker;
+    r1_marker.id = 3;
+    r1_marker.scale.y = 0.005;
+    r1_marker.scale.z = 0.005;
+    r1_marker.type = r1_marker.ARROW;
+    r2_marker = r1_marker;
+    r2_marker.id = 4;
+    r2_marker.color = pc_marker.color;
 
     try
     {
       while(ros::ok())
       {
-        if (action_server_->isActive())
+        if (action_server_->isActive() && finished_acquiring_goal_)
         {
-          contact_point.header.frame_id = chain_base_link_;
-          contact_point.header.stamp = ros::Time::now();
-          contact_point.ns = std::string("folding");
-          contact_point.type = contact_point.SPHERE;
-          contact_point.action = contact_point.ADD;
-          tf::poseEigenToMsg(pc_, contact_point.pose);
-          contact_point.scale.x = 0.01;
-          contact_point.scale.y = 0.01;
-          contact_point.scale.z = 0.01;
-          contact_point.lifetime = ros::Duration(0);
-          contact_point.frame_locked = false;
-          contact_point.color.r = 1.0;
-          contact_point.color.a = 1.0;
-          p1 = contact_point;
-          p1.id = 2;
-          p1.type = p1.ARROW;
-          p1.color.r = 0.0;
-          p1.color.g = 1.0;
-          tf::poseEigenToMsg(p1_, p1.pose);
-          tf::vectorEigenToMsg (pc_.translation() - p1_.translation(), p1.scale);
-          pc_publisher_.publish(contact_point);
-          p1_publisher_.publish(p1);
+          boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          pc_marker.header.stamp = ros::Time::now();
+          p1_marker.header.stamp = ros::Time::now();
+          p2_marker.header.stamp = ros::Time::now();
+          r1_marker.header.stamp = ros::Time::now();
+          r2_marker.header.stamp = ros::Time::now();
+
+          tf::poseEigenToMsg(pc_, pc_marker.pose);
+          tf::poseEigenToMsg(p1_, p1_marker.pose);
+          tf::poseEigenToMsg(p2_, p2_marker.pose);
+          getMarkerPoints(p1_.translation(), pc_.translation(), r1_marker);
+          getMarkerPoints(p2_.translation(), pc_.translation(), r2_marker);
+
+          pc_pub_.publish(pc_marker);
+          p1_pub_.publish(p1_marker);
+          p2_pub_.publish(p2_marker);
+          r1_pub_.publish(r1_marker);
+          r2_pub_.publish(r2_marker);
+
+          tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
+          tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);
+          tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
+          tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
+          tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
+          surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
+          tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
+          surface_wrench.header.stamp = ros::Time::now();
+          feedback_.surface_wrench = surface_wrench;
+          wrench2_pub_.publish(surface_wrench);
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
@@ -212,7 +252,7 @@ namespace cartesian_controllers {
     std::vector<Eigen::Matrix<double, 6, 1> > eef_twist_eig(2);
     std::vector<KDL::Twist> command_twist(2);
     std::vector<KDL::JntArray> commanded_joint_velocities(2);
-    Eigen::Vector3d surface_normal, surface_tangent, p1, omega, pd, surface_normal_in_grasp,
+    Eigen::Vector3d surface_normal, surface_tangent, p1, p2, omega, pd, surface_normal_in_grasp,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis, r,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
 
@@ -261,20 +301,22 @@ namespace cartesian_controllers {
     surface_tangent_in_grasp = eef_to_grasp_eig[surface_arm_].matrix().block<3,1>(0,0);
     rotation_axis = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);;
     p1 = grasp_point_frame[rod_arm_].translation();
-    contact_force = wrenchInFrame(surface_arm_, base_link_).block<3,1>(0,0);
-    contact_torque = wrenchInFrame(surface_arm_, base_link_).block<3,1>(3,0);
-    omega << eef_twist_eig[rod_arm_].block<3,1>(3,0);
+    p2 = grasp_point_frame[surface_arm_].translation();
+    contact_force = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(0,0);
+    contact_torque = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(3,0);
+    omega << eef_twist_eig[surface_arm_].block<3,1>(3,0);
     pd = grasp_point_frame[surface_arm_].translation() + goal_p_*surface_tangent;
 
     if (!has_initial_)
     {
-      estimator_.initialize(pd - p1);
+      estimator_.initialize(Eigen::Vector3d::Zero());
       has_initial_ = true;
     }
 
     if (use_estimates_)
     {
-      r = estimator_.estimate(omega, contact_force, contact_torque, dt.toSec());
+      r = estimator_.estimate(Eigen::Vector3d::Zero(), contact_force, contact_torque, dt.toSec()); // expressed in the tool frame
+      r = grasp_point_frame[surface_arm_].linear()*r;
     }
     else
     {
@@ -282,7 +324,8 @@ namespace cartesian_controllers {
     }
 
     p1_ = grasp_point_frame[rod_arm_];
-    pc_.translation() = r + p1;
+    p2_ = grasp_point_frame[surface_arm_];
+    pc_.translation() = r + p2;
     pc_.linear() =  Eigen::Matrix<double, 3, 3>::Identity();
     controller_.control(pd, goal_theta_, goal_force_, surface_tangent, surface_normal, r, p1, contact_force, out_vel_lin, out_vel_ang, dt.toSec());
 

@@ -7,7 +7,6 @@
 #include <pr2_algorithms/manipulation_control_algorithm.hpp>
 #include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
-#include <visualization_msgs/Marker.h>
 #include <limits>
 
 namespace cartesian_controllers{
@@ -28,14 +27,6 @@ private:
   **/
   Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
 
-  /**
-    Fills a marker with the given initial and end point. Clears existing points.
-
-    @param initial_point Initial marker point.
-    @param final_point Final marker point.
-    @param marker The marker object.
-  **/
-  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
   virtual void publishFeedback();
   virtual void goalCB();
   virtual void preemptCB();

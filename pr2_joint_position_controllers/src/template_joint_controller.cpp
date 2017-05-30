@@ -22,6 +22,9 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
     {
       return true;
     }
+
+    ROS_ERROR("Something went wrong with variable allocation");
+    return false;
   }
   catch (const std::exception &exc)
   {
@@ -52,13 +55,12 @@ void TemplateJointController::starting()
 
   // launch feedback thread. Allows publishing feedback outside of the realtime loop
   feedback_thread_ = boost::thread(boost::bind(&TemplateJointController::publishFeedback, this));
+  ROS_INFO("Joint controller started!");
 }
 
 void TemplateJointController::stopping()
 {
   boost::lock_guard<boost::mutex> guard(reference_mutex_);
-  ROS_INFO("Joint controller stopping!");
-  robot_->zeroCommands();
 
   if(feedback_thread_.joinable())
   {
@@ -66,7 +68,6 @@ void TemplateJointController::stopping()
     feedback_thread_.join();
   }
 
-  ROS_INFO("Reseting allocable variables");
   resetAllocableVariables();
 
   ROS_INFO("Joint controller stopped successfully!");
@@ -207,6 +208,8 @@ bool TemplateJointController::allocateVariables()
       return false;
     }
 
+    ROS_DEBUG("Pushing a controller for joint %s.", joint_names_[i].c_str());
+
     // create a controller instance and give it a unique namespace for setting the controller gains
     position_joint_controllers_.push_back(boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid()));
     modified_velocity_references_.push_back(0);
@@ -219,7 +222,7 @@ bool TemplateJointController::allocateVariables()
     }
     else
     {
-      ROS_INFO("Allocating a controller for joint %s.", joint_names_[i].c_str());
+      ROS_DEBUG("Allocating a controller for joint %s.", joint_names_[i].c_str());
     }
 
     last_active_joint_position_.push_back(joint->position_);
@@ -353,7 +356,7 @@ void TemplateJointController::publishFeedback()
   }
   catch(const boost::thread_interrupted &)
   {
-    ROS_INFO("Joint controller thread interrupted :)");
+    ROS_DEBUG("Joint controller thread interrupted :)");
     return;
   }
 }

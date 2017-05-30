@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <pr2_algorithms/manipulation_control_algorithm.hpp>
 #include <pr2_algorithms/manipulation_ekf.hpp>
-#include <pr2_algorithms/TestBedFeedback.h>
+#include <pr2_algorithms/TestBedManipulationFeedback.h>
 #include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 #include <cstdlib>
 #include <random>
@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
   ManipulationEKF estimator_alg;
   Eigen::Vector3d x_e, u, x_d, variances;
   Eigen::VectorXd x_hat, y, x_c, d_xc(3);
-  pr2_algorithms::TestBedFeedback feedback_msg;
+  pr2_algorithms::TestBedManipulationFeedback feedback_msg;
   Eigen::MatrixXd G(3, 3);
   double max_time, epsilon, spring, force, torque;
   ros::Time init_time, prev_time;
@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
   bool use_real_data = false;
   std::normal_distribution<double> obs_noise(0.0, 0.01);
 
-  ros::Publisher pub = n.advertise<pr2_algorithms::TestBedFeedback>("/test_bed/feedback", 1);
+  ros::Publisher pub = n.advertise<pr2_algorithms::TestBedManipulationFeedback>("/test_bed/feedback", 1);
   ros::Subscriber sub = n.subscribe("/realtime_loop/dexterous_manipulation/feedback", 1, feedbackCallback);
 
   x_d = Eigen::Vector3d::Zero();

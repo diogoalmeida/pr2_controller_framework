@@ -28,14 +28,6 @@ private:
   **/
   Eigen::Matrix3d computeSkewSymmetric(const Eigen::Vector3d &v);
 
-  /**
-    Fills a marker with the given initial and end point. Clears existing points.
-
-    @param initial_point Initial marker point.
-    @param final_point Final marker point.
-    @param marker The marker object.
-  **/
-  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
   virtual void publishFeedback();
   virtual void goalCB();
   virtual void preemptCB();
@@ -51,8 +43,8 @@ private:
   int rod_arm_, surface_arm_;
   double goal_p_, goal_theta_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp_;
-  Eigen::Affine3d pc_, p1_;
-  ros::Publisher pc_publisher_, p1_publisher_;
+  Eigen::Affine3d pc_, p1_, p2_;
+  ros::Publisher pc_pub_, p1_pub_, p2_pub_, r1_pub_, r2_pub_, wrench2_pub_;
   std::vector<double> comp_gains_;
 
   boost::shared_ptr<TwistController> twist_controller_;

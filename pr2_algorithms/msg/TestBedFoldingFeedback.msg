@@ -1,0 +1,6 @@
+geometry_msgs/Vector3Stamped r_real
+geometry_msgs/Vector3Stamped r_est
+geometry_msgs/PointStamped p_c_real
+geometry_msgs/PointStamped p_c_est
+geometry_msgs/PointStamped p_2
+geometry_msgs/WrenchStamped wrench

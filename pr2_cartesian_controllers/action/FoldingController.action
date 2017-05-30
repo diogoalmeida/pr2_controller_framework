@@ -13,3 +13,9 @@ int32 RIGHT_ARM = 1
 ---
 # Feedback: information that may be used to debug the controller
 geometry_msgs/TwistStamped controller_output
+geometry_msgs/Vector3 r1
+geometry_msgs/Vector3 r2
+geometry_msgs/Vector3 p1
+geometry_msgs/Vector3 p2
+geometry_msgs/Vector3 pc
+geometry_msgs/WrenchStamped surface_wrench

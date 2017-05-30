@@ -156,6 +156,7 @@ namespace pr2_cartesian_clients {
     }
 
     switch_srv.request.strictness = switch_srv.request.BEST_EFFORT;
+    ROS_INFO("Requesting start: %s", controller_name.c_str());
 
     if (!switch_controllers_client_.call(switch_srv))
     {
@@ -196,6 +197,7 @@ namespace pr2_cartesian_clients {
     }
 
     load_srv.request.name = controller_name;
+    ROS_INFO("Requesting load: %s", controller_name.c_str());
     if(!load_controllers_client_.call(load_srv))
     {
       ROS_ERROR("Error calling the load controller server!");

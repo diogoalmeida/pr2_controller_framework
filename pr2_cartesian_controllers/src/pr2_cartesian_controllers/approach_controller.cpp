@@ -62,7 +62,6 @@ namespace cartesian_controllers {
 
   void ApproachController::publishFeedback()
   {
-    feedback_.current_wrench.header.frame_id = base_link_;
 
     try
     {
@@ -71,11 +70,11 @@ namespace cartesian_controllers {
         if (action_server_->isActive())
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
+          feedback_.current_wrench.header.frame_id = base_link_;
           feedback_.current_wrench.header.stamp = ros::Time::now();
           tf::wrenchEigenToMsg(wrenchInFrame(arm_index_, base_link_), feedback_.current_wrench.wrench);
           action_server_->publishFeedback(feedback_);
         }
-
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
       }
     }

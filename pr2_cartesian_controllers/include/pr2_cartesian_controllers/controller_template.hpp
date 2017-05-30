@@ -19,6 +19,7 @@
 #include <kdl/kdl.hpp>
 #include <kdl/frames.hpp>
 #include <geometry_msgs/WrenchStamped.h>
+#include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
 #define NUM_ARMS 2
 
@@ -201,6 +202,15 @@ protected:
     @throws logic_error if the name does not exist in the joint_names vector.
   **/
   int getJointIndex(const std::vector<std::string> &joint_names, const std::string &name);
+
+  /**
+    Fills a marker with the given initial and end point. Clears existing points.
+
+    @param initial_point Initial marker point.
+    @param final_point Final marker point.
+    @param marker The marker object.
+  **/
+  void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker);
 
   /**
     Convert a geometry msgs vector to an std vector.
@@ -617,6 +627,18 @@ int ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointIndex
   }
 
   throw std::logic_error("getJointIndex: Tried to query a joint name that is not present in the joint names vector.");
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker)
+{
+  geometry_msgs::Point point;
+
+  marker.points.clear();
+  tf::pointEigenToMsg(initial_point, point);
+  marker.points.push_back(point);
+  tf::pointEigenToMsg(final_point, point);
+  marker.points.push_back(point);
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

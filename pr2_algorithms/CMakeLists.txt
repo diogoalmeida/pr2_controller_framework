@@ -14,11 +14,12 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 add_message_files(
   FILES
-	TestBedFeedback.msg
+  TestBedManipulationFeedback.msg
+	TestBedFoldingFeedback.msg
 )
 
 generate_messages(
-  DEPENDENCIES std_msgs
+  DEPENDENCIES std_msgs geometry_msgs
 )
 
 catkin_package(
@@ -44,6 +45,10 @@ target_link_libraries(folding_assembly_controller ${catkin_LIBRARIES})
 add_library(folding_assembly_estimator src/folding_assembly_estimator.cpp src/algorithm_base.cpp)
 target_link_libraries(folding_assembly_estimator ${catkin_LIBRARIES})
 
-add_executable(test_bed src/test_bed.cpp)
-target_link_libraries(test_bed manipulation_ekf manipulation_control_algorithm ${catkin_LIBRARIES})
-add_dependencies(test_bed pr2_algorithms_generate_messages_cpp)
+add_executable(test_bed_manipulation src/test_bed_manipulation.cpp)
+target_link_libraries(test_bed_manipulation manipulation_ekf manipulation_control_algorithm ${catkin_LIBRARIES})
+add_dependencies(test_bed_manipulation pr2_algorithms_generate_messages_cpp)
+
+add_executable(test_bed_folding src/test_bed_folding.cpp)
+target_link_libraries(test_bed_folding folding_assembly_estimator ${catkin_LIBRARIES})
+add_dependencies(test_bed_folding pr2_algorithms_generate_messages_cpp)

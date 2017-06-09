@@ -48,6 +48,9 @@ target_link_libraries(folding_assembly_estimator ${catkin_LIBRARIES})
 add_library(ects_controller src/mechanism_identification/ects_controller.cpp src/algorithm_base.cpp)
 target_link_libraries(ects_controller ${catkin_LIBRARIES})
 
+add_library(kalman_filter src/mechanism_identification/kalman_filter.cpp src/algorithm_base.cpp)
+target_link_libraries(kalman_filter ${catkin_LIBRARIES})
+
 add_executable(test_bed_manipulation src/test_bed_manipulation.cpp)
 target_link_libraries(test_bed_manipulation manipulation_ekf manipulation_control_algorithm ${catkin_LIBRARIES})
 add_dependencies(test_bed_manipulation pr2_algorithms_generate_messages_cpp)

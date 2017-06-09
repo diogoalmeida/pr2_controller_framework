@@ -1,4 +1,4 @@
-#include <pr2_algorithms/folding_assembly_controller.hpp>
+#include <pr2_algorithms/folding_assembly/folding_assembly_controller.hpp>
 
 namespace manipulation_algorithms{
 

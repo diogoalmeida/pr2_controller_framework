@@ -3,8 +3,8 @@
 
 #include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
-#include <pr2_algorithms/manipulation_ekf.hpp>
-#include <pr2_algorithms/manipulation_control_algorithm.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_ekf.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_control_algorithm.hpp>
 #include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
 #include <limits>

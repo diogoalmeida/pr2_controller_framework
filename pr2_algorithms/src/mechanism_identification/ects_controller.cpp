@@ -1,4 +1,4 @@
-#include <pr2_algorithms/ects_controller.hpp>
+#include <pr2_algorithms/mechanism_identification/ects_controller.hpp>
 
 namespace manipulation_algorithms{
 

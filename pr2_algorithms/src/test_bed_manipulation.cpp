@@ -1,6 +1,6 @@
 #include <ros/ros.h>
-#include <pr2_algorithms/manipulation_control_algorithm.hpp>
-#include <pr2_algorithms/manipulation_ekf.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_control_algorithm.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_ekf.hpp>
 #include <pr2_algorithms/TestBedManipulationFeedback.h>
 #include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 #include <cstdlib>

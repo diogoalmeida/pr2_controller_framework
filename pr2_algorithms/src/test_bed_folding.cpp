@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <pr2_algorithms/folding_assembly_estimator.hpp>
+#include <pr2_algorithms/folding_assembly/folding_assembly_estimator.hpp>
 #include <pr2_algorithms/TestBedFoldingFeedback.h>
 #include <pr2_cartesian_controllers/FoldingControllerAction.h>
 #include <cstdlib>

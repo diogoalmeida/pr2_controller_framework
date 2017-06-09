@@ -1,4 +1,4 @@
-#include <pr2_algorithms/manipulation_control_algorithm.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_control_algorithm.hpp>
 
 namespace manipulation_algorithms{
 

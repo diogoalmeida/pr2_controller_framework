@@ -33,19 +33,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(manipulation_control_algorithm src/manipulation_control_algorithm.cpp src/algorithm_base.cpp)
+add_library(manipulation_control_algorithm src/dexterous_manipulation/manipulation_control_algorithm.cpp src/algorithm_base.cpp)
 target_link_libraries(manipulation_control_algorithm ${catkin_LIBRARIES})
 
-add_library(manipulation_ekf src/manipulation_ekf.cpp src/algorithm_base.cpp)
+add_library(manipulation_ekf src/dexterous_manipulation/manipulation_ekf.cpp src/algorithm_base.cpp)
 target_link_libraries(manipulation_ekf ${catkin_LIBRARIES})
 
-add_library(folding_assembly_controller src/folding_assembly_controller.cpp src/algorithm_base.cpp)
+add_library(folding_assembly_controller src/folding_assembly/folding_assembly_controller.cpp src/algorithm_base.cpp)
 target_link_libraries(folding_assembly_controller ${catkin_LIBRARIES})
 
-add_library(folding_assembly_estimator src/folding_assembly_estimator.cpp src/algorithm_base.cpp)
+add_library(folding_assembly_estimator src/folding_assembly/folding_assembly_estimator.cpp src/algorithm_base.cpp)
 target_link_libraries(folding_assembly_estimator ${catkin_LIBRARIES})
 
-add_library(ects_controller src/ects_controller.cpp src/algorithm_base.cpp)
+add_library(ects_controller src/mechanism_identification/ects_controller.cpp src/algorithm_base.cpp)
 target_link_libraries(ects_controller ${catkin_LIBRARIES})
 
 add_executable(test_bed_manipulation src/test_bed_manipulation.cpp)

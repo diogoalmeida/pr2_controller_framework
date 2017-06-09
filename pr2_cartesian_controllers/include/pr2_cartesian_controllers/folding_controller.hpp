@@ -3,8 +3,8 @@
 
 #include <pr2_cartesian_controllers/FoldingControllerAction.h>
 #include <pr2_cartesian_controllers/controller_template.hpp>
-#include <pr2_algorithms/folding_assembly_controller.hpp>
-#include <pr2_algorithms/folding_assembly_estimator.hpp>
+#include <pr2_algorithms/folding_assembly/folding_assembly_controller.hpp>
+#include <pr2_algorithms/folding_assembly/folding_assembly_estimator.hpp>
 #include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>

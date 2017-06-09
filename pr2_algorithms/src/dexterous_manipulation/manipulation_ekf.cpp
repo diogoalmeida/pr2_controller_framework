@@ -1,4 +1,4 @@
-#include <pr2_algorithms/manipulation_ekf.hpp>
+#include <pr2_algorithms/dexterous_manipulation/manipulation_ekf.hpp>
 
 namespace manipulation_algorithms{
   ManipulationEKF::ManipulationEKF()

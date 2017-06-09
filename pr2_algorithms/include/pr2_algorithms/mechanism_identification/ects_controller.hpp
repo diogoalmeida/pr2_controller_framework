@@ -8,8 +8,15 @@
 #include <limits>
 #include <stdexcept>
 
-using namespace Eigen;
 namespace manipulation_algorithms{
+typedef Eigen::Matrix<double, 6, 6> Matrix6d;
+typedef Eigen::Matrix<double, 6, 7> Matrix67d;
+typedef Eigen::Matrix<double, 12, 12> Matrix12d;
+typedef Eigen::Matrix<double, 12, 14> MatrixECTS;
+typedef Eigen::Vector3d Vector3d;
+typedef Eigen::Matrix<double, 7, 1> Vector7d;
+typedef Eigen::Matrix<double, 12, 1> Vector12d;
+typedef Eigen::Matrix<double, 14, 1> Vector14d;
 
   /**
     Class that implements an extended cooperative task space (ECTS) control algorithm.
@@ -32,12 +39,20 @@ namespace manipulation_algorithms{
       @param q_dot_i The manipulators' joint velocities.
       @return The 14 dimensional joint velocities vector.
     **/
-    Matrix<double, 14, 1> control(const Matrix<double, 6, 7> &J_1, const Matrix<double, 6, 7> &J_2, const Vector3d &r_1, const Vector3d &r_2, const Matrix<double, 7, 1> &q_dot_1, const Matrix<double, 7, 1> &q_dot_2, const Matrix<double, 12, 1> &error);
+    Vector14d control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector12d &error);
   private:
     double alpha_, damping_, K_;
     int beta_;
 
-    Matrix<double, 14, 1> nullSpaceTask(const Matrix<double, 12, 14> &J, const Matrix<double, 12, 1> &u);
+    /**
+      Computes the secundary objective that will be projected unto the nullspace
+      of the primary task.
+
+      @param J The ECTS jacobian.
+      @param u The desired axis for the optimal velocity transfer ration.
+      @return The secundary objective velocity reference.
+    **/
+    Vector14d nullSpaceTask(const MatrixECTS &J, const Vector12d &u);
   };
 }
 #endif

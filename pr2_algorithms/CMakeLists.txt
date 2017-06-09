@@ -25,7 +25,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp std_msgs message_generation
   INCLUDE_DIRS include
-  LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator
+  LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator kalman_filter adaptive_velocity_controller ects_controller
 )
 
 include_directories(
@@ -50,6 +50,9 @@ target_link_libraries(ects_controller ${catkin_LIBRARIES})
 
 add_library(kalman_filter src/mechanism_identification/kalman_filter.cpp src/algorithm_base.cpp)
 target_link_libraries(kalman_filter ${catkin_LIBRARIES})
+
+add_library(adaptive_velocity_controller src/mechanism_identification/adaptive_velocity_controller.cpp src/algorithm_base.cpp)
+target_link_libraries(adaptive_velocity_controller ${catkin_LIBRARIES})
 
 add_executable(test_bed_manipulation src/test_bed_manipulation.cpp)
 target_link_libraries(test_bed_manipulation manipulation_ekf manipulation_control_algorithm ${catkin_LIBRARIES})

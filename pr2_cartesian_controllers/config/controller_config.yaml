@@ -97,11 +97,11 @@ folding_controller:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
-             
+
 mechanism_controller:
   action_server_name: mechanism_controller
   rotational_gains: [0, 0, 0, 0, 0, 0]
-  use_estimates: true
+  use_estimates: false
   rod_length: 0.10
   k_omega: 0.0
   k_v: 0.0

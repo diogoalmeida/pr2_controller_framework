@@ -243,7 +243,7 @@ namespace cartesian_controllers {
     {
       return false;
     }
-    
+
     if (!getParam("/folding_controller/rod_length", rod_length_))
     {
       return false;
@@ -267,10 +267,10 @@ namespace cartesian_controllers {
     Eigen::Vector3d translational_dof_ground, rotational_dof_ground, p1, p2,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
-    Eigen::Matrix<double, 12, 1> ects_twist;
+    Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero();
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
-    KDL::Jacobian kdl_jac;
+    KDL::Jacobian kdl_jac(7);
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
@@ -337,7 +337,6 @@ namespace cartesian_controllers {
     else
     {
       pc_.translation() = rod_length_*grasp_point_frame[rod_arm_].matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
-      ects_twist.block<6,1>(0,0) << 0, 0, 0, 0, 0, 0; // TODO: Figure the absolute twist component out
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
     }
@@ -345,15 +344,15 @@ namespace cartesian_controllers {
     p1_ = grasp_point_frame[rod_arm_];
     p2_ = grasp_point_frame[surface_arm_];
     pc_.linear() =  Eigen::Matrix<double, 3, 3>::Identity();
-    
+
     joint_commands = ects_controller_.control(jacobian[rod_arm_], jacobian[surface_arm_], pc_.translation() - p1_.translation(), pc_.translation() - p2_.translation(), q_dot[rod_arm_], q_dot[surface_arm_], ects_twist);
-    
-    for (unsigned int i = 0; i < 14; i++)
+
+    for (unsigned int i = 0; i < 7; i++)
     {
       commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }
-    
+
     int joint_index = 0;
     for (unsigned long i = 0; i < current_state.name.size(); i++)
     {
@@ -365,7 +364,7 @@ namespace cartesian_controllers {
         control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index);
         joint_index++;
       }
-      
+
       if (hasJoint(chain_[surface_arm_], current_state.name[i]))
       {
         control_output.position[i] = joint_positions_[surface_arm_](joint_index) + commanded_joint_velocities[surface_arm_](joint_index)*dt.toSec();

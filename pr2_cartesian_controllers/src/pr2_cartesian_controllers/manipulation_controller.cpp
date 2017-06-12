@@ -345,7 +345,7 @@ namespace cartesian_controllers {
     Eigen::Vector3d rotation_axis, surface_tangent, surface_normal, force, torque, commands, origin, eef_to_grasp_eig, velocity_command, velocity_eef, actual_commands;
     Eigen::Vector3d u, e, temp, surface_tangent_in_grasp, surface_normal_in_grasp;
     Eigen::VectorXd y(3);
-    double torque_e, f_e_y, f_e_x, x_c, theta_c;
+    double torque_e, f_e_y, f_e_x;
     Eigen::Matrix3d inv_g, skew;
     Eigen::Matrix<double, 6, 1> twist_eig, actual_twist_eigen;
 
@@ -514,7 +514,7 @@ namespace cartesian_controllers {
     control_output = current_state;
 
     int joint_index;
-    for (int i = 0; i < current_state.name.size(); i++)
+    for (unsigned long i = 0; i < current_state.name.size(); i++)
     {
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {

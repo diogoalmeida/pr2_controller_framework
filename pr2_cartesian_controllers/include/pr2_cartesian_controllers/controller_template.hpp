@@ -104,8 +104,9 @@ protected:
     @param fkvel Velocity forward kinematics solver.
     @param ikpos Positional inverse kinematics solver.
     @param ikvel Velocity inverse kinematics solver.
+    @param jac_solver The jacobian solver.
   **/
-  void initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos);
+  void initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos, boost::shared_ptr<KDL::ChainJntToJacSolver> &jac_solver);
 
   /**
     Initializes the wrench vector, subscriber and publisher for a given wrench topic.
@@ -252,6 +253,7 @@ protected:
   std::vector<boost::shared_ptr<KDL::ChainIkSolverPos_LMA> > ikpos_;
   std::vector<boost::shared_ptr<KDL::ChainFkSolverPos_recursive> > fkpos_;
   std::vector<boost::shared_ptr<KDL::ChainFkSolverVel_recursive> > fkvel_;
+  std::vector<boost::shared_ptr<KDL::ChainJntToJacSolver> > jac_solver_;
   std::vector<KDL::Chain> chain_;
   urdf::Model model_;
   std::vector<std::string> end_effector_link_;
@@ -300,6 +302,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
  ikpos_(NUM_ARMS),
  fkpos_(NUM_ARMS),
  fkvel_(NUM_ARMS),
+ jac_solver_(NUM_ARMS),
  chain_(NUM_ARMS),
  end_effector_link_(NUM_ARMS),
  ft_topic_name_(NUM_ARMS),
@@ -307,8 +310,8 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
  ft_sensor_frame_(NUM_ARMS),
  ft_sub_(NUM_ARMS),
  ft_pub_(NUM_ARMS),
- measured_wrench_(NUM_ARMS),
- actuated_joint_names_(NUM_ARMS)
+ actuated_joint_names_(NUM_ARMS),
+ measured_wrench_(NUM_ARMS)
 {
   nh_ = ros::NodeHandle("~");
 
@@ -321,7 +324,7 @@ ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::ControllerTemplat
   for (int i = 0; i < NUM_ARMS; i++)
   {
     initializeArm(end_effector_link_[i], chain_[i], joint_positions_[i], joint_velocities_[i], actuated_joint_names_[i]);
-    initializeSolvers(chain_[i], fkpos_[i], fkvel_[i], ikvel_[i], ikpos_[i]);
+    initializeSolvers(chain_[i], fkpos_[i], fkvel_[i], ikvel_[i], ikpos_[i], jac_solver_[i]);
     initializeWrenchComms(measured_wrench_[i], ft_sub_[i], ft_pub_[i], ft_topic_name_[i]);
   }
 
@@ -339,7 +342,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeAr
   joint_velocities.q.resize(chain.getNrOfJoints());
   joint_velocities.qdot.resize(chain.getNrOfJoints());
 
-  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  for (unsigned int i = 0; i < chain.getNrOfSegments(); i++)
   {
     kdl_joint = chain.getSegment(i).getJoint();
 
@@ -353,7 +356,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeAr
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
-void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos)
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSolvers(const KDL::Chain &chain, boost::shared_ptr<KDL::ChainFkSolverPos_recursive> &fkpos, boost::shared_ptr<KDL::ChainFkSolverVel_recursive> &fkvel, boost::shared_ptr<KDL::ChainIkSolverVel_pinv_nso> &ikvel, boost::shared_ptr<KDL::ChainIkSolverPos_LMA> &ikpos, boost::shared_ptr<KDL::ChainJntToJacSolver> &jac_solver)
 {
   KDL::JntArray min_limits, max_limits;
   KDL::JntArray optimal_values, weights;
@@ -364,7 +367,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSo
   weights.resize(chain.getNrOfJoints());
 
   ROS_INFO("Joint limits: ");
-  for (int i = 0; i < chain.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
+  for (unsigned int i = 0; i < chain.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
   {
     optimal_values(i) = (min_limits(i) + max_limits(i))/2;
 
@@ -389,6 +392,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSo
   // ikvel = new KDL::ChainIkSolverVel_pinv_nso(chain, eps_);
   ikvel.reset(new KDL::ChainIkSolverVel_pinv_nso(chain, optimal_values, weights, eps_, maxiter_, alpha_));
   ikpos.reset(new KDL::ChainIkSolverPos_LMA(chain));
+  jac_solver.reset(new KDL::ChainJntToJacSolver(chain));
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>
@@ -401,7 +405,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
   min_limits.resize(chain.getNrOfJoints());
   max_limits.resize(chain.getNrOfJoints());
 
-  for (int i = 0; i < chain.getNrOfSegments(); i++) // get joint limits
+  for (unsigned int i = 0; i < chain.getNrOfSegments(); i++) // get joint limits
   {
     kdl_joint = chain.getSegment(i).getJoint();
 
@@ -420,8 +424,8 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointLimi
 template <class ActionClass, class ActionFeedback, class ActionResult>
 bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getChainJointState(const sensor_msgs::JointState &current_state, const KDL::Chain &chain, KDL::JntArray &positions, KDL::JntArrayVel &velocities)
 {
-  int processed_joints = 0;
-  for (int i = 0; i < current_state.name.size(); i++)
+  unsigned int processed_joints = 0;
+  for (unsigned long i = 0; i < current_state.name.size(); i++)
   {
     if (hasJoint(chain, current_state.name[i]))
     {
@@ -457,7 +461,7 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
 
   temp_state = last_state_;
 
-  for (int j = 0; j < temp_state.velocity.size(); j++)
+  for (unsigned long j = 0; j < temp_state.velocity.size(); j++)
   {
     if (hasJoint(chain_[arm], temp_state.name[j]))
     {
@@ -476,7 +480,7 @@ sensor_msgs::JointState ControllerTemplate<ActionClass, ActionFeedback, ActionRe
   if(!has_state_)
   {
     last_state_ = current;
-    for (int i = 0; i < last_state_.velocity.size(); i++)
+    for (unsigned long i = 0; i < last_state_.velocity.size(); i++)
     {
       last_state_.velocity[i] = 0.0;
     }
@@ -604,7 +608,7 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::startActionl
 template <class ActionClass, class ActionFeedback, class ActionResult>
 bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::hasJoint(const KDL::Chain &chain, const std::string &joint_name)
 {
-  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  for (unsigned int i = 0; i < chain.getNrOfSegments(); i++)
   {
     if(chain.segments[i].getJoint().getName() == joint_name)
     {
@@ -618,7 +622,7 @@ bool ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::hasJoint(con
 template <class ActionClass, class ActionFeedback, class ActionResult>
 int ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::getJointIndex(const std::vector<std::string> &joint_names, const std::string &name)
 {
-  for (int i = 0; i < joint_names.size(); i++)
+  for (unsigned long i = 0; i < joint_names.size(); i++)
   {
     if (joint_names[i] == name)
     {

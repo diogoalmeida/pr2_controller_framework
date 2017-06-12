@@ -154,7 +154,6 @@ namespace cartesian_controllers {
     sensor_msgs::JointState control_output = current_state;
     KDL::Frame current_pose;
     KDL::Twist twist_comp;
-    double alpha, beta, gamma;
 
     if (!action_server_->isActive())
     {

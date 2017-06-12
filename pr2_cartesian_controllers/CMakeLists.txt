@@ -18,11 +18,11 @@ catkin REQUIRED COMPONENTS
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++0x -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ${CMAKE_CXX_FLAGS}")
 
 add_action_files(
 	DIRECTORY action
-	FILES ManipulationController.action GuardedApproach.action Move.action FoldingController.action
+	FILES ManipulationController.action GuardedApproach.action Move.action FoldingController.action MechanismIdentification.action
 )
 
 generate_messages(

@@ -115,6 +115,6 @@ mechanism_controller:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
-   ects_controller:
-     alpha: 0.5
-     beta: 1
+  ects_controller:
+    alpha: 0.5
+    beta: 1

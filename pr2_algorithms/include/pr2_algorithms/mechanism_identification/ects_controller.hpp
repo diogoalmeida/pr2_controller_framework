@@ -41,7 +41,8 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     **/
     Vector14d control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector12d &error);
   private:
-    double alpha_, damping_, K_;
+    double alpha_, damping_;
+    Matrix12d K_;
     int beta_;
 
     /**

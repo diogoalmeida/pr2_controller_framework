@@ -32,7 +32,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp geometry_msgs actionlib_msgs actionlib kdl_parser visualization_msgs moveit_msgs pr2_algorithms
   INCLUDE_DIRS include
-  LIBRARIES manipulation_controller approach_controller move_controller folding_controller
+  LIBRARIES manipulation_controller approach_controller move_controller folding_controller mechanism_identification_controller
 )
 
 include_directories(
@@ -59,3 +59,7 @@ add_dependencies(move_controller pr2_cartesian_controllers_generate_messages_cpp
 add_library(folding_controller src/pr2_cartesian_controllers/folding_controller.cpp ${utils})
 target_link_libraries(folding_controller ${catkin_LIBRARIES})
 add_dependencies(folding_controller pr2_cartesian_controllers_generate_messages_cpp)
+
+add_library(mechanism_identification_controller src/pr2_cartesian_controllers/mechanism_identification_controller.cpp ${utils})
+target_link_libraries(mechanism_identification_controller ${catkin_LIBRARIES})
+add_dependencies(mechanism_identification_controller pr2_cartesian_controllers_generate_messages_cpp)

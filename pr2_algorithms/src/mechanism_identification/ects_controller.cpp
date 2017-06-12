@@ -33,15 +33,15 @@ namespace manipulation_algorithms{
 
   bool ECTSController::getParams(const ros::NodeHandle &n)
   {
-    if (!n.getParam("/ects_controller/alpha", alpha_))
+    if (!n.getParam("/mechanism_controller/ects_controller/alpha", alpha_))
     {
-      ROS_ERROR("Missing alpha gain (/ects_controller/alpha)");
+      ROS_ERROR("Missing alpha gain (/mechanism_controller/ects_controller/alpha)");
       return false;
     }
 
-    if (!n.getParam("/ects_controller/beta", beta_))
+    if (!n.getParam("/mechanism_controller/ects_controller/beta", beta_))
     {
-      ROS_ERROR("Missing beta value (/ects_controller/beta)");
+      ROS_ERROR("Missing beta value (/mechanism_controller/ects_controller/beta)");
       return false;
     }
 
@@ -52,7 +52,7 @@ namespace manipulation_algorithms{
     }
 
     // TODO: Initialize K_
-
+    K_ = Matrix12d::Identity();
     return true;
   }
 }

@@ -1,0 +1,23 @@
+# Goal: triggers the controller.
+int32 rod_arm
+int32 surface_arm
+float64 goal_force
+float64 vd_amplitude
+float64 vd_frequency
+float64 wd_amplitude
+float64 wd_frequency
+
+int32 LEFT_ARM = 0
+int32 RIGHT_ARM = 1
+---
+# Result:
+
+---
+# Feedback: information that may be used to debug the controller
+geometry_msgs/TwistStamped controller_output
+geometry_msgs/Vector3 r1
+geometry_msgs/Vector3 r2
+geometry_msgs/Vector3 p1
+geometry_msgs/Vector3 p2
+geometry_msgs/Vector3 pc
+geometry_msgs/WrenchStamped surface_wrench

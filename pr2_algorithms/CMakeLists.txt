@@ -7,6 +7,7 @@ catkin REQUIRED COMPONENTS
 	std_msgs
 	message_generation
   eigen_conversions
+	kdl_parser
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
@@ -16,6 +17,7 @@ add_message_files(
   FILES
   TestBedManipulationFeedback.msg
 	TestBedFoldingFeedback.msg
+  TestBedECTSFeedback.msg
 )
 
 generate_messages(
@@ -61,3 +63,7 @@ add_dependencies(test_bed_manipulation pr2_algorithms_generate_messages_cpp)
 add_executable(test_bed_folding src/test_bed_folding.cpp)
 target_link_libraries(test_bed_folding folding_assembly_estimator ${catkin_LIBRARIES})
 add_dependencies(test_bed_folding pr2_algorithms_generate_messages_cpp)
+
+add_executable(test_bed_ects src/test_bed_ects.cpp)
+target_link_libraries(test_bed_ects ects_controller ${catkin_LIBRARIES})
+add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp)

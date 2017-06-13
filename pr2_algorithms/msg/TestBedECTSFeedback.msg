@@ -1,0 +1,5 @@
+geometry_msgs/Vector3Stamped r1
+geometry_msgs/Vector3Stamped r2
+geometry_msgs/PointStamped pc
+geometry_msgs/PointStamped p1
+geometry_msgs/PointStamped p2

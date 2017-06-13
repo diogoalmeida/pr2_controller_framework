@@ -118,3 +118,4 @@ mechanism_controller:
   ects_controller:
     alpha: 0.5
     beta: 1
+    inverse_damping: 0.01

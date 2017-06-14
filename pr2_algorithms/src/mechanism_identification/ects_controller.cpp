@@ -9,8 +9,9 @@ namespace manipulation_algorithms{
   {
     MatrixECTS J = MatrixECTS::Zero();
     Matrix12d C, W = Matrix12d::Identity();
-    Eigen::Matrix<double, 14, 12> damped_inverse, pseudo_inverse;
+    Eigen::Matrix<double, 14, 12> damped_inverse, pseudo_inverse, sigma = Eigen::Matrix<double, 14, 12>::Zero();
     Vector14d q_dot, epsilon;
+    int sing_values_num;
 
     J.block<6, 7>(0, 0) = J_1;
     J.block<6, 7>(6, 7) = J_2;
@@ -23,14 +24,28 @@ namespace manipulation_algorithms{
     q_dot.block<7, 1>(0, 0) = q_dot_1;
     q_dot.block<7, 1>(7, 0) = q_dot_2;
     epsilon = nullSpaceTask(J, Vector12d::Identity());
+    Eigen::JacobiSVD<MatrixECTS> svd(J, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+    sing_values_num = svd.singularValues().rows();
+
+    for (int i = 0; i < sing_values_num; i++)
+    {
+      if (svd.singularValues()(i) > 0.0001)
+      {
+        sigma(i, i) = 1/svd.singularValues()(i);
+      }
+    }
 
     damped_inverse = J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
-    pseudo_inverse = J.transpose()*(J*J.transpose()).inverse();
-    std::cout << "damped" << std::endl;
-    std::cout << damped_inverse << std::endl << std::endl;
-    std::cout << "pseudo" << std::endl;
-    std::cout << pseudo_inverse << std::endl << std::endl;
-    return damped_inverse*K_*error; //+ (Eigen::Matrix<double, 14, 14>::Identity() - pseudo_inverse*J)*epsilon;
+    pseudo_inverse = svd.matrixV()*sigma*svd.matrixU().transpose();
+    // std::cout << "V: " << svd.matrixV() << std::endl;
+    // std::cout << "S: " << sigma << std::endl;
+    // std::cout << "U: " << svd.matrixU() << std::endl;
+    // std::cout << "damped" << std::endl;
+    // std::cout << damped_inverse << std::endl << std::endl;
+    // std::cout << "pseudo" << std::endl;
+    // std::cout << pseudo_inverse << std::endl << std::endl;
+    return damped_inverse*K_*error + (Eigen::Matrix<double, 14, 14>::Identity() - pseudo_inverse*J)*epsilon;
   }
 
   Vector14d ECTSController::nullSpaceTask(const MatrixECTS &J, const Vector12d &u)

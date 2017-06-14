@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
   {
     dt = ros::Time::now() - prev_time;
     elapsed = ros::Time::now() - init_time;
-    
+
     std::cout << "elapsed: " << elapsed.toSec() << std::endl;
 
     jac_solver[0]->JntToJac(joint_state[0].q, jacobian[0]);

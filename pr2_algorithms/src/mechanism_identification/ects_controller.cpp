@@ -21,6 +21,7 @@ namespace manipulation_algorithms{
     C.block<6, 6>(6, 6) = Matrix6d::Identity();
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1);
     W.block<3, 3>(3, 9) = -computeSkewSymmetric(r_2);
+    J = C*W*J; // ECTS Jacobian
     q_dot.block<7, 1>(0, 0) = q_dot_1;
     q_dot.block<7, 1>(7, 0) = q_dot_2;
     epsilon = nullSpaceTask(J, Vector12d::Identity());

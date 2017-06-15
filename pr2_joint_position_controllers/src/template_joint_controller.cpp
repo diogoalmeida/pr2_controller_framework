@@ -151,7 +151,22 @@ bool TemplateJointController::verifySanity(sensor_msgs::JointState &state)
         ROS_WARN("Joint %s has a commanded position <%.2f> bellow the lower limit <%.2f>", state.name[i].c_str(), state.position[i], limits->lower);
       }
     }
-
+    
+    if (std::abs(state.velocity[i]) > max_joint_velocity_)
+    {
+      if (state.velocity[i] < 0)
+      {
+        state.velocity[i] = -max_joint_velocity_;
+      }
+      else
+      {
+        state.velocity[i] = max_joint_velocity_;
+      }
+      
+      ROS_WARN("Joint %s has a commanded velocity <%.2f> of higher magnitude than the manual velocity threshold <%.2f>", state.name[i].c_str(), state.velocity[i], max_joint_velocity_);
+      hit_limit = true;
+    }
+    
     if (std::abs(state.velocity[i]) > limits->velocity)
     {
       if (state.velocity[i] < 0)
@@ -193,7 +208,13 @@ bool TemplateJointController::allocateVariables()
     ROS_ERROR("Joint controller requires a set of joint names (/common/actuated_joint_names)");
     return false;
   }
-
+  
+  if (!n_.getParam("/common/max_joint_velocity", max_joint_velocity_))
+  {
+    ROS_ERROR("Joint controller requires a joint velocity saturation value (/common/max_joint_velocity)");
+    return false;
+  }
+  
   if (joint_names_.size() == 0)
   {
     ROS_ERROR("Joint controller initialized with no joint names");

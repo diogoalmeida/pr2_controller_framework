@@ -16,6 +16,7 @@ common:
     l_wrist_flex_joint,
     l_wrist_roll_joint
     ]
+  max_joint_velocity: 1.0
 
   # Controllers
   position_loop_gains:

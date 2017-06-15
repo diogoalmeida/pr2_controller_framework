@@ -118,7 +118,7 @@ private:
   ros::Publisher feedback_pub_;
   pr2_joint_position_controllers::PR2JointControllerFeedback feedback_;
   boost::thread feedback_thread_;
-  double feedback_hz_;
+  double feedback_hz_, max_joint_velocity_;
 
   // Listen to topic to update reference
   ros::Subscriber reference_subscriber_;

@@ -181,12 +181,12 @@ namespace cartesian_controllers {
     // r2_marker.id = 4;
     // r2_marker.color = pc_marker.color;
     // 
-    // try
-    // {
-    //   while(ros::ok())
-    //   {
-    //     if (action_server_->isActive() && finished_acquiring_goal_)
-    //     {
+    try
+    {
+      while(ros::ok())
+      {
+        if (action_server_->isActive() && finished_acquiring_goal_)
+        {
     //       boost::lock_guard<boost::mutex> guard(reference_mutex_);
     //       pc_marker.header.stamp = ros::Time::now();
     //       p1_marker.header.stamp = ros::Time::now();
@@ -216,15 +216,17 @@ namespace cartesian_controllers {
     //       surface_wrench.header.stamp = ros::Time::now();
     //       feedback_.surface_wrench = surface_wrench;
     //       wrench2_pub_.publish(surface_wrench);
-    //       action_server_->publishFeedback(feedback_);
-    //     }
-    //     boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
-    //   }
-    // }
-    // catch(const boost::thread_interrupted &)
-    // {
-    //   return;
-    // }
+          feedback_.absolute_twist.header.stamp = ros::Time::now();
+          feedback_.relative_twist.header.stamp = ros::Time::now();
+          action_server_->publishFeedback(feedback_);
+        }
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
+      }
+    }
+    catch(const boost::thread_interrupted &)
+    {
+      return;
+    }
   }
 
   bool MechanismIdentificationController::loadParams()
@@ -239,12 +241,12 @@ namespace cartesian_controllers {
       return false;
     }
 
-    if (!getParam("/folding_controller/use_estimates", use_estimates_))
+    if (!getParam("/mechanism_controller/use_estimates", use_estimates_))
     {
       return false;
     }
 
-    if (!getParam("/folding_controller/rod_length", rod_length_))
+    if (!getParam("/mechanism_controller/rod_length", rod_length_))
     {
       return false;
     }
@@ -320,6 +322,8 @@ namespace cartesian_controllers {
     p2 = grasp_point_frame[surface_arm_].translation();
     contact_force = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(0,0);
     contact_torque = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(3,0);
+    p1_ = grasp_point_frame[rod_arm_];
+    p2_ = grasp_point_frame[surface_arm_];
 
     if (!has_initial_)
     {
@@ -336,16 +340,16 @@ namespace cartesian_controllers {
     }
     else
     {
-      pc_.translation() = rod_length_*grasp_point_frame[rod_arm_].matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+      pc_.translation() = rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
     }
-
-    p1_ = grasp_point_frame[rod_arm_];
-    p2_ = grasp_point_frame[surface_arm_];
-    pc_.linear() =  Eigen::Matrix<double, 3, 3>::Identity();
-
-    joint_commands = ects_controller_.control(jacobian[rod_arm_], jacobian[surface_arm_], pc_.translation() - p1_.translation(), pc_.translation() - p2_.translation(), q_dot[rod_arm_], q_dot[surface_arm_], ects_twist);
+    pc_.linear() =  p1_.linear();
+    
+    tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
+    tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);
+    
+    joint_commands = ects_controller_.control(jacobian[rod_arm_], jacobian[surface_arm_], pc_.translation() - p1, pc_.translation() - p2, q_dot[rod_arm_], q_dot[surface_arm_], ects_twist);
 
     for (unsigned int i = 0; i < 7; i++)
     {
@@ -353,23 +357,23 @@ namespace cartesian_controllers {
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }
 
-    int joint_index = 0;
+    std::vector<int> joint_index(2, 0);
     for (unsigned long i = 0; i < current_state.name.size(); i++)
     {
       control_output.velocity[i] = 0;
 
       if (hasJoint(chain_[rod_arm_], current_state.name[i]))
       {
-        control_output.position[i] = joint_positions_[rod_arm_](joint_index) + commanded_joint_velocities[rod_arm_](joint_index)*dt.toSec();
-        control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index);
-        joint_index++;
+        control_output.position[i] = joint_positions_[rod_arm_](joint_index[rod_arm_]) + commanded_joint_velocities[rod_arm_](joint_index[rod_arm_])*dt.toSec();
+        control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index[rod_arm_]);
+        joint_index[rod_arm_]++;
       }
 
       if (hasJoint(chain_[surface_arm_], current_state.name[i]))
       {
-        control_output.position[i] = joint_positions_[surface_arm_](joint_index) + commanded_joint_velocities[surface_arm_](joint_index)*dt.toSec();
-        control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index);
-        joint_index++;
+        control_output.position[i] = joint_positions_[surface_arm_](joint_index[surface_arm_]) + commanded_joint_velocities[surface_arm_](joint_index[surface_arm_])*dt.toSec();
+        control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index[surface_arm_]);
+        joint_index[surface_arm_]++;
       }
     }
 

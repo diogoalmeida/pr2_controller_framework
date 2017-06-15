@@ -228,6 +228,6 @@ folding_joint_controller:
   
 mechanism_joint_controller:
   type: pr2_joint_position_controllers/MechanismJointController
-  feedback_rate: 1
+  feedback_rate: 50
   receive_position_reference: True
   control_timeout: 1

@@ -1,0 +1,9 @@
+<launch>
+  <include file="$(find pr2_joint_position_controllers)/launch/pr2_controller.launch"/>
+  <node pkg="pr2_cartesian_clients" type="mechanism_client" name="mechanism_client"  output="screen">
+    <rosparam file="$(find pr2_cartesian_clients)/config/mechanism_client_config.yaml" command="load"/>
+  </node>
+
+  <node pkg="pr2_cartesian_clients" type="data_logger.py" name="data_logger"  output="screen"/>
+
+</launch>

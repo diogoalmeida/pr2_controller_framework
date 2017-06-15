@@ -8,8 +8,7 @@ namespace manipulation_algorithms{
   Vector14d ECTSController::control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector12d &error)
   {
     MatrixECTS J = MatrixECTS::Zero();
-    Matrix12d C, W = Matrix12d::Identity();
-    Eigen::Matrix<double, 14, 12> damped_inverse, sigma = Eigen::Matrix<double, 14, 12>::Zero();
+    Matrix12d C, W = Matrix12d::Identity(), damped_inverse;
     Vector14d q_dot, epsilon;
     int sing_values_num;
 
@@ -26,9 +25,9 @@ namespace manipulation_algorithms{
     q_dot.block<7, 1>(7, 0) = q_dot_2;
     epsilon = nullSpaceTask(J, Vector12d::Identity());
     
-    damped_inverse = J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
+    damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return damped_inverse*K_*error + epsilon - J.colPivHouseholderQr().solve(J*epsilon);
+    return J.transpose()*damped_inverse.ldlt().solve(K_*error) + epsilon - J.householderQr().solve(J*epsilon);
   }
 
   Vector14d ECTSController::nullSpaceTask(const MatrixECTS &J, const Vector12d &u)

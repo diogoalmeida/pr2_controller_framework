@@ -9,7 +9,7 @@ namespace manipulation_algorithms{
   {
     MatrixECTS J = MatrixECTS::Zero();
     Matrix12d C, W = Matrix12d::Identity();
-    Eigen::Matrix<double, 14, 12> damped_inverse, pseudo_inverse, sigma = Eigen::Matrix<double, 14, 12>::Zero();
+    Eigen::Matrix<double, 14, 12> damped_inverse, sigma = Eigen::Matrix<double, 14, 12>::Zero();
     Vector14d q_dot, epsilon;
     int sing_values_num;
 
@@ -25,22 +25,10 @@ namespace manipulation_algorithms{
     q_dot.block<7, 1>(0, 0) = q_dot_1;
     q_dot.block<7, 1>(7, 0) = q_dot_2;
     epsilon = nullSpaceTask(J, Vector12d::Identity());
-    Eigen::JacobiSVD<MatrixECTS> svd(J, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-    sing_values_num = svd.singularValues().rows();
-
-    for (int i = 0; i < sing_values_num; i++)
-    {
-      if (svd.singularValues()(i) > 0.0001)
-      {
-        sigma(i, i) = 1/svd.singularValues()(i);
-      }
-    }
-
+    
     damped_inverse = J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
-    pseudo_inverse = svd.matrixV()*sigma*svd.matrixU().transpose();
 
-    return damped_inverse*K_*error + (Eigen::Matrix<double, 14, 14>::Identity() - pseudo_inverse*J)*epsilon;
+    return damped_inverse*K_*error + epsilon - J.colPivHouseholderQr().solve(epsilon);
   }
 
   Vector14d ECTSController::nullSpaceTask(const MatrixECTS &J, const Vector12d &u)

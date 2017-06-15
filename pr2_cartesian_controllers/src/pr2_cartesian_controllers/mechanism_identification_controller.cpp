@@ -12,7 +12,7 @@ namespace cartesian_controllers {
       exit(0);
     }
 
-    has_initial_ = false; // used to set the initial pose for one folding action run
+    has_initial_ = false; // used to set the initial pose for one identification action run
     startActionlib();
     finished_acquiring_goal_ = false;
     // pc_pub_ = nh_.advertise<visualization_msgs::Marker>("pc", 1);
@@ -144,7 +144,7 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = true;
     }
 
-    ROS_INFO("Folding controller server received a goal!");
+    ROS_INFO("Mechanism identification controller server received a goal!");
   }
 
   void MechanismIdentificationController::publishFeedback()

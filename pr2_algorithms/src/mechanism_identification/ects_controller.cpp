@@ -38,13 +38,7 @@ namespace manipulation_algorithms{
 
     damped_inverse = J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
     pseudo_inverse = svd.matrixV()*sigma*svd.matrixU().transpose();
-    // std::cout << "V: " << svd.matrixV() << std::endl;
-    // std::cout << "S: " << sigma << std::endl;
-    // std::cout << "U: " << svd.matrixU() << std::endl;
-    // std::cout << "damped" << std::endl;
-    // std::cout << damped_inverse << std::endl << std::endl;
-    // std::cout << "pseudo" << std::endl;
-    // std::cout << pseudo_inverse << std::endl << std::endl;
+
     return damped_inverse*K_*error + (Eigen::Matrix<double, 14, 14>::Identity() - pseudo_inverse*J)*epsilon;
   }
 

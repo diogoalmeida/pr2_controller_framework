@@ -28,7 +28,7 @@ namespace manipulation_algorithms{
     
     damped_inverse = J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
 
-    return damped_inverse*K_*error + epsilon - J.colPivHouseholderQr().solve(epsilon);
+    return damped_inverse*K_*error + epsilon - J.colPivHouseholderQr().solve(J*epsilon);
   }
 
   Vector14d ECTSController::nullSpaceTask(const MatrixECTS &J, const Vector12d &u)

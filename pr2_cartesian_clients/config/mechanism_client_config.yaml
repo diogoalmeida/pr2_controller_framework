@@ -19,12 +19,12 @@ experiment:
   surface_arm: 0
   base_link_name: base_link
   surface_arm_tool_frame: l_gripper_tool_frame
-  num_of_experiments: 20
+  num_of_experiments: 1
   bag_prefix: garbage
-  vd_amp: 0.2
-  vd_freq: 1.5
-  wd_amp: 0.2
-  wd_freq: 1.2
+  vd_amp: 0.02
+  vd_freq: 0.1
+  wd_amp: 0.0
+  wd_freq: 0.0
   goal_force: 0.0
   initial_pose:
     rod: [0.455, -0.086, 0.23, 0.534, 0.539, -0.434, 0.485]

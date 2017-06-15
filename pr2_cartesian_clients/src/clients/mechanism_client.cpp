@@ -375,8 +375,8 @@ void MechanismClient::runExperiment()
         if(!gravity_compensation_client_.call(srv))
         {
           ROS_ERROR("Error calling the gravity compensation server!");
-          action_server_->setAborted();
-          return;
+          // action_server_->setAborted();
+          // return;
         }
 
         {

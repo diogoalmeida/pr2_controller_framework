@@ -1,7 +1,7 @@
 initialization:
   actionlib_server_names:
-    mechanism_action_name: /gazebo/mechanism_controller
-    move_action_name: /gazebo/move_controller
+    mechanism_action_name: /realtime_loop/mechanism_controller
+    move_action_name: /realtime_loop/move_controller
     client_action_name: mechanism_client
   controller_names:
     move_controller: move_joint_controller
@@ -21,14 +21,14 @@ experiment:
   surface_arm_tool_frame: l_gripper_tool_frame
   num_of_experiments: 1
   bag_prefix: garbage
-  vd_amp: 0.06
-  vd_freq: 0.1
+  vd_amp: 0.07
+  vd_freq: 0.3
   wd_amp: 0.0
   wd_freq: 0.2
   goal_force: 0.0
   initial_pose:
-    rod: [0.455, -0.086, 0.23, 0.534, 0.539, -0.434, 0.485]
-    surface: [0.505, 0.218, -0.161, 0.006, 0.006, -0.714, 0.700]
+    rod: [0.513, -0.177, 0.007, 0.670, 0.672, -0.234, 0.214]
+    surface: [0.509, 0.326, -0.020, 0.198, 0.241, -0.655, 0.688]
   logging:
     logging_topic: /realtime_loop/mechanism_identification/feedback
     toggle_logging_service: /data_logger/toggle

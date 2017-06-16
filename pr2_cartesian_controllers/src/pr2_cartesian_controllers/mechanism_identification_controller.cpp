@@ -272,6 +272,7 @@ namespace cartesian_controllers {
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero();
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
+    Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
@@ -349,6 +350,9 @@ namespace cartesian_controllers {
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
     tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);
     
+    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+    tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
+    ects_twist.block<6,1>(6,0) += comp_twist_eig;
     joint_commands = ects_controller_.control(jacobian[rod_arm_], jacobian[surface_arm_], pc_.translation() - p1, pc_.translation() - p2, q_dot[rod_arm_], q_dot[surface_arm_], ects_twist);
 
     for (unsigned int i = 0; i < 7; i++)

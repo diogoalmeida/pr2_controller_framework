@@ -18,6 +18,7 @@ catkin REQUIRED COMPONENTS
 
 link_directories(${catkin_LIBRARY_DIRS})
 set(CMAKE_CXX_FLAGS "-std=c++0x -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ${CMAKE_CXX_FLAGS}")
+set(ROS_BUILD_TYPE Release)
 
 add_message_files(
   FILES

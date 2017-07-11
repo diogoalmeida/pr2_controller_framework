@@ -48,7 +48,7 @@ target_link_libraries(folding_assembly_controller ${catkin_LIBRARIES})
 add_library(folding_assembly_estimator src/folding_assembly/folding_assembly_estimator.cpp src/algorithm_base.cpp)
 target_link_libraries(folding_assembly_estimator ${catkin_LIBRARIES})
 
-add_library(ects_controller src/mechanism_identification/ects_controller.cpp src/algorithm_base.cpp)
+add_library(ects_controller src/mechanism_identification/ects_controller.cpp src/algorithm_base.cpp src/chainjnttojacdotsolver.cpp)
 target_link_libraries(ects_controller ${catkin_LIBRARIES})
 
 add_library(kalman_filter src/mechanism_identification/kalman_filter.cpp src/algorithm_base.cpp)

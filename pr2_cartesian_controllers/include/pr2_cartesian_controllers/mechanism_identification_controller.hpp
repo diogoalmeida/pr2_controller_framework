@@ -39,7 +39,7 @@ private:
   manipulation_algorithms::KalmanEstimator estimator_;
   // controller
   manipulation_algorithms::AdaptiveController adaptive_controller_;
-  manipulation_algorithms::ECTSController ects_controller_;
+  boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;
 
   bool has_initial_, finished_acquiring_goal_, use_estimates_;
   int rod_arm_, surface_arm_;

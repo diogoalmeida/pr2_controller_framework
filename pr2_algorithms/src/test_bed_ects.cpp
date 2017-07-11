@@ -35,7 +35,6 @@ int main(int argc, char ** argv)
 
   ros::NodeHandle n;
   pr2_algorithms::TestBedECTSFeedback feedback_msg;
-  manipulation_algorithms::ECTSController controller;
   urdf::Model model;
   KDL::Tree tree;
   std::vector<KDL::Chain> chain(2);
@@ -54,7 +53,6 @@ int main(int argc, char ** argv)
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedECTSFeedback>("/test_bed/feedback", 1);
   ros::Publisher state_pub = n.advertise<sensor_msgs::JointState>("/sim_joint_states", 1);
-  controller.getParams(n);
   if(!model.initParam("/robot_description")){
       ROS_ERROR("ERROR getting robot description (/robot_description)");
       return -1;
@@ -71,6 +69,8 @@ int main(int argc, char ** argv)
   joint_state[1].qdot.resize(chain[1].getNrOfJoints());
   jac_solver[1].reset(new KDL::ChainJntToJacSolver(chain[1]));
   fk_solver[1].reset(new KDL::ChainFkSolverPos_recursive(chain[1]));
+  manipulation_algorithms::ECTSController controller(chain[0], chain[1]);
+  controller.getParams(n);
 
   if (argc > 1 && atof(argv[1]) > 0)
   {
@@ -116,7 +116,7 @@ int main(int argc, char ** argv)
 
     command_twist = Vector12d::Zero();
 
-    out = controller.control(jacobian[0].data, jacobian[1].data, pc - p1, pc - p2, joint_state[0].q.data, joint_state[1].q.data, command_twist);
+    out = controller.control(jacobian[0].data, jacobian[1].data, pc - p1, pc - p2, joint_state[0].q.data, joint_state[1].q.data, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
     std::cout << out << std::endl << std::endl;
 

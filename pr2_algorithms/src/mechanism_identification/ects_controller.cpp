@@ -2,32 +2,39 @@
 
 namespace manipulation_algorithms{
 
-  ECTSController::ECTSController(){}
+  ECTSController::ECTSController(const KDL::Chain &chain_1, const KDL::Chain &chain_2)
+  {
+    jac_dot_solver_1_.reset(new KDL::ChainJntToJacDotSolver(chain_1));
+    jac_dot_solver_2_.reset(new KDL::ChainJntToJacDotSolver(chain_2));
+  }
+
   ECTSController::~ECTSController(){}
 
-  Vector14d ECTSController::control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector12d &error)
+  Vector14d ECTSController::control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector6d &twist_a, const Vector6d &twist_r)
   {
-    MatrixECTS J = MatrixECTS::Zero();
-    Matrix12d C, W = Matrix12d::Identity(), damped_inverse;
+    MatrixECTSr J = MatrixECTSr::Zero();
+    Matrix6d damped_inverse;
+    Matrix12d C, W = Matrix12d::Identity();
     Vector14d q_dot, epsilon;
-    int sing_values_num;
 
-    J.block<6, 7>(0, 0) = J_1;
-    J.block<6, 7>(6, 7) = J_2;
-    C.block<6, 6>(0, 0) = alpha_*Matrix6d::Identity();
-    C.block<6, 6>(0, 6) = (1 - alpha_)*Matrix6d::Identity();
-    C.block<6, 6>(6, 0) = -beta_*Matrix6d::Identity();
-    C.block<6, 6>(6, 6) = Matrix6d::Identity();
+    // J.block<6, 7>(0, 0) = J_1;
+    // J.block<6, 7>(6, 7) = J_2;
+    // C.block<6, 6>(0, 0) = alpha_*Matrix6d::Identity();
+    // C.block<6, 6>(0, 6) = (1 - alpha_)*Matrix6d::Identity();
+    // C.block<6, 6>(6, 0) = -beta_*Matrix6d::Identity();
+    // C.block<6, 6>(6, 6) = Matrix6d::Identity();
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1);
     W.block<3, 3>(3, 9) = -computeSkewSymmetric(r_2);
-    J = C*W*J; // ECTS Jacobian
+    J.block<6,7>(0,0) = -beta_*W.block<6,6>(0,0)*J_1;
+    J.block<6,7>(0,7) = W.block<6,6>(6,6)*J_2; // ECTS Jacobian
+
     q_dot.block<7, 1>(0, 0) = q_dot_1;
     q_dot.block<7, 1>(7, 0) = q_dot_2;
-    epsilon = nullSpaceTask(J, Vector12d::Identity());
-    
-    damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
+    // epsilon = nullSpaceTask(J, Vector12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(K_*error) + epsilon - J.householderQr().solve(J*epsilon);
+    damped_inverse = (J*J.transpose() + damping_*Matrix6d::Identity());
+
+    return J.transpose()*damped_inverse.ldlt().solve(twist_r) + epsilon - J.householderQr().solve(J*epsilon);
   }
 
   Vector14d ECTSController::nullSpaceTask(const MatrixECTS &J, const Vector12d &u)

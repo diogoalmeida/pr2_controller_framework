@@ -273,7 +273,7 @@ namespace cartesian_controllers {
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero();
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
-    Eigen::Matrix<double, 6, 1> comp_twist_eig;
+    Eigen::Matrix<double, 6, 1> comp_twist_eig, transmission_direction;
     KDL::Jacobian kdl_jac(7);
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
@@ -345,6 +345,13 @@ namespace cartesian_controllers {
       pc_.translation() = rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
+      ects_controller_->clearOptimizationDirections();
+      transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
+      transmission_direction.block<3,1>(0,0) = translational_dof_ground;
+      ects_controller_->addOptimizationDirection(transmission_direction);
+      transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
+      transmission_direction.block<3,1>(3,0) = rotational_dof_ground;
+      ects_controller_->addOptimizationDirection(transmission_direction);
     }
     pc_.linear() =  p1_.linear();
 

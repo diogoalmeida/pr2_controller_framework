@@ -20,11 +20,11 @@ namespace manipulation_algorithms{
     q2_ = q2;
     r_1_ = r_1;
     r_2_ = r_2;
-
+    
     J = computeRelativeJacobian(q1_, q2_);
-
+    
     epsilon = computeNullSpaceTask();
-
+    
     damped_inverse = (J*J.transpose() + damping_*Matrix6d::Identity());
 
     return J.transpose()*damped_inverse.ldlt().solve(twist_r) + epsilon - J.householderQr().solve(J*epsilon);
@@ -32,15 +32,16 @@ namespace manipulation_algorithms{
 
   MatrixECTSr ECTSController::computeRelativeJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2)
   {
-    Matrix12d C, W = Matrix12d::Identity();
+    Matrix12d W = Matrix12d::Identity();
     MatrixECTSr J;
-    KDL::Jacobian J_1_kdl, J_2_kdl;
+    KDL::Jacobian J_1_kdl(7), J_2_kdl(7);
 
     jac_solver_1_->JntToJac(q1, J_1_kdl);
     jac_solver_2_->JntToJac(q2, J_2_kdl);
-
+    
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
-    W.block<3, 3>(3, 9) = -computeSkewSymmetric(r_2_);
+    W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
+    
     J.block<6,7>(0,0) = -beta_*W.block<6,6>(0,0)*J_1_kdl.data;
     J.block<6,7>(0,7) = W.block<6,6>(6,6)*J_2_kdl.data;
 
@@ -49,7 +50,10 @@ namespace manipulation_algorithms{
 
   double ECTSController::computeTransmissionRatio(const MatrixECTSr &J, const Vector6d &u)
   {
-    return 1/sqrt(u.transpose()*(J*J.transpose()).inverse()*u);
+    Matrix6d dJJ = (J*J.transpose()).inverse();
+    double quad = u.transpose()*dJJ*u;
+    
+    return 0.1/sqrt(quad);
   }
 
   double ECTSController::computeTaskCompatibility(const MatrixECTSr &J)
@@ -78,7 +82,6 @@ namespace manipulation_algorithms{
       q_minus = q1_;
       q_plus(i) += epsilon;
       q_minus(i) -= epsilon;
-
       J_plus = computeRelativeJacobian(q_plus, q2_);
       J_minus = computeRelativeJacobian(q_minus, q2_);
       cm_plus = computeTaskCompatibility(J_plus);
@@ -106,6 +109,11 @@ namespace manipulation_algorithms{
   void ECTSController::addOptimizationDirection(const Vector6d &u)
   {
     u_list_.push_back(u);
+  }
+  
+  void ECTSController::clearOptimizationDirections()
+  {
+    u_list_.clear();
   }
 
   bool ECTSController::getParams(const ros::NodeHandle &n)

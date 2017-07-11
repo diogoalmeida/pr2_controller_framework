@@ -9,6 +9,7 @@
 #include <boost/thread.hpp>
 #include <limits>
 #include <stdexcept>
+#include <cmath>
 
 namespace manipulation_algorithms{
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -60,6 +61,7 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       @param u The \f$u_{m_i}\f$ to be added.
     **/
     void addOptimizationDirection(const Vector6d &u);
+    void clearOptimizationDirections();
   private:
     double alpha_, damping_;
     Matrix12d K_;

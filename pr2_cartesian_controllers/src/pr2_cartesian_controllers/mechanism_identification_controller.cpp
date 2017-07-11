@@ -354,7 +354,7 @@ namespace cartesian_controllers {
     comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
     ects_twist.block<6,1>(6,0) += comp_twist_eig;
-    joint_commands = ects_controller_->control(jacobian[rod_arm_], jacobian[surface_arm_], pc_.translation() - p1, pc_.translation() - p2, q_dot[rod_arm_], q_dot[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
+    joint_commands = ects_controller_->control(pc_.translation() - p1, pc_.translation() - p2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)
     {

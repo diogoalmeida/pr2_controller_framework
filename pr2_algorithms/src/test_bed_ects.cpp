@@ -116,7 +116,7 @@ int main(int argc, char ** argv)
 
     command_twist = Vector12d::Zero();
 
-    out = controller.control(jacobian[0].data, jacobian[1].data, pc - p1, pc - p2, joint_state[0].q.data, joint_state[1].q.data, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
+    out = controller.control(pc - p1, pc - p2, joint_state[0].q, joint_state[1].q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
     std::cout << out << std::endl << std::endl;
 

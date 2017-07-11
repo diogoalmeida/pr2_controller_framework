@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 #include <math.h>
 #include <pr2_algorithms/algorithm_base.hpp>
-#include <pr2_algorithms/chainjnttojacdotsolver.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
 #include <boost/thread.hpp>
 #include <limits>
 #include <stdexcept>
@@ -38,30 +38,59 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     /**
       Computes the ECTS reference joint velocities for the two manipulators.
 
-      @param J_i The manipulators' jacobians.
       @param r_i The virtual sticks connecting the manipulators end-effectos to the object reference points.
       @param q_dot_i The manipulators' joint velocities.
       @param twist_a The commanded absolute motion twist.
       @param twist_r The commanded relative motion twist.
       @return The 14 dimensional joint velocities vector.
     **/
-    Vector14d control(const Matrix67d &J_1, const Matrix67d &J_2, const Vector3d &r_1, const Vector3d &r_2, const Vector7d &q_dot_1, const Vector7d &q_dot_2, const Vector6d &twist_a, const Vector6d &twist_r);
+    Vector14d control(const Vector3d &r_1, const Vector3d &r_2, const KDL::JntArray &q1, const KDL::JntArray &q2, const Vector6d &twist_a, const Vector6d &twist_r);
+
+    /**
+      Adds a task relevant direction, u. The controller will try to optimize
+      its velocity transmission ratio. Adding multiple u's will make the controller
+      try to optimize the motion task compatibility index defined as
+
+      \f$c_m = \sum_{i=1}^{n} \alpha_{m_i}^{\pm 2}\f$
+
+      where
+
+      \f$\alpha_{m_i} = [u_{m_i}^\top (J_{E_r}J_{E_r}^\top)^{-1}u_{m_i}]^{-1/2}\f$
+
+      @param u The \f$u_{m_i}\f$ to be added.
+    **/
+    void addOptimizationDirection(const Vector6d &u);
   private:
     double alpha_, damping_;
     Matrix12d K_;
     int beta_;
-    boost::shared_ptr<KDL::ChainJntToJacDotSolver> jac_dot_solver_1_;
-    boost::shared_ptr<KDL::ChainJntToJacDotSolver> jac_dot_solver_2_;
+    boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_1_;
+    boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_2_;
+    std::vector<Vector6d> u_list_;
+    KDL::JntArray q1_, q2_;
+    Vector3d r_1_, r_2_;
 
     /**
-      Computes the secundary objective that will be projected unto the nullspace
-      of the primary task.
+      Compute the velocity transmission ratio along the direction u.
 
-      @param J The ECTS jacobian.
-      @param u The desired axis for the optimal velocity transfer ration.
-      @return The secundary objective velocity reference.
+      @param J The relative jacobian of the system.
+      @param u The direction along which to measure the velocity transmission ratio.
     **/
-    Vector14d nullSpaceTask(const MatrixECTS &J, const Vector12d &u);
+    double computeTransmissionRatio(const MatrixECTSr &J, const Vector6d &u);
+
+    /**
+      Computes the relative jacobian that maps joints to relative task space twists.
+
+      @return The relative jacobian.
+    **/
+    MatrixECTSr computeRelativeJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2);
+
+    /**
+      Computes the task compatibility measure \f$c_m = \sum_{i=1}^n \alpha_{m_i}^{\pm2}\f$.
+    **/
+    double computeTaskCompatibility(const MatrixECTSr &J);
+
+    Vector14d computeNullSpaceTask();
   };
 }
 #endif

@@ -356,16 +356,14 @@ namespace cartesian_controllers {
       if (hasJoint(chain_[rod_arm_], current_state.name[i]))
       {
         control_output.position[i] = joint_positions_[rod_arm_](joint_index[rod_arm_]) + commanded_joint_velocities[rod_arm_](joint_index[rod_arm_])*dt.toSec();
-        // control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index[rod_arm_]);
-        control_output.velocity[i] = 20*(control_output.position[i] - joint_positions_[rod_arm_](joint_index[rod_arm_]));
+        control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index[rod_arm_]);
         joint_index[rod_arm_]++;
       }
 
       if (hasJoint(chain_[surface_arm_], current_state.name[i]))
       {
         control_output.position[i] = joint_positions_[surface_arm_](joint_index[surface_arm_]) + commanded_joint_velocities[surface_arm_](joint_index[surface_arm_])*dt.toSec();
-        // control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index[surface_arm_]);
-        control_output.velocity[i] = 20*(control_output.position[i] - joint_positions_[surface_arm_](joint_index[surface_arm_]));
+        control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index[surface_arm_]);
         joint_index[surface_arm_]++;
       }
     }

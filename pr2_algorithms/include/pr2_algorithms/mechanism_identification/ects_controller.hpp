@@ -72,8 +72,10 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       Return the current alpha value that determines the degree of colaboration between arms.
     **/
     double getAlpha();
+    
+    void setNullspaceGain(double km);
   private:
-    double alpha_, damping_, current_cm_;
+    double alpha_, damping_, current_cm_, km_;
     Matrix12d K_;
     int beta_;
     boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_1_;

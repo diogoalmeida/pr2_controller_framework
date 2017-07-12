@@ -40,7 +40,7 @@ private:
   manipulation_algorithms::AdaptiveController adaptive_controller_;
   boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;
 
-  bool has_initial_, finished_acquiring_goal_, use_estimates_;
+  bool has_initial_, finished_acquiring_goal_, use_estimates_, use_nullspace_;
   int rod_arm_, surface_arm_;
   double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp_;

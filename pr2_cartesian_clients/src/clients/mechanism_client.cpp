@@ -67,7 +67,19 @@ bool MechanismClient::loadParams()
 
   if(!nh_.getParam("experiment/base_link_name", base_link_name_))
   {
-    ROS_ERROR("No base link frame name defined (base_link_name)");
+    ROS_ERROR("No base link frame name defined (experiment/base_link_name)");
+    return false;
+  }
+  
+  if(!nh_.getParam("experiment/use_nullspace", use_nullspace_))
+  {
+    ROS_ERROR("No use_nullspace defined (experiment/use_nullspace)");
+    return false;
+  }
+  
+  if(!nh_.getParam("experiment/nullspace_gain", km_))
+  {
+    ROS_ERROR("No nullspace_gain defined (experiment/nullspace_gain)");
     return false;
   }
 
@@ -263,6 +275,8 @@ void MechanismClient::goalCB()
       goal_force_ = goal->force;
       rod_arm_ = goal->rod_arm;
       surface_arm_ = goal->surface_arm;
+      use_nullspace_ = goal->use_nullspace;
+      km_ = goal->nullspace_gain;
 
       if (goal->randomize_desired_state)
       {
@@ -420,6 +434,8 @@ void MechanismClient::runExperiment()
         mechanism_goal.vd_frequency = vd_freq_;
         mechanism_goal.wd_frequency = wd_freq_;
         mechanism_goal.goal_force = goal_force_;
+        mechanism_goal.use_nullspace = use_nullspace_;
+        mechanism_goal.nullspace_gain = km_;
 
         bool mechanism_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MechanismIdentificationAction,

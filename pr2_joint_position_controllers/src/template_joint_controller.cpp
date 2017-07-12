@@ -283,16 +283,28 @@ double TemplateJointController::applyControlLoop(const pr2_mechanism_model::Join
 {
   double current_position, position_error, position_feedback;
   double current_velocity, velocity_error;
-
+  
+  //TODO: Make proper
+  bool is_old = false;
+  
+  if (is_old)
+  {
+    current_position = joint_state->position_;
+    position_error = desired_position - current_position;
+    current_velocity = joint_state->velocity_;
+    position_feedback = position_joint_controllers_[controller_num]->computeCommand(position_error, dt);
+    velocity_error = desired_velocity + position_feedback - current_velocity;
+    modified_velocity_references_[controller_num] = desired_velocity + position_feedback;
+    
+    return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt) + ff_joint_controllers_[controller_num]*desired_velocity;
+  }
+  
   current_position = joint_state->position_;
-  position_error = desired_position - current_position;
-
   current_velocity = joint_state->velocity_;
-  position_feedback = position_joint_controllers_[controller_num]->computeCommand(position_error, dt);
-  velocity_error = desired_velocity + position_feedback - current_velocity;
-  modified_velocity_references_[controller_num] = desired_velocity + position_feedback;
-
-  return velocity_joint_controllers_[controller_num]->computeCommand(velocity_error, dt) + ff_joint_controllers_[controller_num]*desired_velocity;
+  position_error = desired_position - current_position;
+  velocity_error = desired_velocity - current_velocity;
+  
+  return position_joint_controllers_[controller_num]->computeCommand(position_error, velocity_error, dt);
 }
 
 double TemplateJointController::getReferencePosition(std::string joint_name)

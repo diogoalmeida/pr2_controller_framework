@@ -6,6 +6,8 @@ float64 vd_amplitude
 float64 vd_frequency
 float64 wd_amplitude
 float64 wd_frequency
+float64 nullspace_gain
+bool use_nullspace
 
 int32 LEFT_ARM = 0
 int32 RIGHT_ARM = 1

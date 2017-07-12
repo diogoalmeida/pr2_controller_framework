@@ -1,7 +1,7 @@
 initialization:
   actionlib_server_names:
-    mechanism_action_name: /gazebo/mechanism_controller
-    move_action_name: /gazebo/move_controller
+    mechanism_action_name: /realtime_loop/mechanism_controller
+    move_action_name: /realtime_loop/move_controller
     client_action_name: mechanism_client
   controller_names:
     move_controller: move_joint_controller
@@ -14,6 +14,8 @@ initialization:
   exclude_controller_names: [base_controller, base_odometry, head_traj_controller, laser_tilt_controller, torso_controller, r_gripper_controller, l_gripper_controller, r_arm_controller, l_arm_controller]
 
 experiment:
+  use_nullspace: true
+  nullspace_gain: 0.01
   feedback_rate: 1
   rod_arm: 1 # 0 - left; 1 - right
   surface_arm: 0

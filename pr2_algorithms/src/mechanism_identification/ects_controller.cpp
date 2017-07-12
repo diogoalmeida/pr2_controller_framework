@@ -7,6 +7,7 @@ namespace manipulation_algorithms{
     jac_solver_1_.reset(new KDL::ChainJntToJacSolver(chain_1));
     jac_solver_2_.reset(new KDL::ChainJntToJacSolver(chain_2));
     current_cm_ = 0;
+    km_ = 0;
   }
 
   ECTSController::~ECTSController(){}
@@ -31,7 +32,12 @@ namespace manipulation_algorithms{
 
     return J.transpose()*damped_inverse.ldlt().solve(twist_r) + epsilon - J.householderQr().solve(J*epsilon);
   }
-
+  
+  void ECTSController::setNullspaceGain(double km)
+  {
+    km_ = km;
+  }
+  
   double ECTSController::getTaskCompatibility()
   {
     return current_cm_;
@@ -65,7 +71,7 @@ namespace manipulation_algorithms{
     Matrix6d dJJ = (J*J.transpose()).inverse();
     double quad = u.transpose()*dJJ*u;
 
-    return 0.1/sqrt(quad);
+    return 1/sqrt(quad);
   }
 
   double ECTSController::computeTaskCompatibility(const MatrixECTSr &J)
@@ -115,7 +121,7 @@ namespace manipulation_algorithms{
       task(i + 7) = (cm_plus - cm_minus)/(2*epsilon);
     }
 
-    return task;
+    return km_*task;
   }
 
   void ECTSController::addOptimizationDirection(const Vector6d &u)

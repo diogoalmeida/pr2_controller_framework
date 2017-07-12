@@ -86,12 +86,12 @@ namespace manipulation{
     double move_action_time_limit_, mechanism_action_time_limit_;
     pr2_cartesian_clients::MechanismFeedback feedback_;
 
-    double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_;
+    double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, km_;
     geometry_msgs::PoseStamped initial_rod_pose_, initial_surface_pose_;
     std::string base_link_name_, surface_frame_name_;
     std::string gravity_compensation_service_name_;
     int num_of_experiments_, current_iter_, rod_arm_, surface_arm_;
-    bool use_vision_, sim_mode_;
+    bool use_vision_, sim_mode_, use_nullspace_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 
     std::default_random_engine noise_generator_;

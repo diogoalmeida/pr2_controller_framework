@@ -21,183 +21,183 @@ common:
   # Controllers
   position_loop_gains:
     r_upper_arm_roll_joint:
-      p: 4
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 6
+      i: 600
+      d: 6
+      i_clamp: 4
 
     r_shoulder_pan_joint:
-      p: 5
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 2400
+      i: 800
+      d: 18
+      i_clamp: 4
 
     r_shoulder_lift_joint:
-      p: 50
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 1200
+      i: 700
+      d: 10
+      i_clamp: 4
 
     r_forearm_roll_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 300
+      i: 300
+      d: 6
+      i_clamp: 2
 
     r_elbow_flex_joint:
-      p: 50
-      i: 0
-      d: 0
-      i_clamp: 0
+      p: 700
+      i: 450
+      d: 4
+      i_clamp: 4
 
     r_wrist_flex_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 300
+      i: 300
+      d: 4
+      i_clamp: 2
 
     r_wrist_roll_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 0
+      p: 300
+      i: 300
+      d: 4
+      i_clamp: 2
 
     l_upper_arm_roll_joint:
-      p: 4
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 6
+      i: 600
+      d: 6
+      i_clamp: 4
 
     l_shoulder_pan_joint:
-      p: 5
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 2400
+      i: 800
+      d: 18
+      i_clamp: 4
 
     l_shoulder_lift_joint:
-      p: 50
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 1200
+      i: 700
+      d: 10
+      i_clamp: 4
 
     l_forearm_roll_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 300
+      i: 300
+      d: 6
+      i_clamp: 2
 
     l_elbow_flex_joint:
-      p: 50
-      i: 0
-      d: 0
-      i_clamp: 0
+      p: 700
+      i: 450
+      d: 4
+      i_clamp: 4
 
     l_wrist_flex_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 10
+      p: 300
+      i: 300
+      d: 4
+      i_clamp: 2
 
     l_wrist_roll_joint:
-      p: 100
-      i: 0
-      d: 0
-      i_clamp: 0
+      p: 300
+      i: 300
+      d: 4
+      i_clamp: 2
   velocity_loop_gains:
     r_upper_arm_roll_joint:
-      p: 5
-      i: 10
+      p: 1
+      i: 0
       d: 0
       i_clamp: 2
       feedforward_gain: 30
 
     r_shoulder_pan_joint:
-      p: 20
-      i: 3
+      p: 1
+      i: 0
       d: 0
       i_clamp: 1
       feedforward_gain: 20
 
     r_shoulder_lift_joint:
-      p: 15
-      i: 15
+      p: 1
+      i: 0
       d: 0
       i_clamp: 7.5
       feedforward_gain: 20
 
     r_forearm_roll_joint:
-      p: 20
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 20
 
     r_elbow_flex_joint:
-      p: 10
-      i: 15
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 20
 
     r_wrist_flex_joint:
-      p: 15
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 1
 
     r_wrist_roll_joint:
-      p: 10
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 1
 
     l_upper_arm_roll_joint:
-      p: 5
-      i: 10
+      p: 1
+      i: 0
       d: 0
       i_clamp: 2
       feedforward_gain: 30
 
     l_shoulder_pan_joint:
-      p: 20
-      i: 3
+      p: 1
+      i: 0
       d: 0
       i_clamp: 1
       feedforward_gain: 20
 
     l_shoulder_lift_joint:
-      p: 15
-      i: 15
+      p: 1
+      i: 0
       d: 0
       i_clamp: 7.5
       feedforward_gain: 20
 
     l_forearm_roll_joint:
-      p: 20
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 20
 
     l_elbow_flex_joint:
-      p: 10
-      i: 15
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 20
 
     l_wrist_flex_joint:
-      p: 15
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 1
 
     l_wrist_roll_joint:
-      p: 10
-      i: 100
+      p: 1
+      i: 0
       d: 0
       i_clamp: 10
       feedforward_gain: 1

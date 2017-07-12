@@ -1,7 +1,9 @@
 # Empty goal
+bool use_goal # if false, will keep current values
+bool use_nullspace
 int32 rod_arm
 int32 surface_arm
-bool use_goal # if false, will keep current values
+float64 nullspace_gain
 float64 mechanism_timeout
 int32 num_of_experiments
 std_msgs/String bag_prefix

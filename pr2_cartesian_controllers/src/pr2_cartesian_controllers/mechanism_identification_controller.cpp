@@ -20,6 +20,7 @@ namespace cartesian_controllers {
     p2_pub_ = nh_.advertise<visualization_msgs::Marker>("p2", 1);
     r1_pub_ = nh_.advertise<visualization_msgs::Marker>("r1", 1);
     r2_pub_ = nh_.advertise<visualization_msgs::Marker>("r2", 1);
+    use_nullspace_ = false;
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
@@ -78,7 +79,9 @@ namespace cartesian_controllers {
     vd_freq_ = goal->vd_frequency;
     wd_amp_ = goal->wd_amplitude;
     wd_freq_ = goal->wd_frequency;
-
+    use_nullspace_ = goal->use_nullspace;
+    
+    ects_controller_->setNullspaceGain(goal->nullspace_gain);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;
 
@@ -317,13 +320,17 @@ namespace cartesian_controllers {
       pc_.translation() = rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
-      ects_controller_->clearOptimizationDirections();
-      transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
-      transmission_direction.block<3,1>(0,0) = translational_dof_ground;
-      ects_controller_->addOptimizationDirection(transmission_direction);
-      transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
-      transmission_direction.block<3,1>(3,0) = rotational_dof_ground;
-      ects_controller_->addOptimizationDirection(transmission_direction);
+      
+      if (use_nullspace_)
+      {
+        ects_controller_->clearOptimizationDirections();
+        transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
+        transmission_direction.block<3,1>(0,0) = translational_dof_ground;
+        ects_controller_->addOptimizationDirection(transmission_direction);
+        transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
+        transmission_direction.block<3,1>(3,0) = rotational_dof_ground;
+        ects_controller_->addOptimizationDirection(transmission_direction);
+      }
     }
     pc_.linear() =  p1_.linear();
 

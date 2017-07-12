@@ -21,6 +21,7 @@
 #include <geometry_msgs/WrenchStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
+#include <utils/TwistController.hpp>
 #define NUM_ARMS 2
 
 namespace cartesian_controllers{
@@ -117,6 +118,15 @@ protected:
     @param ft_topic_name The ros topic where the original wrench measurements are published.
   **/
   void initializeWrenchComms(Eigen::Matrix<double, 6, 1> &measured_wrench, ros::Subscriber &ft_sub, ros::Publisher &ft_pub, std::string ft_topic_name);
+
+  /**
+    Initializes the twist controller by translating the desired gains from the given frame id to the base link.
+
+    @param comp_gains The gains in frame_id.
+    @param base_link The base link name.
+    @param frame_id The frame where the gains are expressed.
+  **/
+  void initTwistController(const std::vector<double> &comp_gains, const std::string &base_link, const std::string &frame_id);
 
   /**
     Provides access to the measured wrench in a given frame.
@@ -286,6 +296,7 @@ protected:
 
   std::vector<Eigen::Matrix<double, 6, 1> > measured_wrench_;
   double force_d_;
+  boost::shared_ptr<TwistController> twist_controller_;
 
 private:
   tf::TransformBroadcaster broadcaster_;
@@ -452,6 +463,47 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeWr
   measured_wrench << 0, 0, 0, 0, 0, 0;
   ft_sub = nh_.subscribe(ft_topic_name, 1, &ControllerTemplate::forceTorqueCB, this); // we will pass the topic name to the subscriber to allow the proper wrench vector to be filled.
   ft_pub = nh_.advertise<geometry_msgs::WrenchStamped>(ft_topic_name + "/converted", 1);
+}
+
+template <class ActionClass, class ActionFeedback, class ActionResult>
+void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initTwistController(const std::vector<double> &comp_gains, const std::string &base_link, const std::string &frame_id)
+{
+  std::vector<double> linear_gains(3), ang_gains(3);
+  for (int i = 0; i < 3; i++)
+  {
+    linear_gains[i] = comp_gains[i];
+    ang_gains[i] = comp_gains[i + 3];
+  }
+
+  geometry_msgs::Vector3Stamped lin_gains_msg, ang_gains_msg;
+
+  vectorStdToMsg(linear_gains, lin_gains_msg.vector);
+  vectorStdToMsg(ang_gains, ang_gains_msg.vector);
+
+  lin_gains_msg.header.frame_id = frame_id;
+  // ang_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
+
+  try
+  {
+    lin_gains_msg.header.stamp = ros::Time(0);
+    ang_gains_msg.header.stamp = ros::Time(0);
+    listener_.transformVector(base_link, lin_gains_msg, lin_gains_msg);
+    vectorMsgToStd(lin_gains_msg.vector, linear_gains);
+    Eigen::Matrix<double, 6, 1> gains;
+    for (int i = 0; i < 3; i++)
+    {
+      gains[i] = linear_gains[i];
+      gains[i + 3] = ang_gains[i];
+    }
+
+    twist_controller_.reset(new TwistController(gains));
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+    action_server_->setAborted();
+    return;
+  }
 }
 
 template <class ActionClass, class ActionFeedback, class ActionResult>

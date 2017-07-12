@@ -70,39 +70,11 @@ namespace cartesian_controllers {
     goal_theta_ = goal->orientation_goal;
     goal_force_ = goal->force_goal;
 
-    std::vector<double> linear_gains(3), ang_gains(3);
-    for (int i = 0; i < 3; i++)
-    {
-      linear_gains[i] = comp_gains_[i];
-      ang_gains[i] = comp_gains_[i + 3];
-    }
-
-    geometry_msgs::Vector3Stamped lin_gains_msg, ang_gains_msg;
-
-    vectorStdToMsg(linear_gains, lin_gains_msg.vector);
-    vectorStdToMsg(ang_gains, ang_gains_msg.vector);
-
-    lin_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
-    // ang_gains_msg.header.frame_id = ft_frame_id_[surface_arm_];
-
+    initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;
+
     try
     {
-      lin_gains_msg.header.stamp = ros::Time(0);
-      ang_gains_msg.header.stamp = ros::Time(0);
-      listener_.transformVector(base_link_, lin_gains_msg, lin_gains_msg);
-      // listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
-      vectorMsgToStd(lin_gains_msg.vector, linear_gains);
-      // vectorMsgToStd(ang_gains_msg.vector, ang_gains);
-      Eigen::Matrix<double, 6, 1> gains;
-      for (int i = 0; i < 3; i++)
-      {
-        gains[i] = linear_gains[i];
-        gains[i + 3] = ang_gains[i];
-      }
-
-      twist_controller_.reset(new TwistController(gains));
-
       // get the relationship between kinematic chain end-effector and
       // tool-tip (grasping point)
       for (int i = 0; i < NUM_ARMS; i++)

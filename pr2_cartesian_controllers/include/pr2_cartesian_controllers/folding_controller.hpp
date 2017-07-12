@@ -47,8 +47,6 @@ private:
   ros::Publisher pc_pub_, p1_pub_, p2_pub_, r1_pub_, r2_pub_, wrench2_pub_;
   std::vector<double> comp_gains_;
 
-  boost::shared_ptr<TwistController> twist_controller_;
-
 public:
   FoldingController();
   virtual ~FoldingController();

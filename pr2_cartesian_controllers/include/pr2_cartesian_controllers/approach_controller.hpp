@@ -34,8 +34,6 @@ private:
   ros::Time initial_contact_;
   int arm_index_;
 
-  boost::shared_ptr<TwistController> twist_controller_;
-
 public:
   ApproachController();
   virtual ~ApproachController();

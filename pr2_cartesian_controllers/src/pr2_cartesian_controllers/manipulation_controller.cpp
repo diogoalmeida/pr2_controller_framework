@@ -103,40 +103,11 @@ namespace cartesian_controllers {
 
     pose_in = goal->surface_frame;
 
-    std::vector<double> linear_gains(3), ang_gains(3);
-
-    for (int i = 0; i < 3; i++)
-    {
-      linear_gains[i] = comp_gains_[i];
-      ang_gains[i] = comp_gains_ [i + 3];
-    }
-
-    geometry_msgs::Vector3Stamped lin_gains_msg, ang_gains_msg;
-
-    vectorStdToMsg(linear_gains, lin_gains_msg.vector);
-    vectorStdToMsg(ang_gains, ang_gains_msg.vector);
-
-    lin_gains_msg.header.frame_id = pose_in.header.frame_id;
-    ang_gains_msg.header.frame_id = pose_in.header.frame_id;
+    initTwistController(comp_gains_, base_link_, pose_in.header.frame_id);
     listener_.waitForTransform(pose_in.header.frame_id, base_link_, ros::Time(0), ros::Duration(wait_for_tf_time_));
+
     try
     {
-      // get surface frame
-      lin_gains_msg.header.stamp = ros::Time(0);
-      ang_gains_msg.header.stamp = ros::Time(0);
-      listener_.transformVector(base_link_, lin_gains_msg, lin_gains_msg);
-      listener_.transformVector(base_link_, ang_gains_msg, ang_gains_msg);
-      vectorMsgToStd(lin_gains_msg.vector, linear_gains);
-      vectorMsgToStd(ang_gains_msg.vector, ang_gains);
-      Eigen::Matrix<double, 6, 1> gains;
-      for (int i = 0; i < 3; i++)
-      {
-        gains[i] = linear_gains[i];
-        gains[i + 3] = ang_gains[i];
-      }
-
-      twist_controller_.reset(new TwistController(gains));
-
       pose_in.header.stamp = ros::Time(0);
       listener_.transformPose(base_link_, pose_in, pose_out);
       tf::poseMsgToEigen(pose_out.pose, surface_frame_);

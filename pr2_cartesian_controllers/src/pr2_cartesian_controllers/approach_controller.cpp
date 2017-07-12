@@ -113,12 +113,7 @@ namespace cartesian_controllers {
       return false;
     }
 
-    for (int i = 0; i < 6; i++)
-    {
-      rot_gains_eig[i] = rot_gains[i];
-    }
-
-    twist_controller_.reset(new TwistController(rot_gains_eig));
+    initTwistController(rot_gains, base_link_, base_link_);
 
     return true;
   }

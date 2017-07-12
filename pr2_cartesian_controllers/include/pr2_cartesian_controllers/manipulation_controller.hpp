@@ -59,7 +59,6 @@ private:
   ros::Publisher target_pub_, current_pub_, eef_to_grasp_pub_, ground_truth_pub_;
   tf::TransformBroadcaster broadcaster_;
 
-  boost::shared_ptr<TwistController> twist_controller_;
 public:
   ManipulationController();
   virtual ~ManipulationController();

@@ -6,7 +6,6 @@
 #include <pr2_algorithms/mechanism_identification/ects_controller.hpp>
 #include <pr2_algorithms/mechanism_identification/adaptive_velocity_controller.hpp>
 #include <pr2_algorithms/mechanism_identification/kalman_filter.hpp>
-#include <utils/TwistController.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
 #include <limits>
@@ -49,8 +48,6 @@ private:
   ros::Publisher pc_pub_, p1_pub_, p2_pub_, r1_pub_, r2_pub_, wrench2_pub_;
   std::vector<double> comp_gains_;
   ros::Time elapsed_;
-
-  boost::shared_ptr<TwistController> twist_controller_;
 
 public:
   MechanismIdentificationController();

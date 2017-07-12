@@ -20,6 +20,8 @@ namespace cartesian_controllers {
     p2_pub_ = nh_.advertise<visualization_msgs::Marker>("p2", 1);
     r1_pub_ = nh_.advertise<visualization_msgs::Marker>("r1", 1);
     r2_pub_ = nh_.advertise<visualization_msgs::Marker>("r2", 1);
+    trans_pub_ = nh_.advertise<visualization_msgs::Marker>("trans", 1);
+    rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
     use_nullspace_ = false;
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
@@ -123,10 +125,9 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::publishFeedback()
   {
-    visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker;
+    visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker, trans_marker, rot_marker;
     geometry_msgs::Vector3 r_vec;
     geometry_msgs::WrenchStamped surface_wrench;
-    Eigen::Affine3d pc;
 
     pc_marker.header.frame_id = chain_base_link_;
     pc_marker.ns = std::string("mechanism_identification");
@@ -155,6 +156,16 @@ namespace cartesian_controllers {
     r2_marker = r1_marker;
     r2_marker.id = 4;
     r2_marker.color = pc_marker.color;
+    trans_marker = r2_marker;
+    trans_marker.id = 5;
+    trans_marker.color.r = 1.0;
+    trans_marker.color.g = 0.0;
+    trans_marker.scale.x = 0.01;
+    trans_marker.scale.y = 0.01;
+    trans_marker.scale.z = 0.01;
+    rot_marker = trans_marker;
+    rot_marker.color.r = 0.0;
+    rot_marker.color.b = 1.0;
 
     try
     {
@@ -168,20 +179,24 @@ namespace cartesian_controllers {
           p2_marker.header.stamp = ros::Time::now();
           r1_marker.header.stamp = ros::Time::now();
           r2_marker.header.stamp = ros::Time::now();
-          
-          pc = pc_;
-          pc.translation() = pc.translation() - p1_.translation();
-          tf::poseEigenToMsg(pc , pc_marker.pose);
+          trans_marker.header.stamp = ros::Time::now();
+          rot_marker.header.stamp = ros::Time::now();
+
+          tf::poseEigenToMsg(pc_, pc_marker.pose);
           tf::poseEigenToMsg(p1_, p1_marker.pose);
           tf::poseEigenToMsg(p2_, p2_marker.pose);
-          getMarkerPoints(p1_.translation(), pc.translation(), r1_marker);
-          getMarkerPoints(p2_.translation(), pc.translation(), r2_marker);
+          getMarkerPoints(p1_.translation(), pc_.translation(), r1_marker);
+          getMarkerPoints(p2_.translation(), pc_.translation(), r2_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_marker);
 
           pc_pub_.publish(pc_marker);
           p1_pub_.publish(p1_marker);
           p2_pub_.publish(p2_marker);
           r1_pub_.publish(r1_marker);
           r2_pub_.publish(r2_marker);
+          trans_pub_.publish(trans_marker);
+          rot_pub_.publish(rot_marker);
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
           tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);
@@ -248,10 +263,10 @@ namespace cartesian_controllers {
     Eigen::Vector3d translational_dof_ground, rotational_dof_ground, p1, p2,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
-    Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero();
+    Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero(), transmission_direction;
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
-    Eigen::Matrix<double, 6, 1> comp_twist_eig, transmission_direction;
+    Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
 
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
@@ -320,18 +335,20 @@ namespace cartesian_controllers {
     }
     else
     {
-      pc_.translation() = rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+      translational_dof_est_ = translational_dof_ground;
+      rotational_dof_est_ = rotational_dof_ground;
+      pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
 
       if (use_nullspace_)
       {
         ects_controller_->clearOptimizationDirections();
-        transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
-        transmission_direction.block<3,1>(0,0) = translational_dof_ground;
+        transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
+        transmission_direction.block<3,1>(6,0) = translational_dof_ground;
         ects_controller_->addOptimizationDirection(transmission_direction);
-        transmission_direction = Eigen::Matrix<double, 6, 1>::Zero();
-        transmission_direction.block<3,1>(3,0) = rotational_dof_ground;
+        transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
+        transmission_direction.block<3,1>(9,0) = rotational_dof_ground;
         ects_controller_->addOptimizationDirection(transmission_direction);
       }
     }
@@ -342,7 +359,7 @@ namespace cartesian_controllers {
 
     comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
-    ects_twist.block<6,1>(6,0) += comp_twist_eig;
+    // ects_twist.block<6,1>(6,0) += comp_twist_eig;
     joint_commands = ects_controller_->control(pc_.translation() - p1, pc_.translation() - p2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)

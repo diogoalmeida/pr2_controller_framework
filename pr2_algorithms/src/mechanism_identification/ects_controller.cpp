@@ -14,23 +14,26 @@ namespace manipulation_algorithms{
 
   Vector14d ECTSController::control(const Vector3d &r_1, const Vector3d &r_2, const KDL::JntArray &q1, const KDL::JntArray &q2, const Vector6d &twist_a, const Vector6d &twist_r)
   {
-    MatrixECTSr J = MatrixECTSr::Zero();
-    Matrix6d damped_inverse;
+    MatrixECTS J = MatrixECTS::Zero();
+    Matrix12d damped_inverse;
+    Vector12d total_twist;
     Vector14d q_dot, epsilon = Vector14d::Zero();
 
     q1_ = q1;
     q2_ = q2;
     r_1_ = r_1;
     r_2_ = r_2;
-
-    J = computeRelativeJacobian(q1_, q2_);
+    total_twist.block<6,1>(0,0) = twist_a;
+    total_twist.block<6,1>(6,0) = twist_r;
+    
+    J = computeECTSJacobian(q1_, q2_);
 
     epsilon = computeNullSpaceTask();
     current_cm_ = computeTaskCompatibility(J);
 
-    damped_inverse = (J*J.transpose() + damping_*Matrix6d::Identity());
+    damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(twist_r) + epsilon - J.householderQr().solve(J*epsilon);
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon - J.householderQr().solve(J*epsilon);
   }
   
   void ECTSController::setNullspaceGain(double km)
@@ -48,33 +51,40 @@ namespace manipulation_algorithms{
     return alpha_;
   }
 
-  MatrixECTSr ECTSController::computeRelativeJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2)
+  MatrixECTS ECTSController::computeECTSJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2)
   {
-    Matrix12d W = Matrix12d::Identity();
-    MatrixECTSr J;
+    Matrix12d C = Matrix12d::Identity(), W = Matrix12d::Identity();
+    MatrixECTS J_e, J = MatrixECTS::Identity();
     KDL::Jacobian J_1_kdl(7), J_2_kdl(7);
 
     jac_solver_1_->JntToJac(q1, J_1_kdl);
     jac_solver_2_->JntToJac(q2, J_2_kdl);
-
+    
+    C.block<6,6>(0,0) = alpha_*Matrix6d::Identity();
+    C.block<6,6>(0,6) = (1 - alpha_)*Matrix6d::Identity();
+    C.block<6,6>(6,0) = -beta_*Matrix6d::Identity();
+    C.block<6,6>(6,6) = Matrix6d::Identity();
+    
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
     W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
+    
+    J.block<6,7>(0,0) = J_1_kdl.data;
+    J.block<6,7>(6,7) = J_2_kdl.data;
+    
+    J_e = C*W*J;
 
-    J.block<6,7>(0,0) = -beta_*W.block<6,6>(0,0)*J_1_kdl.data;
-    J.block<6,7>(0,7) = W.block<6,6>(6,6)*J_2_kdl.data;
-
-    return J;
+    return J_e;
   }
 
-  double ECTSController::computeTransmissionRatio(const MatrixECTSr &J, const Vector6d &u)
+  double ECTSController::computeTransmissionRatio(const MatrixECTS &J, const Vector12d &u)
   {
-    Matrix6d dJJ = (J*J.transpose()).inverse();
+    Matrix12d dJJ = (J*J.transpose()).inverse();
     double quad = u.transpose()*dJJ*u;
 
     return 1/sqrt(quad);
   }
 
-  double ECTSController::computeTaskCompatibility(const MatrixECTSr &J)
+  double ECTSController::computeTaskCompatibility(const MatrixECTS &J)
   {
     double cm = 0, ratio;
     for (unsigned long i = 0; i < u_list_.size(); i++)
@@ -90,7 +100,7 @@ namespace manipulation_algorithms{
   {
     Vector14d task = Vector14d::Zero();
     KDL::JntArray q_plus, q_minus;
-    MatrixECTSr J_plus, J_minus;
+    MatrixECTS J_plus, J_minus;
     double epsilon = 0.001;
     double cm_plus, cm_minus;
 
@@ -100,8 +110,8 @@ namespace manipulation_algorithms{
       q_minus = q1_;
       q_plus(i) += epsilon;
       q_minus(i) -= epsilon;
-      J_plus = computeRelativeJacobian(q_plus, q2_);
-      J_minus = computeRelativeJacobian(q_minus, q2_);
+      J_plus = computeECTSJacobian(q_plus, q2_);
+      J_minus = computeECTSJacobian(q_minus, q2_);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
       task(i) = (cm_plus - cm_minus)/(2*epsilon);
@@ -114,8 +124,8 @@ namespace manipulation_algorithms{
       q_plus(i) += epsilon;
       q_minus(i) -= epsilon;
 
-      J_plus = computeRelativeJacobian(q1_, q_plus);
-      J_minus = computeRelativeJacobian(q1_, q_minus);
+      J_plus = computeECTSJacobian(q1_, q_plus);
+      J_minus = computeECTSJacobian(q1_, q_minus);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
       task(i + 7) = (cm_plus - cm_minus)/(2*epsilon);
@@ -124,7 +134,7 @@ namespace manipulation_algorithms{
     return km_*task;
   }
 
-  void ECTSController::addOptimizationDirection(const Vector6d &u)
+  void ECTSController::addOptimizationDirection(const Vector12d &u)
   {
     u_list_.push_back(u);
   }

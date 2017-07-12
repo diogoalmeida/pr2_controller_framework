@@ -21,7 +21,7 @@ common:
   # Controllers
   position_loop_gains:
     r_upper_arm_roll_joint:
-      p: 6
+      p: 1000
       i: 600
       d: 6
       i_clamp: 4
@@ -63,7 +63,7 @@ common:
       i_clamp: 2
 
     l_upper_arm_roll_joint:
-      p: 6
+      p: 1000
       i: 600
       d: 6
       i_clamp: 4

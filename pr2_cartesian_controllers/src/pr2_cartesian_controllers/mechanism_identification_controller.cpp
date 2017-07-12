@@ -126,6 +126,7 @@ namespace cartesian_controllers {
     visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker;
     geometry_msgs::Vector3 r_vec;
     geometry_msgs::WrenchStamped surface_wrench;
+    Eigen::Affine3d pc;
 
     pc_marker.header.frame_id = chain_base_link_;
     pc_marker.ns = std::string("mechanism_identification");
@@ -167,12 +168,14 @@ namespace cartesian_controllers {
           p2_marker.header.stamp = ros::Time::now();
           r1_marker.header.stamp = ros::Time::now();
           r2_marker.header.stamp = ros::Time::now();
-
-          tf::poseEigenToMsg(pc_, pc_marker.pose);
+          
+          pc = pc_;
+          pc.translation() = pc.translation() - p1_.translation();
+          tf::poseEigenToMsg(pc , pc_marker.pose);
           tf::poseEigenToMsg(p1_, p1_marker.pose);
           tf::poseEigenToMsg(p2_, p2_marker.pose);
-          getMarkerPoints(p1_.translation(), pc_.translation(), r1_marker);
-          getMarkerPoints(p2_.translation(), pc_.translation(), r2_marker);
+          getMarkerPoints(p1_.translation(), pc.translation(), r1_marker);
+          getMarkerPoints(p2_.translation(), pc.translation(), r2_marker);
 
           pc_pub_.publish(pc_marker);
           p1_pub_.publish(p1_marker);

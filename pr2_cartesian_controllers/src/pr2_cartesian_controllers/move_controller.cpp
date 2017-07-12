@@ -333,8 +333,7 @@ namespace cartesian_controllers {
     for (int i = 0; i < current_state.name.size(); i++)
     {
       // joints we don't care about won't move
-      control_output.velocity[i] = current_state.velocity[i];
-      control_output.position[i] = current_state.position[i];
+      control_output.velocity[i] = 0;
       
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
@@ -357,7 +356,7 @@ namespace cartesian_controllers {
         }
 
         control_output.velocity[i] = velocity_gain_ * e;
-        control_output.position[i] = current_state.position[i];
+        control_output.position[i] = current_state.position[i] + velocity_gain_ * e * dt.toSec();
 
         feedback_.joint_position_references.push_back(val);
         feedback_.joint_position_errors.push_back(val - current_state.position[i]);

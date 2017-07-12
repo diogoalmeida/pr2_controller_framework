@@ -6,6 +6,7 @@ namespace manipulation_algorithms{
   {
     jac_solver_1_.reset(new KDL::ChainJntToJacSolver(chain_1));
     jac_solver_2_.reset(new KDL::ChainJntToJacSolver(chain_2));
+    current_cm_ = 0;
   }
 
   ECTSController::~ECTSController(){}
@@ -20,14 +21,25 @@ namespace manipulation_algorithms{
     q2_ = q2;
     r_1_ = r_1;
     r_2_ = r_2;
-    
+
     J = computeRelativeJacobian(q1_, q2_);
-    
+
     epsilon = computeNullSpaceTask();
-    
+    current_cm_ = computeTaskCompatibility(J);
+
     damped_inverse = (J*J.transpose() + damping_*Matrix6d::Identity());
 
     return J.transpose()*damped_inverse.ldlt().solve(twist_r) + epsilon - J.householderQr().solve(J*epsilon);
+  }
+
+  double ECTSController::getTaskCompatibility()
+  {
+    return current_cm_;
+  }
+
+  double ECTSController::getAlpha()
+  {
+    return alpha_;
   }
 
   MatrixECTSr ECTSController::computeRelativeJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2)
@@ -38,10 +50,10 @@ namespace manipulation_algorithms{
 
     jac_solver_1_->JntToJac(q1, J_1_kdl);
     jac_solver_2_->JntToJac(q2, J_2_kdl);
-    
+
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
     W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
-    
+
     J.block<6,7>(0,0) = -beta_*W.block<6,6>(0,0)*J_1_kdl.data;
     J.block<6,7>(0,7) = W.block<6,6>(6,6)*J_2_kdl.data;
 
@@ -52,7 +64,7 @@ namespace manipulation_algorithms{
   {
     Matrix6d dJJ = (J*J.transpose()).inverse();
     double quad = u.transpose()*dJJ*u;
-    
+
     return 0.1/sqrt(quad);
   }
 
@@ -110,7 +122,7 @@ namespace manipulation_algorithms{
   {
     u_list_.push_back(u);
   }
-  
+
   void ECTSController::clearOptimizationDirections()
   {
     u_list_.clear();

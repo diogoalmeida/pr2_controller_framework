@@ -62,8 +62,18 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     **/
     void addOptimizationDirection(const Vector6d &u);
     void clearOptimizationDirections();
+
+    /**
+      Return the last computed task compatibility value.
+    **/
+    double getTaskCompatibility();
+
+    /**
+      Return the current alpha value that determines the degree of colaboration between arms.
+    **/
+    double getAlpha();
   private:
-    double alpha_, damping_;
+    double alpha_, damping_, current_cm_;
     Matrix12d K_;
     int beta_;
     boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_1_;

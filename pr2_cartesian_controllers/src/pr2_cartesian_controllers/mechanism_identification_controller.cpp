@@ -187,6 +187,8 @@ namespace cartesian_controllers {
     //       surface_wrench.header.stamp = ros::Time::now();
     //       feedback_.surface_wrench = surface_wrench;
     //       wrench2_pub_.publish(surface_wrench);
+          feedback_.task_compatibility = ects_controller_->getTaskCompatibility();
+          feedback_.alpha = ects_controller_->getAlpha();
           feedback_.absolute_twist.header.stamp = ros::Time::now();
           feedback_.relative_twist.header.stamp = ros::Time::now();
           action_server_->publishFeedback(feedback_);

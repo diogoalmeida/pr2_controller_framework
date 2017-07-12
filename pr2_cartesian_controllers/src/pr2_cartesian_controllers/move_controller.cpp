@@ -331,10 +331,7 @@ namespace cartesian_controllers {
 
     // 1 - Compute position error
     for (int i = 0; i < current_state.name.size(); i++)
-    {
-      // joints we don't care about won't move
-      control_output.velocity[i] = 0;
-      
+    {      
       if (hasJoint(chain_[arm_index_], current_state.name[i]))
       {
         double val = getDesiredPosition(current_state.name[i]);
@@ -362,6 +359,23 @@ namespace cartesian_controllers {
         feedback_.joint_position_errors.push_back(val - current_state.position[i]);
         feedback_.joint_velocity_references.push_back(velocity_gain_ * e);
         feedback_.joint_velocity_errors.push_back(velocity_gain_ * e - current_state.velocity[i]);
+      }
+      else
+      {
+        double val = control_output.position[i] - current_state.position[i];
+        
+        if (std::abs(val) > max_allowed_error_)
+        {
+          if (val > 0)
+          {
+            val = max_allowed_error_;
+          }
+          else
+          {
+            val = -max_allowed_error_;
+          }
+        }
+        control_output.velocity[i] = velocity_gain_ * val;
       }
     }
 

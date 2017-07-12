@@ -212,7 +212,7 @@ bool MechanismClient::loadParams()
   std::vector<std::string> exclusion_list;
   if (nh_.getParam("initialization/exclude_controller_names", exclusion_list))
   {
-    for (int i = 0; i < exclusion_list.size(); i++)
+    for (unsigned long i = 0; i < exclusion_list.size(); i++)
     {
       ROS_INFO("Adding exclusion: %s", exclusion_list[i].c_str());
       controller_runner_.addException(exclusion_list[i]);
@@ -313,6 +313,70 @@ void MechanismClient::runExperiment()
 
   action_server_->start();
   ROS_INFO("Started the mechanism client action server: %s", cartesian_client_action_name_.c_str());
+  ROS_INFO("Moving to initial configuration");
+
+  if (action_server_->isActive())
+  {
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_); // to wait if goal is being processed
+    }
+
+    pr2_cartesian_controllers::MoveGoal move_goal;
+
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      current_action_ = move_action_name_ + std::string(" (rod arm)");
+    }
+
+    move_goal.arm = rod_arm_;
+    move_goal.desired_pose = initial_rod_pose_;
+
+    if (!controller_runner_.runController(move_controller_name_))
+    {
+      ROS_ERROR("Failed to run the controller %s", move_action_name_.c_str());
+      action_server_->setAborted();
+      return;
+    }
+
+    controller_runner_.stopController("l_arm_controller");
+    controller_runner_.stopController("r_arm_controller");
+
+    bool move_timeout = false;
+    if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
+                          pr2_cartesian_controllers::MoveGoal,
+                          pr2_cartesian_clients::MechanismAction>
+                            (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
+    {
+      ROS_ERROR("Error in the move action. Aborting.");
+      action_server_->setAborted();
+      return;
+    }
+    ROS_INFO("Move action succeeded!");
+
+    {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      current_action_ = move_action_name_ + std::string(" (surface arm)");
+    }
+
+    // Send the surface arm to the initial pose
+    move_goal.arm = surface_arm_;
+    move_goal.desired_pose = initial_surface_pose_;
+
+    move_timeout = false;
+    if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
+                          pr2_cartesian_controllers::MoveGoal,
+                          pr2_cartesian_clients::MechanismAction>
+                            (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
+    {
+      ROS_ERROR("Error in the move action. Aborting.");
+      action_server_->setAborted();
+      return;
+    }
+    ROS_INFO("Move action succeeded!");
+  }
+
+  ROS_INFO("Place mechanism");
+  std::cin.get();
 
   while (ros::ok())
   {

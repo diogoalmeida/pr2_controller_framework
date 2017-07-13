@@ -33,7 +33,7 @@ namespace manipulation_algorithms{
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon - J.householderQr().solve(J*epsilon);
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.householderQr().solve(J*epsilon);
   }
   
   void ECTSController::setNullspaceGain(double km)

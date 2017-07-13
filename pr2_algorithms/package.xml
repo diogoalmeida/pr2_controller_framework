@@ -13,5 +13,7 @@
   <depend>std_msgs</depend>
   <depend>message_generation</depend>
   <depend>eigen_conversions</depend>
+  <depend>tf</depend>
   <depend>kdl_parser</depend>
+  <depend>kdl_conversions</depend>
 </package>

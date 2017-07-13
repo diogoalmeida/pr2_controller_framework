@@ -7,7 +7,9 @@ catkin REQUIRED COMPONENTS
 	std_msgs
 	message_generation
   eigen_conversions
+  tf
 	kdl_parser
+  kdl_conversions
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
@@ -26,7 +28,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs message_generation
+  CATKIN_DEPENDS roscpp std_msgs message_generation tf kdl_conversions
   INCLUDE_DIRS include
   LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator kalman_filter adaptive_velocity_controller ects_controller
 )

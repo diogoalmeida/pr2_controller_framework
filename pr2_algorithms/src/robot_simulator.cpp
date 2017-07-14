@@ -124,17 +124,17 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
 
   for (int i = 0; i < 7; i++)
   {
-    joint_state.q(i) = 0.0;
+    joint_state.q(i) = desired_pose[i];
   }
-
-  ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
-
-  ROS_INFO("Initial joint config:");
-  for(int i = 0; i < 7; i++)
-  {
-    std::cout << joint_state.q(i) << " ";
-  }
-  std::cout << std::endl;
+  // 
+  // ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
+  // 
+  // ROS_INFO("Initial joint config:");
+  // for(int i = 0; i < 7; i++)
+  // {
+  //   std::cout << joint_state.q(i) << " ";
+  // }
+  // std::cout << std::endl;
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);

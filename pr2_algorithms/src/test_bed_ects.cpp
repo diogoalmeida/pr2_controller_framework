@@ -48,7 +48,7 @@ int main(int argc, char ** argv)
   ros::Time init_time, prev_time;
   ros::Duration dt, elapsed;
   tf::TransformListener listener;
-  ros::Rate r(50);
+  ros::Rate r(100);
   std::vector<double> pose_vector;
   KDL::Frame pose_frame;
   double max_time, epsilon;
@@ -133,7 +133,7 @@ int main(int argc, char ** argv)
   elapsed = ros::Time::now() - init_time;
   epsilon = std::numeric_limits<double>::epsilon();
   pc = Eigen::Vector3d::Zero();
-  double vd_freq = 0.1, wd_freq = 0.1, vd_amp = 0.05, wd_amp = 0.0;
+  double vd_freq = 0.1, wd_freq = 0.1, vd_amp = 0.0, wd_amp = 0.05;
 
   ROS_INFO("Starting simulation");
   Eigen::Vector3d rotational_dof_ground, translational_dof_ground;
@@ -158,8 +158,8 @@ int main(int argc, char ** argv)
 
     rotational_dof_ground  = grasp_point_frame[1].matrix().block<3,1>(0,1);
     translational_dof_ground = grasp_point_frame[1].matrix().block<3,1>(0,0);
-    command_twist.block<3,1>(0,0) = vd_amp*sin(2*M_PI*vd_freq*elapsed.toSec())*translational_dof_ground;
-    command_twist.block<3,1>(3,0) = wd_amp*sin(2*M_PI*wd_freq*elapsed.toSec())*rotational_dof_ground;
+    command_twist.block<3,1>(6,0) = vd_amp*sin(2*M_PI*vd_freq*elapsed.toSec())*translational_dof_ground;
+    command_twist.block<3,1>(9,0) = wd_amp*sin(2*M_PI*wd_freq*elapsed.toSec())*rotational_dof_ground;
 
     bool use_nullspace = false;
     Eigen::Matrix<double, 12, 1> transmission_direction;
@@ -181,7 +181,7 @@ int main(int argc, char ** argv)
     simulator.getJointState(end_effector_link[0], l_q);
     simulator.getJointState(end_effector_link[1], r_q);
 
-    out = controller.control(pc - pc, pc - pc, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
+    out = controller.control(pc - p1, pc - p2, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
     // std::cout << out << std::endl << std::endl;
     simulator.setJointVelocities(end_effector_link[0], out.block<7, 1>(0, 0));

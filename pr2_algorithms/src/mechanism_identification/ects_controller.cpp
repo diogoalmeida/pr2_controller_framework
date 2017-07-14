@@ -53,24 +53,24 @@ namespace manipulation_algorithms{
 
   MatrixECTS ECTSController::computeECTSJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2)
   {
-    Matrix12d C = Matrix12d::Identity(), W = Matrix12d::Identity();
-    MatrixECTS J_e, J = MatrixECTS::Identity();
+    Matrix12d C = Matrix12d::Zero(), W = Matrix12d::Identity();
+    MatrixECTS J_e, J = MatrixECTS::Zero();
     KDL::Jacobian J_1_kdl(7), J_2_kdl(7);
 
     jac_solver_1_->JntToJac(q1, J_1_kdl);
     jac_solver_2_->JntToJac(q2, J_2_kdl);
-    
+
     C.block<6,6>(0,0) = alpha_*Matrix6d::Identity();
     C.block<6,6>(0,6) = (1 - alpha_)*Matrix6d::Identity();
     C.block<6,6>(6,0) = -beta_*Matrix6d::Identity();
     C.block<6,6>(6,6) = Matrix6d::Identity();
-    
+
     W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
     W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
-    
+
     J.block<6,7>(0,0) = J_1_kdl.data;
     J.block<6,7>(6,7) = J_2_kdl.data;
-    
+
     J_e = C*W*J;
 
     return J_e;

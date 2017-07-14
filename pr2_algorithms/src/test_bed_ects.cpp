@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
   pr2_algorithms::TestBedECTSFeedback feedback_msg;
   urdf::Model model;
   KDL::Tree tree;
-  std::vector<Eigen::Affine3d> eef_to_grasp_eig(2), grasp_point_frame(2);
+  std::vector<Eigen::Affine3d> eef_to_grasp_eig(2), grasp_point_frame(2), p_eig(2);
   std::vector<KDL::Frame> eef_grasp_kdl(2), p(2), eef_to_grasp(2);
   Eigen::Vector3d p1, p2, pc;
   Vector12d command_twist = Vector12d::Zero();
@@ -133,8 +133,8 @@ int main(int argc, char ** argv)
   elapsed = ros::Time::now() - init_time;
   epsilon = std::numeric_limits<double>::epsilon();
   pc = Eigen::Vector3d::Zero();
-  double vd_freq = 0.1, wd_freq = 0.1, vd_amp = 0.0, wd_amp = 0.05;
-
+  double vd_freq = 0.1, wd_freq = 0.05, vd_amp = 0.0, wd_amp = 0.06;
+  bool acquired_dof = false;
   ROS_INFO("Starting simulation");
   Eigen::Vector3d rotational_dof_ground, translational_dof_ground;
   while (elapsed.toSec() < max_time && ros::ok())
@@ -146,6 +146,7 @@ int main(int argc, char ** argv)
     {
       simulator.getPose(end_effector_link[arm], p[arm]);
       eef_grasp_kdl[arm] = p[arm]*eef_to_grasp[arm];
+      tf::transformKDLToEigen(p[arm], p_eig[arm]);
       tf::transformKDLToEigen(eef_to_grasp[arm], eef_to_grasp_eig[arm]);
       tf::transformKDLToEigen(eef_grasp_kdl[arm], grasp_point_frame[arm]);
     }
@@ -156,8 +157,13 @@ int main(int argc, char ** argv)
       p2[i] = p[1].p[i];
     }
 
-    rotational_dof_ground  = grasp_point_frame[1].matrix().block<3,1>(0,1);
-    translational_dof_ground = grasp_point_frame[1].matrix().block<3,1>(0,0);
+    if (!acquired_dof)
+    {
+      rotational_dof_ground  = grasp_point_frame[1].matrix().block<3,1>(0,1);
+      translational_dof_ground = grasp_point_frame[1].matrix().block<3,1>(0,0);
+      // acquired_dof = true;
+    }
+    pc = p1 + 0.1*grasp_point_frame[0].matrix().block<3,1>(0,0);
     command_twist.block<3,1>(6,0) = vd_amp*sin(2*M_PI*vd_freq*elapsed.toSec())*translational_dof_ground;
     command_twist.block<3,1>(9,0) = wd_amp*sin(2*M_PI*wd_freq*elapsed.toSec())*rotational_dof_ground;
 

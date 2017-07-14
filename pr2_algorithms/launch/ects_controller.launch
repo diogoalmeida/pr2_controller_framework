@@ -2,10 +2,6 @@
   <arg name="exec_time" default="0"/>
   <include file="$(find pr2_description)/robots/upload_pr2.launch"/>
   <rosparam command="load" file="$(find pr2_cartesian_controllers)/config/controller_config.yaml"/>
-  <node name="state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <rosparam param="source_list">["sim_joint_states"]</rosparam>
-  </node>
-  <node name="tf_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
   <node name="ects_sim" pkg="pr2_algorithms" type="test_bed_ects" args="$(arg exec_time)" output="screen">
     <rosparam param="left_arm_pose">[0.513, 0.15, 0.007, 0.670, 0.672, -0.234, 0.214]</rosparam>
     <rosparam param="right_arm_pose">[0.509, -0.15, -0.020, 0.198, 0.241, -0.655, 0.688]</rosparam>

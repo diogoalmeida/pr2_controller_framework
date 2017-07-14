@@ -10,6 +10,7 @@ catkin REQUIRED COMPONENTS
   tf
 	kdl_parser
   kdl_conversions
+  robot_state_publisher
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
@@ -28,7 +29,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs message_generation tf kdl_conversions
+  CATKIN_DEPENDS roscpp std_msgs message_generation tf kdl_conversions robot_state_publisher
   INCLUDE_DIRS include
   LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator kalman_filter adaptive_velocity_controller ects_controller
 )
@@ -67,6 +68,6 @@ add_executable(test_bed_folding src/test_bed_folding.cpp)
 target_link_libraries(test_bed_folding folding_assembly_estimator ${catkin_LIBRARIES})
 add_dependencies(test_bed_folding pr2_algorithms_generate_messages_cpp)
 
-add_executable(test_bed_ects src/test_bed_ects.cpp)
+add_executable(test_bed_ects src/test_bed_ects.cpp src/robot_simulator.cpp)
 target_link_libraries(test_bed_ects ects_controller ${catkin_LIBRARIES})
 add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp)

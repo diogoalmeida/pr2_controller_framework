@@ -9,6 +9,7 @@
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainiksolverpos_lma.hpp>
+#include <boost/thread.hpp>
 #include <Eigen/Dense>
 
 /**
@@ -18,7 +19,7 @@
 class RobotSimulator
 {
 public:
-  RobotSimulator();
+  RobotSimulator(double frequency);
 
   /**
     Initializes the kinematic chain connecting base_link to end_effector_link.
@@ -51,14 +52,9 @@ public:
   bool getJointState(const std::string &end_effector_link, KDL::JntArray &q);
 
   /**
-    Apply the given joint velocities to the kinematic chain indexed by the end-effector link.
-
-    @param joint_velocities The joint velocities vector.
-    @param end_effector_link The kinematic chain end-effector.
-    @param dt Time step.
-    @return False in case of failure.
+    Set the current joint velocities for the joint chain
   **/
-  bool applyJointVelocities(const Eigen::VectorXd &joint_velocities, const std::string &end_effector_link, double dt);
+  bool setJointVelocities(const std::string &end_effector_link, const Eigen::VectorXd &joint_velocities);
 private:
   boost::shared_ptr<robot_state_publisher::RobotStatePublisher> robot_publisher_;
   KDL::Tree tree_;
@@ -69,6 +65,10 @@ private:
   std::vector<boost::shared_ptr<KDL::ChainFkSolverPos_recursive> > fk_solver_;
   std::vector<boost::shared_ptr<KDL::ChainIkSolverPos_LMA> > ik_solver_;
   std::map<std::string, double> joint_positions_;
+  std::vector<Eigen::VectorXd> current_joint_velocities_;
+  boost::mutex velocities_mutex_;
+  boost::thread sim_thread_;
+  double frequency_;
 
   /**
     Gets a KDL frame from a vector with a 7 dimensional pose description.
@@ -77,6 +77,21 @@ private:
     @return The KDL frame that represents the same pose.
   **/
   KDL::Frame getKDLPose(const std::vector<double> &pose_in);
+
+  /**
+    Simulation thread.
+  **/
+  void simulation();
+
+  /**
+    Apply the given joint velocities to the kinematic chain indexed by the end-effector link.
+
+    @param joint_velocities The joint velocities vector.
+    @param end_effector_link The kinematic chain end-effector.
+    @param dt Time step.
+    @return False in case of failure.
+  **/
+  bool applyJointVelocities(const Eigen::VectorXd &joint_velocities, const std::string &end_effector_link, double dt);
 };
 
 #endif

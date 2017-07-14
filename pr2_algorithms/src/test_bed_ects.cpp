@@ -43,16 +43,16 @@ int main(int argc, char ** argv)
   std::vector<Eigen::Affine3d> eef_to_grasp_eig(2), grasp_point_frame(2);
   std::vector<KDL::Frame> eef_grasp_kdl(2), p(2), eef_to_grasp(2);
   Eigen::Vector3d p1, p2, pc;
-  Vector12d command_twist;
+  Vector12d command_twist = Vector12d::Zero();
   Vector14d out = Vector14d::Zero();
   ros::Time init_time, prev_time;
   ros::Duration dt, elapsed;
   tf::TransformListener listener;
-  ros::Rate r(100);
+  ros::Rate r(0.1);
   std::vector<double> pose_vector;
   KDL::Frame pose_frame;
   double max_time, epsilon;
-  RobotSimulator simulator;
+  RobotSimulator simulator(1000);
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedECTSFeedback>("/test_bed/feedback", 1);
   ros::Publisher state_pub = n.advertise<sensor_msgs::JointState>("/sim_joint_states", 1);
@@ -97,8 +97,6 @@ int main(int argc, char ** argv)
   std::string end_effector_link[] = {"l_wrist_roll_link", "r_wrist_roll_link"};
 
   bool done_acquiring_tf = false;
-  simulator.applyJointVelocities(out.block<7, 1>(0, 0), end_effector_link[0], 0);
-  simulator.applyJointVelocities(out.block<7, 1>(7, 0), end_effector_link[1], 0);
   while (!done_acquiring_tf && ros::ok())
   {
     try
@@ -176,17 +174,18 @@ int main(int argc, char ** argv)
       transmission_direction.block<3,1>(9,0) = rotational_dof_ground;
       controller.addOptimizationDirection(transmission_direction);
       controller.setNullspaceGain(0.01);
-      std::cout << controller.getTaskCompatibility() << std::endl;
+      // std::cout << controller.getTaskCompatibility() << std::endl;
     }
 
     KDL::JntArray l_q, r_q;
     simulator.getJointState(end_effector_link[0], l_q);
     simulator.getJointState(end_effector_link[1], r_q);
-    // out = controller.control(pc - p1, pc - p2, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
+
+    out = controller.control(pc - p1, pc - p2, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
     // std::cout << out << std::endl << std::endl;
-    simulator.applyJointVelocities(out.block<7, 1>(0, 0), end_effector_link[0], dt.toSec());
-    simulator.applyJointVelocities(out.block<7, 1>(7, 0), end_effector_link[1], dt.toSec());
+    simulator.setJointVelocities(end_effector_link[0], out.block<7, 1>(0, 0));
+    simulator.setJointVelocities(end_effector_link[1], out.block<7, 1>(7, 0));
 
     prev_time = ros::Time::now();
     pub.publish(feedback_msg);

@@ -1,6 +1,6 @@
 #include <pr2_algorithms/robot_simulator.hpp>
 
-RobotSimulator::RobotSimulator()
+RobotSimulator::RobotSimulator(double frequency = 10)
 {
   urdf::Model model;
 
@@ -24,6 +24,9 @@ RobotSimulator::RobotSimulator()
 
   robot_publisher_->publishTransforms(joint_positions_, ros::Time::now(), "");
   robot_publisher_->publishFixedTransforms("");
+  frequency_ = frequency;
+
+  sim_thread_ = boost::thread(&RobotSimulator::simulation, this);
 }
 
 KDL::Frame RobotSimulator::getKDLPose(const std::vector<double> &pose_in)
@@ -94,6 +97,7 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver;
   boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ik_solver;
   KDL::Frame pose_frame;
+  boost::mutex::scoped_lock lock(velocities_mutex_);
 
   for (int i = 0; i < end_effector_link_name_.size(); i++)
   {
@@ -112,17 +116,49 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   }
   joint_state.q.resize(chain.getNrOfJoints());
   joint_state.qdot.resize(chain.getNrOfJoints());
+  Eigen::VectorXd velocities(chain.getNrOfJoints());
+  velocities = Eigen::VectorXd::Zero(chain.getNrOfJoints());
   fk_solver.reset(new KDL::ChainFkSolverPos_recursive(chain));
   ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain));
   pose_frame = getKDLPose(desired_pose);
+
+  for (int i = 0; i < 7; i++)
+  {
+    joint_state.q(i) = 0.0;
+  }
+
   ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
+
+  ROS_INFO("Initial joint config:");
+  for(int i = 0; i < 7; i++)
+  {
+    std::cout << joint_state.q(i) << " ";
+  }
+  std::cout << std::endl;
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);
   fk_solver_.push_back(fk_solver);
   ik_solver_.push_back(ik_solver);
+  current_joint_velocities_.push_back(velocities);
 
   return true;
+}
+
+bool RobotSimulator::setJointVelocities(const std::string &end_effector_link, const Eigen::VectorXd &joint_velocities)
+{
+  for (int i = 0; i < end_effector_link_name_.size(); i++)
+  {
+    if (end_effector_link_name_[i] == end_effector_link)
+    {
+      boost::mutex::scoped_lock lock(velocities_mutex_);
+      current_joint_velocities_[i] = joint_velocities;
+      return true;
+    }
+  }
+
+  ROS_ERROR("Could not find end-effector %s's joint velocities. Did you initialize the kinematic chain?", end_effector_link.c_str());
+  return false;
 }
 
 bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocities, const std::string &end_effector_link, double dt)
@@ -153,7 +189,7 @@ bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocitie
   for (int i = 0; i < joint_velocities.rows(); i++)
   {
     joint_state_[arm].qdot(i) = joint_velocities[i];
-    joint_state_[arm].q(i) += joint_velocities[i]*dt;
+    joint_state_[arm].q(i) = joint_state_[arm].q(i) + joint_velocities[i]*dt;
     joint_positions_[chain_[arm].getSegment(i).getJoint().getName()] = joint_state_[arm].q(i);
   }
 
@@ -161,4 +197,24 @@ bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocitie
   robot_publisher_->publishFixedTransforms("");
   ros::spinOnce();
   return true;
+}
+
+void RobotSimulator::simulation()
+{
+  ros::Rate r(frequency_);
+  ros::Time prev = ros::Time::now();
+  ros::Duration elapsed;
+  while(ros::ok())
+  {
+    {
+      boost::mutex::scoped_lock lock(velocities_mutex_);
+      elapsed = ros::Time::now() - prev;
+      for (int i = 0; i < end_effector_link_name_.size(); i++)
+      {
+        applyJointVelocities(current_joint_velocities_[i], end_effector_link_name_[i], elapsed.toSec());
+      }
+    }
+    prev = ros::Time::now();
+    r.sleep();
+  }
 }

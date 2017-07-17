@@ -99,6 +99,15 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   KDL::Frame pose_frame;
   boost::mutex::scoped_lock lock(velocities_mutex_);
 
+  ROS_INFO("Setting arm %s to pose: ", end_effector_link.c_str());
+
+  for (int i = 0; i < 7; i++)
+  {
+    std::cout << desired_pose[i];
+  }
+
+  std::cout << std::endl;
+
   for (int i = 0; i < end_effector_link_name_.size(); i++)
   {
     if (end_effector_link_name_[i] == end_effector_link)
@@ -122,19 +131,24 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain));
   pose_frame = getKDLPose(desired_pose);
 
-  for (int i = 0; i < 7; i++)
+  int error_num = -1;
+
+  while (error_num < 0)
   {
-    joint_state.q(i) = desired_pose[i];
+    error_num = ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
+    if (error_num < 0)
+    {
+      ROS_ERROR("Error in kinematic solver: %s", ik_solver->strError(error_num));
+      KDL::SetToZero(joint_state.q);
+    }
   }
-  // 
-  // ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
-  // 
-  // ROS_INFO("Initial joint config:");
-  // for(int i = 0; i < 7; i++)
-  // {
-  //   std::cout << joint_state.q(i) << " ";
-  // }
-  // std::cout << std::endl;
+
+  ROS_INFO("Initial joint config:");
+  for(int i = 0; i < 7; i++)
+  {
+    std::cout << joint_state.q(i) << " ";
+  }
+  std::cout << std::endl;
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);
@@ -186,11 +200,17 @@ bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocitie
     return false;
   }
 
-  for (int i = 0; i < joint_velocities.rows(); i++)
+  int j = 0;
+  for (int i = 0; i < chain_[arm].getNrOfSegments(); i++)
   {
-    joint_state_[arm].qdot(i) = joint_velocities[i];
-    joint_state_[arm].q(i) = joint_state_[arm].q(i) + joint_velocities[i]*dt;
-    joint_positions_[chain_[arm].getSegment(i).getJoint().getName()] = joint_state_[arm].q(i);
+    if (chain_[arm].getSegment(i).getJoint().getType() != KDL::Joint::None)
+    {
+      joint_state_[arm].qdot(j) = joint_velocities[j];
+      joint_state_[arm].q(j) = joint_state_[arm].q(j) + joint_velocities[j]*dt;
+      // ROS_INFO("Publishing joints %s", chain_[arm].getSegment(i).getJoint().getName().c_str());
+      joint_positions_[chain_[arm].getSegment(i).getJoint().getName()] = joint_state_[arm].q(j);
+      j++;
+    }
   }
 
   robot_publisher_->publishTransforms(joint_positions_, ros::Time::now(), "");

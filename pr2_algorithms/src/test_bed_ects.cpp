@@ -97,9 +97,11 @@ int main(int argc, char ** argv)
   KDL::Frame pose_frame;
   RobotSimulator simulator(100);
   double max_time, epsilon;
-  visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker, trans_marker, rot_marker;
+  visualization_msgs::Marker pc_marker, eef1_marker, eef2_marker, p1_marker, p2_marker, r1_marker, r2_marker, trans_marker, rot_marker;
 
   ros::Publisher pc_pub = n.advertise<visualization_msgs::Marker>("pc", 1);
+  ros::Publisher eef1_pub = n.advertise<visualization_msgs::Marker>("eef1", 1);
+  ros::Publisher eef2_pub = n.advertise<visualization_msgs::Marker>("eef2", 1);
   ros::Publisher p1_pub = n.advertise<visualization_msgs::Marker>("p1", 1);
   ros::Publisher p2_pub = n.advertise<visualization_msgs::Marker>("p2", 1);
   ros::Publisher r1_pub = n.advertise<visualization_msgs::Marker>("r1", 1);
@@ -144,6 +146,10 @@ int main(int argc, char ** argv)
   rot_marker = trans_marker;
   rot_marker.color.r = 0.0;
   rot_marker.color.b = 1.0;
+  eef1_marker = p1_marker;
+  eef1_marker.id = 6;
+  eef2_marker = p2_marker;
+  eef2_marker.id = 7;
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedECTSFeedback>("/test_bed/feedback", 1);
   ros::Publisher state_pub = n.advertise<sensor_msgs::JointState>("/sim_joint_states", 1);
@@ -293,6 +299,8 @@ int main(int argc, char ** argv)
       simulator.getJointState(end_effector_link[1], r_q);
 
       tf::poseEigenToMsg(pc_eig, pc_marker.pose);
+      tf::poseEigenToMsg(p_eig[0], eef1_marker.pose);
+      tf::poseEigenToMsg(p_eig[1], eef2_marker.pose);
       tf::poseEigenToMsg(grasp_point_frame[0], p1_marker.pose);
       tf::poseEigenToMsg(grasp_point_frame[1], p2_marker.pose);
       getMarkerPoints(pc_eig.translation(), pc_eig.translation() + 0.1*translational_dof_ground, trans_marker);
@@ -300,7 +308,9 @@ int main(int argc, char ** argv)
 
       pc_pub.publish(pc_marker);
       p1_pub.publish(p1_marker);
+      eef1_pub.publish(eef1_marker);
       p2_pub.publish(p2_marker);
+      eef2_pub.publish(eef2_marker);
       trans_pub.publish(trans_marker);
       rot_pub.publish(rot_marker);
 

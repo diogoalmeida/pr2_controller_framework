@@ -10,8 +10,10 @@
 #include <tf/transform_listener.h>
 #include <kdl_conversions/kdl_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
+#include <eigen_conversions/eigen_msg.h>
 #include <pr2_algorithms/robot_simulator.hpp>
 #include <pr2_algorithms/ECTSDebugAction.h>
+#include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
 #include <cstdlib>
 
@@ -64,6 +66,17 @@ void preemptCB(RobotSimulator &simulator)
   ROS_WARN("ECTS controller preempted");
 }
 
+void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d &final_point, visualization_msgs::Marker &marker)
+{
+  geometry_msgs::Point point;
+
+  marker.points.clear();
+  tf::pointEigenToMsg(initial_point, point);
+  marker.points.push_back(point);
+  tf::pointEigenToMsg(final_point, point);
+  marker.points.push_back(point);
+}
+
 int main(int argc, char ** argv)
 {
   ros::init(argc, argv, "test_bed");
@@ -71,6 +84,7 @@ int main(int argc, char ** argv)
   pr2_algorithms::TestBedECTSFeedback feedback_msg;
   urdf::Model model;
   KDL::Tree tree;
+  Eigen::Affine3d pc_eig;
   std::vector<Eigen::Affine3d> eef_to_grasp_eig(2), grasp_point_frame(2), p_eig(2);
   std::vector<KDL::Frame> eef_grasp_kdl(2), p(2), eef_to_grasp(2);
   Eigen::Vector3d p1, p2, pc;
@@ -83,6 +97,53 @@ int main(int argc, char ** argv)
   KDL::Frame pose_frame;
   RobotSimulator simulator(100);
   double max_time, epsilon;
+  visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker, trans_marker, rot_marker;
+
+  ros::Publisher pc_pub = n.advertise<visualization_msgs::Marker>("pc", 1);
+  ros::Publisher p1_pub = n.advertise<visualization_msgs::Marker>("p1", 1);
+  ros::Publisher p2_pub = n.advertise<visualization_msgs::Marker>("p2", 1);
+  ros::Publisher r1_pub = n.advertise<visualization_msgs::Marker>("r1", 1);
+  ros::Publisher r2_pub = n.advertise<visualization_msgs::Marker>("r2", 1);
+  ros::Publisher trans_pub = n.advertise<visualization_msgs::Marker>("trans", 1);
+  ros::Publisher rot_pub = n.advertise<visualization_msgs::Marker>("rot", 1);
+
+  pc_marker.header.frame_id = "torso_lift_link";
+  pc_marker.ns = std::string("mechanism_identification");
+  pc_marker.type = pc_marker.SPHERE;
+  pc_marker.action = pc_marker.ADD;
+  pc_marker.scale.x = 0.01;
+  pc_marker.scale.y = 0.01;
+  pc_marker.scale.z = 0.01;
+  pc_marker.lifetime = ros::Duration(0);
+  pc_marker.frame_locked = false;
+  pc_marker.color.r = 1.0;
+  pc_marker.color.a = 1.0;
+  p1_marker = pc_marker;
+  p1_marker.id = 1;
+  p2_marker = pc_marker;
+  p2_marker.id = 2;
+  p1_marker.color.r = 0.0;
+  p2_marker.color.r = 0.0;
+  p1_marker.color.g = 1.0;
+  p2_marker.color.g = 1.0;
+  r1_marker = pc_marker;
+  r1_marker.id = 3;
+  r1_marker.scale.y = 0.005;
+  r1_marker.scale.z = 0.005;
+  r1_marker.type = r1_marker.ARROW;
+  r2_marker = r1_marker;
+  r2_marker.id = 4;
+  r2_marker.color = pc_marker.color;
+  trans_marker = r2_marker;
+  trans_marker.id = 5;
+  trans_marker.color.r = 1.0;
+  trans_marker.color.g = 0.0;
+  trans_marker.scale.x = 0.01;
+  trans_marker.scale.y = 0.01;
+  trans_marker.scale.z = 0.01;
+  rot_marker = trans_marker;
+  rot_marker.color.r = 0.0;
+  rot_marker.color.b = 1.0;
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedECTSFeedback>("/test_bed/feedback", 1);
   ros::Publisher state_pub = n.advertise<sensor_msgs::JointState>("/sim_joint_states", 1);
@@ -206,6 +267,8 @@ int main(int argc, char ** argv)
         // acquired_dof = true;
       }
       pc = p1 + 0.1*grasp_point_frame[0].matrix().block<3,1>(0,0);
+      pc_eig.translation() = pc;
+      pc_eig.linear() = grasp_point_frame[0].linear();
       command_twist.block<3,1>(6,0) = vd_amp*sin(2*M_PI*vd_freq*elapsed.toSec())*translational_dof_ground;
       command_twist.block<3,1>(9,0) = wd_amp*sin(2*M_PI*wd_freq*elapsed.toSec())*rotational_dof_ground;
 
@@ -228,6 +291,18 @@ int main(int argc, char ** argv)
       KDL::JntArray l_q, r_q;
       simulator.getJointState(end_effector_link[0], l_q);
       simulator.getJointState(end_effector_link[1], r_q);
+
+      tf::poseEigenToMsg(pc_eig, pc_marker.pose);
+      tf::poseEigenToMsg(grasp_point_frame[0], p1_marker.pose);
+      tf::poseEigenToMsg(grasp_point_frame[1], p2_marker.pose);
+      getMarkerPoints(pc_eig.translation(), pc_eig.translation() + 0.1*translational_dof_ground, trans_marker);
+      getMarkerPoints(pc_eig.translation(), pc_eig.translation() + 0.1*rotational_dof_ground, rot_marker);
+
+      pc_pub.publish(pc_marker);
+      p1_pub.publish(p1_marker);
+      p2_pub.publish(p2_marker);
+      trans_pub.publish(trans_marker);
+      rot_pub.publish(rot_marker);
 
       out = controller.control(pc - p1, pc - pc, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 

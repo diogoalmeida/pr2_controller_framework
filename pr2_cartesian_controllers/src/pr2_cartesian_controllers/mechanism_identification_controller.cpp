@@ -82,7 +82,7 @@ namespace cartesian_controllers {
     wd_amp_ = goal->wd_amplitude;
     wd_freq_ = goal->wd_frequency;
     use_nullspace_ = goal->use_nullspace;
-    
+
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;

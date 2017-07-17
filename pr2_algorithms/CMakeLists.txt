@@ -11,6 +11,7 @@ catkin REQUIRED COMPONENTS
 	kdl_parser
   kdl_conversions
   actionlib_msgs
+  visualization_msgs
   robot_state_publisher
 )
 

@@ -147,11 +147,11 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
 
 bool RobotSimulator::setJointVelocities(const std::string &end_effector_link, const Eigen::VectorXd &joint_velocities)
 {
+  boost::mutex::scoped_lock lock(velocities_mutex_);
   for (int i = 0; i < end_effector_link_name_.size(); i++)
   {
     if (end_effector_link_name_[i] == end_effector_link)
     {
-      boost::mutex::scoped_lock lock(velocities_mutex_);
       current_joint_velocities_[i] = joint_velocities;
       return true;
     }
@@ -195,7 +195,6 @@ bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocitie
 
   robot_publisher_->publishTransforms(joint_positions_, ros::Time::now(), "");
   robot_publisher_->publishFixedTransforms("");
-  ros::spinOnce();
   return true;
 }
 
@@ -206,9 +205,9 @@ void RobotSimulator::simulation()
   ros::Duration elapsed;
   while(ros::ok())
   {
+      elapsed = ros::Time::now() - prev;
     {
       boost::mutex::scoped_lock lock(velocities_mutex_);
-      elapsed = ros::Time::now() - prev;
       for (int i = 0; i < end_effector_link_name_.size(); i++)
       {
         applyJointVelocities(current_joint_velocities_[i], end_effector_link_name_[i], elapsed.toSec());

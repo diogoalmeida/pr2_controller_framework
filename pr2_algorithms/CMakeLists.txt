@@ -10,6 +10,7 @@ catkin REQUIRED COMPONENTS
   tf
 	kdl_parser
   kdl_conversions
+  actionlib_msgs
   robot_state_publisher
 )
 
@@ -24,8 +25,13 @@ add_message_files(
   TestBedECTSFeedback.msg
 )
 
+add_action_files(
+	DIRECTORY action
+	FILES ECTSDebug.action
+)
+
 generate_messages(
-  DEPENDENCIES std_msgs geometry_msgs
+  DEPENDENCIES std_msgs geometry_msgs actionlib_msgs
 )
 
 catkin_package(

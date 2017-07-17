@@ -96,17 +96,7 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   KDL::Chain chain;
   boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver;
   boost::shared_ptr<KDL::ChainIkSolverPos_LMA> ik_solver;
-  KDL::Frame pose_frame;
   boost::mutex::scoped_lock lock(velocities_mutex_);
-
-  ROS_INFO("Setting arm %s to pose: ", end_effector_link.c_str());
-
-  for (int i = 0; i < 7; i++)
-  {
-    std::cout << desired_pose[i];
-  }
-
-  std::cout << std::endl;
 
   for (int i = 0; i < end_effector_link_name_.size(); i++)
   {
@@ -124,37 +114,72 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
     ROS_ERROR("Failed to get the kinematic chain from %s to %s", base_link.c_str(), end_effector_link.c_str());
   }
   joint_state.q.resize(chain.getNrOfJoints());
+  KDL::SetToZero(joint_state.q);
   joint_state.qdot.resize(chain.getNrOfJoints());
+  KDL::SetToZero(joint_state.qdot);
   Eigen::VectorXd velocities(chain.getNrOfJoints());
   velocities = Eigen::VectorXd::Zero(chain.getNrOfJoints());
   fk_solver.reset(new KDL::ChainFkSolverPos_recursive(chain));
   ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain));
-  pose_frame = getKDLPose(desired_pose);
-
-  int error_num = -1;
-
-  while (error_num < 0)
-  {
-    error_num = ik_solver->CartToJnt(joint_state.q, pose_frame, joint_state.q);
-    if (error_num < 0)
-    {
-      ROS_ERROR("Error in kinematic solver: %s", ik_solver->strError(error_num));
-      KDL::SetToZero(joint_state.q);
-    }
-  }
-
-  ROS_INFO("Initial joint config:");
-  for(int i = 0; i < 7; i++)
-  {
-    std::cout << joint_state.q(i) << " ";
-  }
-  std::cout << std::endl;
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);
   fk_solver_.push_back(fk_solver);
   ik_solver_.push_back(ik_solver);
   current_joint_velocities_.push_back(velocities);
+  setPose(end_effector_link, desired_pose);
+  return true;
+}
+
+bool RobotSimulator::setPose(const std::string &end_effector_link, const std::vector<double> &desired_pose)
+{
+  KDL::Frame pose_frame;
+  int arm = -1;
+
+  for (int i = 0; i < end_effector_link_name_.size(); i++)
+  {
+    if (end_effector_link_name_[i] == end_effector_link)
+    {
+      arm = i;
+      break;
+    }
+  }
+
+  if (arm < 0)
+  {
+    ROS_ERROR("Could not find kinematic chain for end-effector %s. Did you initialize?", end_effector_link.c_str());
+    return false;
+  }
+
+  pose_frame = getKDLPose(desired_pose);
+
+  int error_num = -1, attempts = 0;
+
+  while (error_num < 0 && attempts < 10)
+  {
+    attempts++;
+    ROS_INFO("Setting arm %s to pose: ", end_effector_link.c_str());
+
+    for (int i = 0; i < 7; i++)
+    {
+      std::cout << desired_pose[i] << " ";
+    }
+
+    std::cout << std::endl;
+
+    error_num = ik_solver_[arm]->CartToJnt(joint_state_[arm].q, pose_frame, joint_state_[arm].q);
+    if (error_num < 0)
+    {
+      ROS_ERROR("Error in kinematic solver: %s", ik_solver_[arm]->strError(error_num));
+    }
+  }
+
+  ROS_INFO("Initial joint config:");
+  for(int i = 0; i < 7; i++)
+  {
+    std::cout << joint_state_[arm].q(i) << " ";
+  }
+  std::cout << std::endl;
 
   return true;
 }

@@ -72,7 +72,7 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       Return the current alpha value that determines the degree of colaboration between arms.
     **/
     double getAlpha();
-    
+    void setAlpha(double alpha);
     void setNullspaceGain(double km);
   private:
     double alpha_, damping_, current_cm_, km_;

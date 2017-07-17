@@ -33,6 +33,11 @@ public:
   bool initKinematicChain(const std::string &base_link, const std::string &end_effector_link, const std::vector<double> &desired_pose);
 
   /**
+    Set the desired chain to a pose.
+  **/
+  bool setPose(const std::string &end_effector_link, const std::vector<double> &desired_pose);
+
+  /**
     Get an initialized kinematic chain.
 
     @param end_effector_link The name of the chain's end-effector.

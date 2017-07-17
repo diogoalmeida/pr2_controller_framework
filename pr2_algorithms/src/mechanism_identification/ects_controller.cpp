@@ -25,22 +25,28 @@ namespace manipulation_algorithms{
     r_2_ = r_2;
     total_twist.block<6,1>(0,0) = twist_a;
     total_twist.block<6,1>(6,0) = twist_r;
-    
+
     J = computeECTSJacobian(q1_, q2_);
 
     epsilon = computeNullSpaceTask();
+
     current_cm_ = computeTaskCompatibility(J);
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.householderQr().solve(J*epsilon);
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon);
   }
-  
+
   void ECTSController::setNullspaceGain(double km)
   {
     km_ = km;
   }
-  
+
+  void ECTSController::setAlpha(double alpha)
+  {
+    alpha_ = alpha;
+  }
+
   double ECTSController::getTaskCompatibility()
   {
     return current_cm_;

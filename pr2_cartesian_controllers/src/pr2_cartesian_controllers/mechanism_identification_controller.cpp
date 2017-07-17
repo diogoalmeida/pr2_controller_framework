@@ -260,7 +260,7 @@ namespace cartesian_controllers {
     std::vector<KDL::Twist> command_twist(2);
     std::vector<KDL::JntArray> commanded_joint_velocities(2);
     std::vector<Eigen::Matrix<double, 6, 7> > jacobian(2);
-    Eigen::Vector3d translational_dof_ground, rotational_dof_ground, p1, p2,
+    Eigen::Vector3d translational_dof_ground, rotational_dof_ground, p1, p2, eef1, eef2,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero(), transmission_direction;
@@ -315,6 +315,13 @@ namespace cartesian_controllers {
     translational_dof_ground = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
     p1 = grasp_point_frame[rod_arm_].translation();
     p2 = grasp_point_frame[surface_arm_].translation();
+
+    for(int i = 0; i < 3; i++)
+    {
+      eef1[i] = eef_kdl[rod_arm_].p(i);
+      eef2[i] = eef_kdl[surface_arm_].p(i);
+    }
+
     contact_force = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(0,0);
     contact_torque = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(3,0);
     p1_ = grasp_point_frame[rod_arm_];
@@ -360,7 +367,7 @@ namespace cartesian_controllers {
     comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
     // ects_twist.block<6,1>(6,0) += comp_twist_eig;
-    joint_commands = ects_controller_->control(pc_.translation() - p1, pc_.translation() - p2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
+    joint_commands = ects_controller_->control(pc_.translation() - eef1, pc_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)
     {

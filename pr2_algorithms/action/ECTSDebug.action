@@ -2,6 +2,7 @@ float64 vd_amp
 float64 wd_amp
 float64 vd_freq
 float64 wd_freq
+float64 alpha
 ---
 
 ---

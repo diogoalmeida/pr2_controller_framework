@@ -63,17 +63,28 @@ namespace manipulation_algorithms{
     r_2_ = r_2;
     total_twist.block<6,1>(0,0) = twist_a;
     total_twist.block<6,1>(6,0) = twist_r;
-    
+
     J = computeECTSJacobian(q1_, q2_);
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
-    
+
     {
       boost::lock_guard<boost::mutex> guard(optimization_mutex_);
       epsilon = epsilon_;
       std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
-    proj = (I  - J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse()*J)*epsilon;
+
+    proj = (I  - J.transpose()*(J*J.transpose()).inverse()*J)*epsilon;
+
+    for (int i = 0; i < 14; i++)
+    {
+      if (proj[i] > 0.5)
+      {
+        proj = Vector14d::Zero();
+        break;
+      }
+    }
+
     std::cout << "Proj: " << std::endl << proj.transpose() << std::endl << std::endl;
     return J.transpose()*damped_inverse.ldlt().solve(total_twist) + proj;
   }

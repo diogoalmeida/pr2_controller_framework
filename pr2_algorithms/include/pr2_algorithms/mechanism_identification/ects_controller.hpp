@@ -83,6 +83,8 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     std::vector<Vector12d> u_list_;
     KDL::JntArray q1_, q2_;
     Vector3d r_1_, r_2_;
+    Vector14d epsilon_;
+    boost::thread optimization_thread_;
 
     /**
       Compute the velocity transmission ratio along the direction u.
@@ -107,6 +109,7 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     double computeTaskCompatibility(const MatrixECTS &J);
 
     Vector14d computeNullSpaceTask();
+    void optimizationTaskLoop();
   };
 }
 #endif

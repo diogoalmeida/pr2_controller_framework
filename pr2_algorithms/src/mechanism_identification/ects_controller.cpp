@@ -8,9 +8,33 @@ namespace manipulation_algorithms{
     jac_solver_2_.reset(new KDL::ChainJntToJacSolver(chain_2));
     current_cm_ = 0;
     km_ = 0;
+    epsilon_ = Vector14d::Zero();
+    optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
   }
 
-  ECTSController::~ECTSController(){}
+  ECTSController::~ECTSController()
+  {
+    optimization_thread_.interrupt();
+    optimization_thread_.join();
+  }
+  
+  void ECTSController::optimizationTaskLoop()
+  {
+    ros::Rate optimization_rate(500);
+    
+    try
+    {
+      while(ros::ok())
+      {
+        epsilon_ = computeNullSpaceTask();
+        optimization_rate.sleep();
+      }  
+    }
+    catch(const boost::thread_interrupted &)
+    {
+      return;
+    }
+  }
 
   Vector14d ECTSController::control(const Vector3d &r_1, const Vector3d &r_2, const KDL::JntArray &q1, const KDL::JntArray &q2, const Vector6d &twist_a, const Vector6d &twist_r)
   {
@@ -28,13 +52,11 @@ namespace manipulation_algorithms{
 
     J = computeECTSJacobian(q1_, q2_);
 
-    epsilon = computeNullSpaceTask();
-
     current_cm_ = computeTaskCompatibility(J);
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon);
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon_  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon_);
   }
 
   void ECTSController::setNullspaceGain(double km)

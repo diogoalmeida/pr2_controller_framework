@@ -331,6 +331,7 @@ namespace cartesian_controllers {
     {
       estimator_.initialize(Eigen::Vector3d::Zero());
       elapsed_ = ros::Time(0);
+      target_joint_positions_ = joint_positions_;
       has_initial_ = true;
     }
 
@@ -371,6 +372,8 @@ namespace cartesian_controllers {
 
     for (unsigned int i = 0; i < 7; i++)
     {
+      target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();      
+      target_joint_positions_[surface_arm_](i) += joint_commands[i + 7]*dt.toSec();
       commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }
@@ -382,14 +385,16 @@ namespace cartesian_controllers {
 
       if (hasJoint(chain_[rod_arm_], current_state.name[i]))
       {
-        control_output.position[i] = joint_positions_[rod_arm_](joint_index[rod_arm_]) + commanded_joint_velocities[rod_arm_](joint_index[rod_arm_])*dt.toSec();
+        control_output.position[i] = target_joint_positions_[rod_arm_](joint_index[rod_arm_]);
+        // control_output.position[i] = joint_positions_[rod_arm](joint_index[rod_arm]) + commanded_joint_velocities[rod_arm](joint_index[rod_arm_])*dt.toSec();
         control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index[rod_arm_]);
         joint_index[rod_arm_]++;
       }
 
       if (hasJoint(chain_[surface_arm_], current_state.name[i]))
       {
-        control_output.position[i] = joint_positions_[surface_arm_](joint_index[surface_arm_]) + commanded_joint_velocities[surface_arm_](joint_index[surface_arm_])*dt.toSec();
+        control_output.position[i] = target_joint_positions_[surface_arm_](joint_index[surface_arm_]);
+        // control_output.position[i] = joint_positions_[surface_arm_](joint_index[surface_arm_]) + commanded_joint_velocities[surface_arm_](joint_index[surface_arm_])*dt.toSec();
         control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index[surface_arm_]);
         joint_index[surface_arm_]++;
       }

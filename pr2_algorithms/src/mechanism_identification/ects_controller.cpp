@@ -27,7 +27,7 @@ namespace manipulation_algorithms{
   
   void ECTSController::optimizationTaskLoop()
   {
-    double feedback_hz = 500;
+    double feedback_hz = 100;
     MatrixECTS J = MatrixECTS::Zero();
     
     try
@@ -186,7 +186,7 @@ namespace manipulation_algorithms{
     Vector14d task = Vector14d::Zero();
     KDL::JntArray q_plus, q_minus;
     MatrixECTS J_plus, J_minus;
-    double epsilon = 0.001;
+    double epsilon = 0.0001;
     double cm_plus, cm_minus;
     KDL::Jacobian J_1(7), J_2(7);
     jac_solver_1_->JntToJac(q1_, J_1);

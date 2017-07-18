@@ -154,6 +154,7 @@ bool RobotSimulator::setPose(const std::string &end_effector_link, const std::ve
   pose_frame = getKDLPose(desired_pose);
 
   int error_num = -1, attempts = 0;
+  KDL::SetToZero(joint_state_[arm].q);
 
   while (error_num < 0 && attempts < 10)
   {

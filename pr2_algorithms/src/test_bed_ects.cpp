@@ -62,6 +62,7 @@ void goalCB(boost::shared_ptr<manipulation_algorithms::ECTSController> &controll
   vd_amp = goal->vd_amp;
   wd_amp = goal->wd_amp;
   controller->setAlpha(goal->alpha);
+  controller->setNullspaceGain(goal->nullspace_gain);
   init_time = ros::Time::now();
   prev_time = ros::Time::now();
   ROS_INFO("ECTS controller got new goal");

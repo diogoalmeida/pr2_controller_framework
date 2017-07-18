@@ -98,7 +98,9 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       @return The ECTS jacobian.
     **/
     MatrixECTS computeECTSJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2);
-
+    MatrixECTS computeECTSJacobianGiven1(const KDL::JntArray &q2, const KDL::Jacobian &J_1_kdl);
+    MatrixECTS computeECTSJacobianGiven2(const KDL::JntArray &q1, const KDL::Jacobian &J_2_kdl);
+    
     /**
       Computes the task compatibility measure \f$c_m = \sum_{i=1}^n \alpha_{m_i}^{\pm2}\f$.
     **/

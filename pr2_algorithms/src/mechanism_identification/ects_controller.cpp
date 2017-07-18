@@ -81,6 +81,54 @@ namespace manipulation_algorithms{
 
     return J_e;
   }
+  
+  MatrixECTS ECTSController::computeECTSJacobianGiven1(const KDL::JntArray &q2, const KDL::Jacobian &J_1_kdl)
+  {
+    Matrix12d C = Matrix12d::Zero(), W = Matrix12d::Identity();
+    MatrixECTS J_e, J = MatrixECTS::Zero();
+    KDL::Jacobian J_2_kdl(7);
+
+    jac_solver_2_->JntToJac(q2, J_2_kdl);
+
+    C.block<6,6>(0,0) = alpha_*Matrix6d::Identity();
+    C.block<6,6>(0,6) = (1 - alpha_)*Matrix6d::Identity();
+    C.block<6,6>(6,0) = -beta_*Matrix6d::Identity();
+    C.block<6,6>(6,6) = Matrix6d::Identity();
+
+    W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
+    W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
+
+    J.block<6,7>(0,0) = J_1_kdl.data;
+    J.block<6,7>(6,7) = J_2_kdl.data;
+
+    J_e = C*W*J;
+
+    return J_e;
+  }
+  
+  MatrixECTS ECTSController::computeECTSJacobianGiven2(const KDL::JntArray &q1, const KDL::Jacobian &J_2_kdl)
+  {
+    Matrix12d C = Matrix12d::Zero(), W = Matrix12d::Identity();
+    MatrixECTS J_e, J = MatrixECTS::Zero();
+    KDL::Jacobian J_1_kdl(7);
+
+    jac_solver_1_->JntToJac(q1, J_1_kdl);
+
+    C.block<6,6>(0,0) = alpha_*Matrix6d::Identity();
+    C.block<6,6>(0,6) = (1 - alpha_)*Matrix6d::Identity();
+    C.block<6,6>(6,0) = -beta_*Matrix6d::Identity();
+    C.block<6,6>(6,6) = Matrix6d::Identity();
+
+    W.block<3, 3>(0, 3) = -computeSkewSymmetric(r_1_);
+    W.block<3, 3>(6, 9) = -computeSkewSymmetric(r_2_);
+
+    J.block<6,7>(0,0) = J_1_kdl.data;
+    J.block<6,7>(6,7) = J_2_kdl.data;
+
+    J_e = C*W*J;
+
+    return J_e;
+  }
 
   double ECTSController::computeTransmissionRatio(const MatrixECTS &J, const Vector12d &u)
   {
@@ -109,15 +157,19 @@ namespace manipulation_algorithms{
     MatrixECTS J_plus, J_minus;
     double epsilon = 0.001;
     double cm_plus, cm_minus;
-
+    KDL::Jacobian J_1, J_2;
+    jac_solver_1_->JntToJac(q1_, J_1);
+    jac_solver_2_->JntToJac(q2_, J_2);
+    
     for (int i = 0; i < 7; i++)
     {
       q_plus = q1_;
       q_minus = q1_;
       q_plus(i) += epsilon;
       q_minus(i) -= epsilon;
-      J_plus = computeECTSJacobian(q_plus, q2_);
-      J_minus = computeECTSJacobian(q_minus, q2_);
+
+      J_plus = computeECTSJacobianGiven2(q_plus, J_2);
+      J_minus = computeECTSJacobianGiven2(q_minus, J_2);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
       task(i) = (cm_plus - cm_minus)/(2*epsilon);
@@ -129,9 +181,9 @@ namespace manipulation_algorithms{
       q_minus = q2_;
       q_plus(i) += epsilon;
       q_minus(i) -= epsilon;
-
-      J_plus = computeECTSJacobian(q1_, q_plus);
-      J_minus = computeECTSJacobian(q1_, q_minus);
+      
+      J_plus = computeECTSJacobianGiven1(q_plus, J_1);
+      J_minus = computeECTSJacobianGiven1(q_minus, J_1);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
       task(i + 7) = (cm_plus - cm_minus)/(2*epsilon);

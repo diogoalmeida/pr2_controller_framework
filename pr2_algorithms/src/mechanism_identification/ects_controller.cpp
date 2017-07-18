@@ -28,12 +28,15 @@ namespace manipulation_algorithms{
   void ECTSController::optimizationTaskLoop()
   {
     double feedback_hz = 500;
+    MatrixECTS J = MatrixECTS::Zero();
     
     try
     {
       while(ros::ok())
       {
         epsilon_ = computeNullSpaceTask();
+        J = computeECTSJacobian(q1_, q2_);
+        current_cm_ = computeTaskCompatibility(J);
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz));
       }  
     }
@@ -59,10 +62,9 @@ namespace manipulation_algorithms{
     
     J = computeECTSJacobian(q1_, q2_);
 
-    current_cm_ = computeTaskCompatibility(J);
-
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
-
+    
+    epsilon = epsilon_;
     return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon);
   }
 

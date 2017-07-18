@@ -10,6 +10,10 @@ namespace manipulation_algorithms{
     km_ = 0;
     epsilon_ = Vector14d::Zero();
     optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
+    q1_.resize(chain_1.getNrOfJoints());
+    q2_.resize(chain_2.getNrOfJoints());
+    r_1_ = Vector3d::Zero();
+    r_2_ = Vector3d::Zero();
   }
 
   ECTSController::~ECTSController()
@@ -56,7 +60,7 @@ namespace manipulation_algorithms{
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon_  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon_);
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon);
   }
 
   void ECTSController::setNullspaceGain(double km)

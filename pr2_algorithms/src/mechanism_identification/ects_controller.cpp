@@ -18,8 +18,11 @@ namespace manipulation_algorithms{
 
   ECTSController::~ECTSController()
   {
-    optimization_thread_.interrupt();
-    optimization_thread_.join();
+    if (optimization_thread_.joinable())
+    {
+      optimization_thread_.interrupt();
+      optimization_thread_.join();
+    }
   }
   
   void ECTSController::optimizationTaskLoop()

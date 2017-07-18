@@ -23,6 +23,7 @@ namespace cartesian_controllers {
     trans_pub_ = nh_.advertise<visualization_msgs::Marker>("trans", 1);
     rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
     use_nullspace_ = false;
+    has_joint_positions_ = false;
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
@@ -50,10 +51,10 @@ namespace cartesian_controllers {
   void MechanismIdentificationController::goalCB()
   {
     boost::shared_ptr<const pr2_cartesian_controllers::MechanismIdentificationGoal> goal = action_server_->acceptNewGoal();
-
     {
       boost::lock_guard<boost::mutex>guard(reference_mutex_);
       finished_acquiring_goal_ = false;
+      has_joint_positions_ = false;
     }
 
     if(!ects_controller_->getParams(nh_))
@@ -273,7 +274,13 @@ namespace cartesian_controllers {
     {
       return lastState(current_state);
     }
-
+    
+    if (!has_joint_positions_)
+    {
+      target_joint_positions_ = joint_positions_;
+      has_joint_positions_ = true;
+    }
+    
     // TODO: This should be handled in the template class
     has_state_ = false;
 
@@ -331,7 +338,6 @@ namespace cartesian_controllers {
     {
       estimator_.initialize(Eigen::Vector3d::Zero());
       elapsed_ = ros::Time(0);
-      target_joint_positions_ = joint_positions_;
       has_initial_ = true;
     }
 

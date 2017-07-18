@@ -41,7 +41,7 @@ private:
   boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;
 
   std::vector<KDL::JntArray> target_joint_positions_;
-  bool has_initial_, finished_acquiring_goal_, use_estimates_, use_nullspace_;
+  bool has_initial_, finished_acquiring_goal_, use_estimates_, use_nullspace_, has_joint_positions_;
   int rod_arm_, surface_arm_;
   double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, rod_length_;
   std::vector<KDL::Frame> eef_to_grasp_;

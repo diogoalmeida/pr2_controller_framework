@@ -120,7 +120,7 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   Eigen::VectorXd velocities(chain.getNrOfJoints());
   velocities = Eigen::VectorXd::Zero(chain.getNrOfJoints());
   fk_solver.reset(new KDL::ChainFkSolverPos_recursive(chain));
-  ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain));
+  ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain, 1e-5, 10000, 1e-6));
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);
@@ -155,8 +155,8 @@ bool RobotSimulator::setPose(const std::string &end_effector_link, const std::ve
 
   int error_num = -1, attempts = 0;
   KDL::SetToZero(joint_state_[arm].q);
-
-  while (error_num < 0 && attempts < 10)
+  ik_solver_[arm].reset(new KDL::ChainIkSolverPos_LMA(chain_[arm], 1e-5, 10000, 1e-6));
+  while (error_num < 0 && attempts < 1)
   {
     attempts++;
     ROS_INFO("Setting arm %s to pose: ", end_effector_link.c_str());
@@ -165,7 +165,14 @@ bool RobotSimulator::setPose(const std::string &end_effector_link, const std::ve
     {
       std::cout << desired_pose[i] << " ";
     }
-
+    std::cout << std::endl;
+    
+    ROS_INFO("Joint values: ");
+    
+    for (int i = 0; i < 7; i++)
+    {
+      std::cout << joint_state_[arm].q(i) << " ";
+    }
     std::cout << std::endl;
 
     error_num = ik_solver_[arm]->CartToJnt(joint_state_[arm].q, pose_frame, joint_state_[arm].q);

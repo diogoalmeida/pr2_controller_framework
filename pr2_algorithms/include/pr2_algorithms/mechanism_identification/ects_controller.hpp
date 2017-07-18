@@ -15,6 +15,7 @@ namespace manipulation_algorithms{
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 6, 7> Matrix67d;
 typedef Eigen::Matrix<double, 12, 12> Matrix12d;
+typedef Eigen::Matrix<double, 14, 14> Matrix14d;
 typedef Eigen::Matrix<double, 6, 14> MatrixECTSr;
 typedef Eigen::Matrix<double, 12, 14> MatrixECTS;
 typedef Eigen::Vector3d Vector3d;

@@ -15,7 +15,7 @@ common:
     alpha: 0.5
     maxiter: 200
     nso_weights: 1
-  feedback_rate: 50
+  feedback_rate: 10
   force_torque_topic:
     arm_1: /l_ft_sensor/ft_compensated
     arm_2: /l_ft_sensor/ft_compensated_echo

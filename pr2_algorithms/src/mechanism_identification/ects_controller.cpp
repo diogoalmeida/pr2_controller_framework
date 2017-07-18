@@ -27,7 +27,7 @@ namespace manipulation_algorithms{
   
   void ECTSController::optimizationTaskLoop()
   {
-    double feedback_hz = 500;
+    double optimization_hz = 10;
     MatrixECTS J = MatrixECTS::Zero();
     
     try
@@ -40,7 +40,7 @@ namespace manipulation_algorithms{
           J = computeECTSJacobian(q1_, q2_);
           current_cm_ = computeTaskCompatibility(J);
         }
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/optimization_hz));
       }  
     }
     catch(const boost::thread_interrupted &)
@@ -52,9 +52,10 @@ namespace manipulation_algorithms{
   Vector14d ECTSController::control(const Vector3d &r_1, const Vector3d &r_2, const KDL::JntArray &q1, const KDL::JntArray &q2, const Vector6d &twist_a, const Vector6d &twist_r)
   {
     MatrixECTS J = MatrixECTS::Zero();
+    Matrix14d I = Matrix14d::Identity();
     Matrix12d damped_inverse;
     Vector12d total_twist;
-    Vector14d q_dot, epsilon = Vector14d::Zero();
+    Vector14d q_dot, epsilon = Vector14d::Zero(), proj;
 
     q1_ = q1;
     q2_ = q2;
@@ -70,8 +71,11 @@ namespace manipulation_algorithms{
     {
       boost::lock_guard<boost::mutex> guard(optimization_mutex_);
       epsilon = epsilon_;
+      std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + epsilon  - J.transpose()*(J*J.transpose()).householderQr().solve(J*epsilon);
+    proj = (I  - J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse()*J)*epsilon;
+    std::cout << "Proj: " << std::endl << proj.transpose() << std::endl << std::endl;
+    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + proj;
   }
 
   void ECTSController::setNullspaceGain(double km)

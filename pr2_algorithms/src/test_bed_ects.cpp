@@ -37,6 +37,7 @@ typedef Eigen::Matrix<double, 12, 1> Vector12d;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
 double vd_freq = 0.0, wd_freq = 0.0, vd_amp = 0.0, wd_amp = 0.0;
+bool use_nullspace = false;
 std::vector<double> pose_left, pose_right;
 int left_arm = 0, right_arm = 1;
 ros::Time init_time, prev_time;
@@ -61,6 +62,7 @@ void goalCB(boost::shared_ptr<manipulation_algorithms::ECTSController> &controll
   wd_freq = goal->wd_freq;
   vd_amp = goal->vd_amp;
   wd_amp = goal->wd_amp;
+  use_nullspace = goal->use_nullspace;
   controller->setAlpha(goal->alpha);
   controller->setNullspaceGain(goal->nullspace_gain);
   init_time = ros::Time::now();
@@ -287,7 +289,6 @@ int main(int argc, char ** argv)
       command_twist.block<3,1>(6,0) = vd_amp*sin(2*M_PI*vd_freq*elapsed.toSec())*translational_dof_ground;
       command_twist.block<3,1>(9,0) = wd_amp*sin(2*M_PI*wd_freq*elapsed.toSec())*rotational_dof_ground;
 
-      bool use_nullspace = true;
       Eigen::Matrix<double, 12, 1> transmission_direction;
 
       if (use_nullspace)
@@ -299,7 +300,6 @@ int main(int argc, char ** argv)
         transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
         transmission_direction.block<3,1>(9,0) = rotational_dof_ground;
         controller->addOptimizationDirection(transmission_direction);
-        controller->setNullspaceGain(0.1);
         // std::cout << controller->getTaskCompatibility() << std::endl;
       }
 
@@ -325,7 +325,7 @@ int main(int argc, char ** argv)
 
       out = controller->control(pc - eef2, pc - eef1, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
-      // std::cout << out << std::endl << std::endl;
+      std::cout << out.transpose() << std::endl << std::endl;
       simulator.setJointVelocities(end_effector_link[left_arm], out.block<7, 1>(0, 0));
       simulator.setJointVelocities(end_effector_link[right_arm], out.block<7, 1>(7, 0));
     }

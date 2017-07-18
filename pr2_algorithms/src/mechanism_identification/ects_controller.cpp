@@ -157,7 +157,7 @@ namespace manipulation_algorithms{
     MatrixECTS J_plus, J_minus;
     double epsilon = 0.001;
     double cm_plus, cm_minus;
-    KDL::Jacobian J_1, J_2;
+    KDL::Jacobian J_1(7), J_2(7);
     jac_solver_1_->JntToJac(q1_, J_1);
     jac_solver_2_->JntToJac(q2_, J_2);
     

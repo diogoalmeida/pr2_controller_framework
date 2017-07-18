@@ -245,6 +245,11 @@ namespace cartesian_controllers {
     {
       return false;
     }
+    
+    if (!getParam("/mechanism_controller/joint_error_lim", joint_error_lim_))
+    {
+      return false;
+    }
 
     return true;
   }
@@ -378,8 +383,17 @@ namespace cartesian_controllers {
 
     for (unsigned int i = 0; i < 7; i++)
     {
-      target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();      
-      target_joint_positions_[surface_arm_](i) += joint_commands[i + 7]*dt.toSec();
+      if (std::abs(target_joint_positions_[rod_arm_](i) - joint_positions_[rod_arm_](i)) < joint_error_lim_)
+      {
+        target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();      
+      }
+      
+      if (std::abs(target_joint_positions_[surface_arm_](i) - joint_positions_[surface_arm_](i)) < joint_error_lim_)
+      {
+        target_joint_positions_[surface_arm_](i) += joint_commands[i + 7]*dt.toSec();
+      }
+      
+      
       commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }

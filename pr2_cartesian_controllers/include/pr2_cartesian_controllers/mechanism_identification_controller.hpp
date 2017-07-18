@@ -43,7 +43,7 @@ private:
   std::vector<KDL::JntArray> target_joint_positions_;
   bool has_initial_, finished_acquiring_goal_, use_estimates_, use_nullspace_, has_joint_positions_;
   int rod_arm_, surface_arm_;
-  double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, rod_length_;
+  double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, rod_length_, joint_error_lim_;
   std::vector<KDL::Frame> eef_to_grasp_;
   Eigen::Affine3d pc_, p1_, p2_;
   Eigen::Vector3d translational_dof_est_, rotational_dof_est_;

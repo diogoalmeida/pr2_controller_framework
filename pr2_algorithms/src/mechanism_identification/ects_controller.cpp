@@ -27,14 +27,14 @@ namespace manipulation_algorithms{
   
   void ECTSController::optimizationTaskLoop()
   {
-    ros::Rate optimization_rate(500);
+    double feedback_hz = 500;
     
     try
     {
       while(ros::ok())
       {
         epsilon_ = computeNullSpaceTask();
-        optimization_rate.sleep();
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz));
       }  
     }
     catch(const boost::thread_interrupted &)
@@ -56,7 +56,7 @@ namespace manipulation_algorithms{
     r_2_ = r_2;
     total_twist.block<6,1>(0,0) = twist_a;
     total_twist.block<6,1>(6,0) = twist_r;
-
+    
     J = computeECTSJacobian(q1_, q2_);
 
     current_cm_ = computeTaskCompatibility(J);

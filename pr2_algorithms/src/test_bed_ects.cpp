@@ -45,21 +45,29 @@ std::string end_effector_link[] = {"l_wrist_roll_link", "r_wrist_roll_link"};
 boost::mutex cb_mutex;
 boost::shared_ptr<actionlib::SimpleActionServer<pr2_algorithms::ECTSDebugAction> > action_server;
 
-void goalCB(manipulation_algorithms::ECTSController &controller)
+void goalCB(boost::shared_ptr<manipulation_algorithms::ECTSController> &controller, RobotSimulator &simulator, const ros::NodeHandle &n)
 {
   boost::mutex::scoped_lock lock(cb_mutex);
   boost::shared_ptr<const pr2_algorithms::ECTSDebugGoal> goal = action_server->acceptNewGoal();
 
+  KDL::Chain l_chain, r_chain;
+  simulator.getKinematicChain("l_wrist_roll_link", l_chain);
+  simulator.getKinematicChain("r_wrist_roll_link", r_chain);
+  
+  controller.reset(new manipulation_algorithms::ECTSController(l_chain, r_chain));
+  controller->getParams(n);
+  
   vd_freq = goal->vd_freq;
   wd_freq = goal->wd_freq;
   vd_amp = goal->vd_amp;
   wd_amp = goal->wd_amp;
-  controller.setAlpha(goal->alpha);
+  controller->setAlpha(goal->alpha);
   init_time = ros::Time::now();
   prev_time = ros::Time::now();
+  ROS_INFO("ECTS controller got new goal");
 }
 
-void preemptCB(RobotSimulator &simulator)
+void preemptCB(boost::shared_ptr<manipulation_algorithms::ECTSController> &controller, RobotSimulator &simulator)
 {
   Vector7d null = Vector7d::Zero();
   boost::mutex::scoped_lock lock(cb_mutex);
@@ -68,6 +76,7 @@ void preemptCB(RobotSimulator &simulator)
   simulator.setPose(end_effector_link[left_arm], pose_left);
   simulator.setPose(end_effector_link[right_arm], pose_right);
   action_server->setPreempted();
+  controller.reset();
   ROS_WARN("ECTS controller preempted");
 }
 
@@ -173,15 +182,11 @@ int main(int argc, char ** argv)
   }
   simulator.initKinematicChain("torso_lift_link", "r_wrist_roll_link", pose_right);
 
-  KDL::Chain l_chain, r_chain;
-  simulator.getKinematicChain("l_wrist_roll_link", l_chain);
-  simulator.getKinematicChain("r_wrist_roll_link", r_chain);
-  manipulation_algorithms::ECTSController controller(l_chain, r_chain);
-  controller.getParams(n);
+  boost::shared_ptr<manipulation_algorithms::ECTSController> controller;
 
   action_server = boost::shared_ptr<actionlib::SimpleActionServer<pr2_algorithms::ECTSDebugAction> >(new actionlib::SimpleActionServer<pr2_algorithms::ECTSDebugAction>(n, "ects_debug", false));
-  action_server->registerGoalCallback(boost::bind(&goalCB, boost::ref(controller)));
-  action_server->registerPreemptCallback(boost::bind(&preemptCB, boost::ref(simulator)));
+  action_server->registerGoalCallback(boost::bind(&goalCB, boost::ref(controller), boost::ref(simulator), boost::cref(n)));
+  action_server->registerPreemptCallback(boost::bind(&preemptCB, boost::ref(controller), boost::ref(simulator)));
   action_server->start();
 
   if (argc > 1 && atof(argv[1]) > 0)
@@ -249,7 +254,7 @@ int main(int argc, char ** argv)
       r.sleep();
       continue;
     }
-
+    
     {
       boost::mutex::scoped_lock lock(cb_mutex);
       dt = ros::Time::now() - prev_time;
@@ -286,15 +291,15 @@ int main(int argc, char ** argv)
 
       if (use_nullspace)
       {
-        controller.clearOptimizationDirections();
+        controller->clearOptimizationDirections();
         transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
         transmission_direction.block<3,1>(6,0) = translational_dof_ground;
-        controller.addOptimizationDirection(transmission_direction);
+        controller->addOptimizationDirection(transmission_direction);
         transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
         transmission_direction.block<3,1>(9,0) = rotational_dof_ground;
-        controller.addOptimizationDirection(transmission_direction);
-        controller.setNullspaceGain(0.1);
-        // std::cout << controller.getTaskCompatibility() << std::endl;
+        controller->addOptimizationDirection(transmission_direction);
+        controller->setNullspaceGain(0.1);
+        // std::cout << controller->getTaskCompatibility() << std::endl;
       }
 
       KDL::JntArray l_q, r_q;
@@ -317,7 +322,7 @@ int main(int argc, char ** argv)
       trans_pub.publish(trans_marker);
       rot_pub.publish(rot_marker);
 
-      out = controller.control(pc - eef2, pc - eef1, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
+      out = controller->control(pc - eef2, pc - eef1, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
       // std::cout << out << std::endl << std::endl;
       simulator.setJointVelocities(end_effector_link[left_arm], out.block<7, 1>(0, 0));
@@ -328,4 +333,5 @@ int main(int argc, char ** argv)
     pub.publish(feedback_msg);
     r.sleep();
   }
+  ROS_ERROR("WHOOOOPS LOL");
 }

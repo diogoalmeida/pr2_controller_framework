@@ -280,12 +280,6 @@ namespace cartesian_controllers {
       return lastState(current_state);
     }
     
-    if (!has_joint_positions_)
-    {
-      target_joint_positions_ = joint_positions_;
-      has_joint_positions_ = true;
-    }
-    
     // TODO: This should be handled in the template class
     has_state_ = false;
 
@@ -303,6 +297,12 @@ namespace cartesian_controllers {
       ROS_ERROR("Failed to get the chain joint state for the rod arm. Aborting.");
       action_server_->setAborted();
       return lastState(current_state);
+    }
+    
+    if (!has_joint_positions_)
+    {
+      target_joint_positions_ = joint_positions_;
+      has_joint_positions_ = true;
     }
 
     control_output = lastState(current_state, rod_arm_);

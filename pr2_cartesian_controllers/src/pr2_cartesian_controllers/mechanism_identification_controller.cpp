@@ -372,9 +372,9 @@ namespace cartesian_controllers {
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
 
+      ects_controller_->clearOptimizationDirections();
       if (use_nullspace_)
       {
-        ects_controller_->clearOptimizationDirections();
         transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
         transmission_direction.block<3,1>(6,0) = translational_dof_ground;
         ects_controller_->addOptimizationDirection(transmission_direction);

@@ -47,6 +47,7 @@ namespace cartesian_controllers {
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     action_server_->setPreempted(result_);
     has_initial_ = false;
+    has_joint_positions_ = false;
     ROS_WARN("Mechanism identification controller preempted!");
   }
 

@@ -88,7 +88,7 @@ namespace manipulation_algorithms{
       // std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
 
-    proj = (I  - J.transpose()*(J*J.transpose()).inverse()*J)*epsilon;
+    proj = (I  - J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse()*J)*epsilon;
 
     for (int i = 0; i < 14; i++)
     {

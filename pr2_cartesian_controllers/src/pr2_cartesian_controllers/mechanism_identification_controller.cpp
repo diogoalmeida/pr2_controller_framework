@@ -27,6 +27,8 @@ namespace cartesian_controllers {
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
+    cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
+    cfg_server_.setCallback(cfg_callback_);
   }
 
   MechanismIdentificationController::~MechanismIdentificationController()
@@ -46,6 +48,16 @@ namespace cartesian_controllers {
     action_server_->setPreempted(result_);
     has_initial_ = false;
     ROS_WARN("Mechanism identification controller preempted!");
+  }
+
+  void MechanismIdentificationController::dynamicReconfigureCallback(const pr2_cartesian_controllers::MechanismIdentificationConfig &config, uint32_t level)
+  {
+    goal_force_ = config.force;
+    vd_amp_ = config.vd_amp;
+    vd_freq_ = config.vd_freq;
+    wd_amp_ = config.wd_amp;
+    wd_freq_ = config.wd_freq;
+    use_nullspace_ = config.use_nullspace;
   }
 
   void MechanismIdentificationController::goalCB()
@@ -245,7 +257,7 @@ namespace cartesian_controllers {
     {
       return false;
     }
-    
+
     if (!getParam("/mechanism_controller/joint_error_lim", joint_error_lim_))
     {
       return false;
@@ -279,7 +291,7 @@ namespace cartesian_controllers {
     {
       return lastState(current_state);
     }
-    
+
     // TODO: This should be handled in the template class
     has_state_ = false;
 
@@ -298,7 +310,7 @@ namespace cartesian_controllers {
       action_server_->setAborted();
       return lastState(current_state);
     }
-    
+
     if (!has_joint_positions_)
     {
       target_joint_positions_ = joint_positions_;
@@ -376,24 +388,22 @@ namespace cartesian_controllers {
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
     tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);
 
-    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+    // comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
-    ects_twist.block<6,1>(0,0) += comp_twist_eig;
     joint_commands = ects_controller_->control(pc_.translation() - eef1, pc_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)
     {
       if (std::abs(target_joint_positions_[rod_arm_](i) - joint_positions_[rod_arm_](i)) < joint_error_lim_)
       {
-        target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();      
+        target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();
       }
-      
+
       if (std::abs(target_joint_positions_[surface_arm_](i) - joint_positions_[surface_arm_](i)) < joint_error_lim_)
       {
         target_joint_positions_[surface_arm_](i) += joint_commands[i + 7]*dt.toSec();
       }
-      
-      
+
       commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }

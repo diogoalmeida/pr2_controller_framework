@@ -22,4 +22,5 @@
   <depend>kdl_conversions</depend>
   <depend>visualization_msgs</depend>
   <depend>message_generation</depend>
+  <depend>dynamic_reconfigure</depend>
 </package>

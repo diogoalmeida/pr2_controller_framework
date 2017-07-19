@@ -15,11 +15,16 @@ catkin REQUIRED COMPONENTS
   kdl_conversions
 	message_generation
   pr2_algorithms
+  dynamic_reconfigure
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
 set(CMAKE_CXX_FLAGS "-std=c++0x -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ${CMAKE_CXX_FLAGS}")
 set(ROS_BUILD_TYPE Release)
+
+generate_dynamic_reconfigure_options(
+  config/MechanismIdentification.cfg
+)
 
 add_action_files(
 	DIRECTORY action
@@ -63,4 +68,4 @@ add_dependencies(folding_controller pr2_cartesian_controllers_generate_messages_
 
 add_library(mechanism_identification_controller src/pr2_cartesian_controllers/mechanism_identification_controller.cpp ${utils})
 target_link_libraries(mechanism_identification_controller ${catkin_LIBRARIES})
-add_dependencies(mechanism_identification_controller pr2_cartesian_controllers_generate_messages_cpp)
+add_dependencies(mechanism_identification_controller pr2_cartesian_controllers_generate_messages_cpp pr2_cartesian_controllers_gencfg)

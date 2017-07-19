@@ -8,6 +8,8 @@
 #include <pr2_algorithms/mechanism_identification/kalman_filter.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
+#include <dynamic_reconfigure/server.h>
+#include <pr2_cartesian_controllers/MechanismIdentificationConfig.h>
 #include <limits>
 
 namespace cartesian_controllers{
@@ -40,6 +42,9 @@ private:
   manipulation_algorithms::AdaptiveController adaptive_controller_;
   boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;
 
+  dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig> cfg_server_;
+  dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>::CallbackType cfg_callback_;
+
   std::vector<KDL::JntArray> target_joint_positions_;
   bool has_initial_, finished_acquiring_goal_, use_estimates_, use_nullspace_, has_joint_positions_;
   int rod_arm_, surface_arm_;
@@ -50,6 +55,8 @@ private:
   ros::Publisher pc_pub_, p1_pub_, p2_pub_, r1_pub_, r2_pub_, wrench2_pub_, trans_pub_, rot_pub_;
   std::vector<double> comp_gains_;
   ros::Time elapsed_;
+
+  void dynamicReconfigureCallback(const pr2_cartesian_controllers::MechanismIdentificationConfig &config, uint32_t level);
 
 public:
   MechanismIdentificationController();

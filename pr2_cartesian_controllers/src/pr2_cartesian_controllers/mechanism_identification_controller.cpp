@@ -28,7 +28,8 @@ namespace cartesian_controllers {
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
     cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
-    cfg_server_.setCallback(cfg_callback_);
+    cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle("mechanism_identification_config")));
+    cfg_server_->setCallback(cfg_callback_);
   }
 
   MechanismIdentificationController::~MechanismIdentificationController()

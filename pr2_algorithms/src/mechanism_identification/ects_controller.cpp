@@ -156,7 +156,7 @@ namespace manipulation_algorithms{
 
   double ECTSController::computeTransmissionRatio(const MatrixECTS &J, const Vector12d &u)
   {
-    Matrix12d dJJ = (J*J.transpose()).inverse();
+    Matrix12d dJJ = (J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
     double quad = u.transpose()*dJJ*u;
 
     // std::cout << "quad: " << quad << std::endl;

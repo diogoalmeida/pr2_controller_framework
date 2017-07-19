@@ -41,7 +41,7 @@ namespace manipulation_algorithms{
       while(ros::ok())
       {
         {
-          boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+          // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
           epsilon_ = computeNullSpaceTask();
           // std::cout << "joint values from optimization loop: ";
           // for (int i = 0; i < 7; i++)
@@ -83,7 +83,7 @@ namespace manipulation_algorithms{
     // std::cout << "alpha: " << alpha_ << " beta: " << beta_ << " km_: " << km_ << " max_nullspace_velocities: " << max_nullspace_velocities_ << " damping: " << damping_ << " gradient_delta: " << gradient_delta_ << std::endl;
 
     {
-      boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+      // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
       epsilon = epsilon_;
       // std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
@@ -120,7 +120,7 @@ namespace manipulation_algorithms{
 
   double ECTSController::getTaskCompatibility()
   {
-    boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+    // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
     return current_cm_;
   }
 

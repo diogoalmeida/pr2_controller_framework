@@ -13,11 +13,16 @@ catkin REQUIRED COMPONENTS
   actionlib_msgs
   visualization_msgs
   robot_state_publisher
+  dynamic_reconfigure
 )
 
 link_directories(${catkin_LIBRARY_DIRS})
 set(CMAKE_CXX_FLAGS "-std=c++0x -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ${CMAKE_CXX_FLAGS}")
 set(ROS_BUILD_TYPE Release)
+
+generate_dynamic_reconfigure_options(
+  cfg/ects.cfg
+)
 
 add_message_files(
   FILES
@@ -77,4 +82,4 @@ add_dependencies(test_bed_folding pr2_algorithms_generate_messages_cpp)
 
 add_executable(test_bed_ects src/test_bed_ects.cpp src/robot_simulator.cpp)
 target_link_libraries(test_bed_ects ects_controller ${catkin_LIBRARIES})
-add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp)
+add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp pr2_algorithms_gencfg)

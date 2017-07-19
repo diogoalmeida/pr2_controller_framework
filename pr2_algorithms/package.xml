@@ -19,4 +19,5 @@
   <depend>kdl_parser</depend>
   <depend>kdl_conversions</depend>
   <depend>robot_state_publisher</depend>
+  <depend>dynamic_reconfigure</depend>
 </package>

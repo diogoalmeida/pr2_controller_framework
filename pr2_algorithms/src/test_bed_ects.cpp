@@ -54,10 +54,10 @@ void goalCB(boost::shared_ptr<manipulation_algorithms::ECTSController> &controll
   KDL::Chain l_chain, r_chain;
   simulator.getKinematicChain("l_wrist_roll_link", l_chain);
   simulator.getKinematicChain("r_wrist_roll_link", r_chain);
-  
+
   controller.reset(new manipulation_algorithms::ECTSController(l_chain, r_chain));
   controller->getParams(n);
-  
+
   vd_freq = goal->vd_freq;
   wd_freq = goal->wd_freq;
   vd_amp = goal->vd_amp;
@@ -257,7 +257,7 @@ int main(int argc, char ** argv)
       r.sleep();
       continue;
     }
-    
+
     {
       boost::mutex::scoped_lock lock(cb_mutex);
       dt = ros::Time::now() - prev_time;
@@ -325,7 +325,7 @@ int main(int argc, char ** argv)
 
       out = controller->control(pc - eef2, pc - eef1, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
 
-      std::cout << out.transpose() << std::endl << std::endl;
+      // std::cout << out.transpose() << std::endl << std::endl;
       simulator.setJointVelocities(end_effector_link[left_arm], out.block<7, 1>(0, 0));
       simulator.setJointVelocities(end_effector_link[right_arm], out.block<7, 1>(7, 0));
     }

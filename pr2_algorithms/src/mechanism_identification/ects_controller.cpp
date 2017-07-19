@@ -10,13 +10,17 @@ namespace manipulation_algorithms{
     km_ = 0;
     optimization_hz_ = 1;
     max_nullspace_velocities_ = 0;
-    gradient_delta_ = 0;
+    gradient_delta_ = 0.0001;
     epsilon_ = Vector14d::Zero();
     optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
     q1_.resize(chain_1.getNrOfJoints());
+    KDL::SetToZero(q1_);
     q2_.resize(chain_2.getNrOfJoints());
+    KDL::SetToZero(q2_);
     r_1_ = Vector3d::Zero();
     r_2_ = Vector3d::Zero();
+    dyncfg_cb_ = boost::bind(&ECTSController::reconfigureCallback, this, _1, _2);
+    dyncfg_server_.setCallback(dyncfg_cb_);
   }
 
   ECTSController::~ECTSController()
@@ -39,6 +43,12 @@ namespace manipulation_algorithms{
         {
           boost::lock_guard<boost::mutex> guard(optimization_mutex_);
           epsilon_ = computeNullSpaceTask();
+          // std::cout << "joint values from optimization loop: ";
+          // for (int i = 0; i < 7; i++)
+          // {
+          //   std::cout << "q1: " << q1_(i) << " q2: " << q2_(i) << std::endl;
+          // }
+          // std::cout << "epsilon from optimization loop: " << epsilon_ << std::endl;
           J = computeECTSJacobian(q1_, q2_);
           current_cm_ = computeTaskCompatibility(J);
         }
@@ -70,10 +80,12 @@ namespace manipulation_algorithms{
 
     damped_inverse = (J*J.transpose() + damping_*Matrix12d::Identity());
 
+    // std::cout << "alpha: " << alpha_ << " beta: " << beta_ << " km_: " << km_ << " max_nullspace_velocities: " << max_nullspace_velocities_ << " damping: " << damping_ << " gradient_delta: " << gradient_delta_ << std::endl;
+
     {
       boost::lock_guard<boost::mutex> guard(optimization_mutex_);
       epsilon = epsilon_;
-      std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
+      // std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
 
     proj = (I  - J.transpose()*(J*J.transpose()).inverse()*J)*epsilon;
@@ -87,8 +99,13 @@ namespace manipulation_algorithms{
       }
     }
 
-    std::cout << "Proj: " << std::endl << proj.transpose() << std::endl << std::endl;
+    // std::cout << "Proj: " << std::endl << proj.transpose() << std::endl << std::endl;
     return J.transpose()*damped_inverse.ldlt().solve(total_twist) + proj;
+  }
+
+  void ECTSController::reconfigureCallback(const pr2_algorithms::ectsConfig &config, uint32_t level)
+  {
+    setAlpha(config.ects_alpha);
   }
 
   void ECTSController::setNullspaceGain(double km)
@@ -142,6 +159,8 @@ namespace manipulation_algorithms{
     Matrix12d dJJ = (J*J.transpose()).inverse();
     double quad = u.transpose()*dJJ*u;
 
+    // std::cout << "quad: " << quad << std::endl;
+
     return 1/sqrt(quad);
   }
 
@@ -151,6 +170,7 @@ namespace manipulation_algorithms{
     for (unsigned long i = 0; i < u_list_.size(); i++)
     {
       ratio = computeTransmissionRatio(J, u_list_[i]);
+      // std::cout << "ratio " << ratio << std::endl;
       cm += ratio*ratio;
     }
 
@@ -159,6 +179,8 @@ namespace manipulation_algorithms{
       ROS_WARN("TASK COMPATIBILITY IS NAN");
       cm = 0;
     }
+
+    // std::cout << "returning " << cm << std::endl;
 
     return cm;
   }
@@ -169,6 +191,8 @@ namespace manipulation_algorithms{
     KDL::JntArray q_plus, q_minus;
     MatrixECTS J_plus, J_minus;
     double cm_plus, cm_minus;
+
+    // std::cout << "gradient_delta: " << gradient_delta_ << std::endl;
 
     for (int i = 0; i < 7; i++)
     {
@@ -181,6 +205,7 @@ namespace manipulation_algorithms{
       J_minus = computeECTSJacobian(q_minus, q2_);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
+      // std::cout << "cm_plus: " << cm_plus << " cm_minus: " << cm_minus << std::endl;
       task(i) = (cm_plus - cm_minus)/(2*gradient_delta_);
     }
 
@@ -195,8 +220,11 @@ namespace manipulation_algorithms{
       J_minus = computeECTSJacobian(q_minus, q1_);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
+      // std::cout << "cm_plus: " << cm_plus << " cm_minus: " << cm_minus << std::endl;
       task(i + 7) = (cm_plus - cm_minus)/(2*gradient_delta_);
     }
+
+    // std::cout << "task: " << task.transpose() << " km*task: " << km_*task.transpose() << std::endl;
 
     return km_*task;
   }

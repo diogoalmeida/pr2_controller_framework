@@ -10,6 +10,8 @@
 #include <limits>
 #include <stdexcept>
 #include <cmath>
+#include <dynamic_reconfigure/server.h>
+#include <pr2_algorithms/ectsConfig.h>
 
 namespace manipulation_algorithms{
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -103,6 +105,8 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     Vector14d epsilon_;
     boost::thread optimization_thread_;
     boost::mutex optimization_mutex_;
+    dynamic_reconfigure::Server<pr2_algorithms::ectsConfig> dyncfg_server_;
+    dynamic_reconfigure::Server<pr2_algorithms::ectsConfig>::CallbackType dyncfg_cb_;
 
     /**
       Compute the velocity transmission ratio along the direction u.
@@ -124,8 +128,24 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     **/
     double computeTaskCompatibility(const MatrixECTS &J);
 
+    /**
+      Computes the nullspace optimization task by numerically estimating the gradient of the task compatibility measure.
+
+      @return The 14-dimensional joint velocity vector representing the desired motion, which must be projected onto the nullspace of the
+      task jacobian.
+    **/
     Vector14d computeNullSpaceTask();
+
+    /**
+      Loop that uptades the nullspace task value, meant to be run assynchronously to avoid breaking
+      realtime constraints.
+    **/
     void optimizationTaskLoop();
+
+    /**
+      Dynamic reconfigure callback allows for online tuning of controller gains.
+    **/
+    void reconfigureCallback(const pr2_algorithms::ectsConfig &config, uint32_t level);
   };
 }
 #endif

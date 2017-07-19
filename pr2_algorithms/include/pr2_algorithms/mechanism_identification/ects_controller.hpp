@@ -57,11 +57,15 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
 
       where
 
-      \f$\alpha_{m_i} = [u_{m_i}^\top (J_{E_r}J_{E_r}^\top)^{-1}u_{m_i}]^{-1/2}\f$
+      \f$\alpha_{m_i} = [u_{m_i}^\top (J_{E}J_{E}^\top)^{-1}u_{m_i}]^{-1/2}\f$
 
       @param u The \f$u_{m_i}\f$ to be added.
     **/
     void addOptimizationDirection(const Vector12d &u);
+
+    /**
+      Resets the vector of optimization directions.
+    **/
     void clearOptimizationDirections();
 
     /**
@@ -73,10 +77,22 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       Return the current alpha value that determines the degree of colaboration between arms.
     **/
     double getAlpha();
+
+    /**
+      Sets the alpha value.
+
+      @param alpha The desired ECTS alpha value.
+    **/
     void setAlpha(double alpha);
+
+    /**
+      Sets the gradient ascent gain for the nullspace optimization task.
+
+      @param km The desired nullspace optimization gain.
+    **/
     void setNullspaceGain(double km);
   private:
-    double alpha_, damping_, current_cm_, km_;
+    double alpha_, damping_, current_cm_, km_, optimization_hz_, gradient_delta_, max_nullspace_velocities_;
     Matrix12d K_;
     int beta_;
     boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_1_;
@@ -102,7 +118,7 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
       @return The ECTS jacobian.
     **/
     MatrixECTS computeECTSJacobian(const KDL::JntArray &q1, const KDL::JntArray &q2);
-    
+
     /**
       Computes the task compatibility measure \f$c_m = \sum_{i=1}^n \alpha_{m_i}^{\pm2}\f$.
     **/

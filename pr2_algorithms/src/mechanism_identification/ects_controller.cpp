@@ -8,6 +8,9 @@ namespace manipulation_algorithms{
     jac_solver_2_.reset(new KDL::ChainJntToJacSolver(chain_2));
     current_cm_ = 0;
     km_ = 0;
+    optimization_hz_ = 1;
+    max_nullspace_velocities_ = 0;
+    gradient_delta_ = 0;
     epsilon_ = Vector14d::Zero();
     optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
     q1_.resize(chain_1.getNrOfJoints());
@@ -24,12 +27,11 @@ namespace manipulation_algorithms{
       optimization_thread_.join();
     }
   }
-  
+
   void ECTSController::optimizationTaskLoop()
   {
-    double optimization_hz = 10;
     MatrixECTS J = MatrixECTS::Zero();
-    
+
     try
     {
       while(ros::ok())
@@ -40,8 +42,8 @@ namespace manipulation_algorithms{
           J = computeECTSJacobian(q1_, q2_);
           current_cm_ = computeTaskCompatibility(J);
         }
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/optimization_hz));
-      }  
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/optimization_hz_));
+      }
     }
     catch(const boost::thread_interrupted &)
     {
@@ -78,7 +80,7 @@ namespace manipulation_algorithms{
 
     for (int i = 0; i < 14; i++)
     {
-      if (proj[i] > 0.5)
+      if (proj[i] > max_nullspace_velocities_)
       {
         proj = Vector14d::Zero();
         break;
@@ -134,10 +136,10 @@ namespace manipulation_algorithms{
 
     return J_e;
   }
-  
+
   double ECTSController::computeTransmissionRatio(const MatrixECTS &J, const Vector12d &u)
   {
-    Matrix12d dJJ = (J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
+    Matrix12d dJJ = (J*J.transpose()).inverse();
     double quad = u.transpose()*dJJ*u;
 
     return 1/sqrt(quad);
@@ -151,12 +153,13 @@ namespace manipulation_algorithms{
       ratio = computeTransmissionRatio(J, u_list_[i]);
       cm += ratio*ratio;
     }
-    
+
     if (std::isnan(cm))
     {
       ROS_WARN("TASK COMPATIBILITY IS NAN");
       cm = 0;
     }
+
     return cm;
   }
 
@@ -165,35 +168,34 @@ namespace manipulation_algorithms{
     Vector14d task = Vector14d::Zero();
     KDL::JntArray q_plus, q_minus;
     MatrixECTS J_plus, J_minus;
-    double epsilon = 0.00001;
     double cm_plus, cm_minus;
-    
+
     for (int i = 0; i < 7; i++)
     {
       q_plus = q1_;
       q_minus = q1_;
-      q_plus(i) += epsilon;
-      q_minus(i) -= epsilon;
+      q_plus(i) += gradient_delta_;
+      q_minus(i) -= gradient_delta_;
 
       J_plus = computeECTSJacobian(q_plus, q2_);
       J_minus = computeECTSJacobian(q_minus, q2_);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
-      task(i) = (cm_plus - cm_minus)/(2*epsilon);
+      task(i) = (cm_plus - cm_minus)/(2*gradient_delta_);
     }
 
     for (int i = 0; i < 7; i++)
     {
       q_plus = q2_;
       q_minus = q2_;
-      q_plus(i) += epsilon;
-      q_minus(i) -= epsilon;
-      
+      q_plus(i) += gradient_delta_;
+      q_minus(i) -= gradient_delta_;
+
       J_plus = computeECTSJacobian(q_plus, q1_);
       J_minus = computeECTSJacobian(q_minus, q1_);
       cm_plus = computeTaskCompatibility(J_plus);
       cm_minus = computeTaskCompatibility(J_minus);
-      task(i + 7) = (cm_plus - cm_minus)/(2*epsilon);
+      task(i + 7) = (cm_plus - cm_minus)/(2*gradient_delta_);
     }
 
     return km_*task;
@@ -226,6 +228,24 @@ namespace manipulation_algorithms{
     if (!n.getParam("/mechanism_controller/ects_controller/inverse_damping", damping_))
     {
       ROS_ERROR("Missing damping value (/mechanism_controller/ects_controller/inverse_damping)");
+      return false;
+    }
+
+    if (!n.getParam("/mechanism_controller/ects_controller/optimization_rate", optimization_hz_))
+    {
+      ROS_ERROR("Missing optimization rate (/mechanism_controller/ects_controller/optimization_rate)");
+      return false;
+    }
+
+    if (!n.getParam("/mechanism_controller/ects_controller/gradient_delta", gradient_delta_))
+    {
+      ROS_ERROR("Missing the numerical gradient delta (/mechanism_controller/ects_controller/gradient_delta)");
+      return false;
+    }
+
+    if (!n.getParam("/mechanism_controller/ects_controller/max_nullspace_velocities", max_nullspace_velocities_))
+    {
+      ROS_ERROR("Missing value for maximum nullspace joint velocities(/mechanism_controller/ects_controller/max_nullspace_velocities)");
       return false;
     }
 

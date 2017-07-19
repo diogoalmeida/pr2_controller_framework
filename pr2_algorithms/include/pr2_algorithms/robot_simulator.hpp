@@ -73,6 +73,8 @@ private:
   std::vector<Eigen::VectorXd> current_joint_velocities_;
   boost::mutex velocities_mutex_;
   boost::thread sim_thread_;
+  ros::Publisher joint_state_pub_;
+  sensor_msgs::JointState joint_msg_;
   double frequency_;
 
   /**

@@ -70,7 +70,9 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = false;
       has_joint_positions_ = false;
     }
-
+    
+    ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
+    
     if(!ects_controller_->getParams(nh_))
     {
       action_server_->setAborted(result_);

@@ -42,7 +42,7 @@ private:
   manipulation_algorithms::AdaptiveController adaptive_controller_;
   boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;
 
-  dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig> cfg_server_;
+  boost::shared_ptr<dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig> > cfg_server_;
   dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>::CallbackType cfg_callback_;
 
   std::vector<KDL::JntArray> target_joint_positions_;

@@ -3,7 +3,8 @@
 RobotSimulator::RobotSimulator(double frequency = 10)
 {
   urdf::Model model;
-
+  ros::NodeHandle n("~");
+  
   if(!model.initParam("/robot_description")){
       ROS_ERROR("ERROR getting robot description (/robot_description)");
       return;
@@ -24,6 +25,7 @@ RobotSimulator::RobotSimulator(double frequency = 10)
 
   robot_publisher_->publishTransforms(joint_positions_, ros::Time::now(), "");
   robot_publisher_->publishFixedTransforms("");
+  joint_state_pub_ = n.advertise<sensor_msgs::JointState>("/sim_joint_states", 1000);
   frequency_ = frequency;
 
   sim_thread_ = boost::thread(&RobotSimulator::simulation, this);
@@ -121,6 +123,17 @@ bool RobotSimulator::initKinematicChain(const std::string &base_link, const std:
   velocities = Eigen::VectorXd::Zero(chain.getNrOfJoints());
   fk_solver.reset(new KDL::ChainFkSolverPos_recursive(chain));
   ik_solver.reset(new KDL::ChainIkSolverPos_LMA(chain, 1e-5, 10000, 1e-6));
+  
+  for (int i = 0; i < chain.getNrOfSegments(); i++)
+  {
+    if (chain.getSegment(i).getJoint().getType() != KDL::Joint::None)
+    {
+      joint_msg_.name.push_back(chain.getSegment(i).getJoint().getName());
+      joint_msg_.position.push_back(0);
+      joint_msg_.velocity.push_back(0);
+      joint_msg_.effort.push_back(0);
+    }
+  }
 
   chain_.push_back(chain);
   joint_state_.push_back(joint_state);
@@ -211,6 +224,7 @@ bool RobotSimulator::setJointVelocities(const std::string &end_effector_link, co
 bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocities, const std::string &end_effector_link, double dt)
 {
   int arm = -1;
+  std::string joint_name;
 
   for (int i = 0; i < end_effector_link_name_.size(); i++)
   {
@@ -233,13 +247,31 @@ bool RobotSimulator::applyJointVelocities(const Eigen::VectorXd &joint_velocitie
     return false;
   }
 
-  int j = 0;
+  int j = 0, joint_index = -1;
   for (int i = 0; i < chain_[arm].getNrOfSegments(); i++)
   {
     if (chain_[arm].getSegment(i).getJoint().getType() != KDL::Joint::None)
     {
+      joint_name = chain_[arm].getSegment(i).getJoint().getName();
+      for (int k = 0; k < joint_msg_.name.size(); k++)
+      {
+        if (joint_msg_.name[k] == joint_name)
+        {
+          joint_index = k;
+        }
+      }
       joint_state_[arm].qdot(j) = joint_velocities[j];
       joint_state_[arm].q(j) = joint_state_[arm].q(j) + joint_velocities[j]*dt;
+      
+      if (joint_index >= 0)
+      {
+        joint_msg_.position[joint_index] = joint_state_[arm].q(j);
+        joint_msg_.velocity[joint_index] = joint_state_[arm].qdot(j);
+      }
+      else
+      {
+        ROS_WARN("Joint message is missing name %s", joint_name.c_str());
+      }
       // ROS_INFO("Publishing joints %s", chain_[arm].getSegment(i).getJoint().getName().c_str());
       joint_positions_[chain_[arm].getSegment(i).getJoint().getName()] = joint_state_[arm].q(j);
       j++;
@@ -265,6 +297,8 @@ void RobotSimulator::simulation()
       {
         applyJointVelocities(current_joint_velocities_[i], end_effector_link_name_[i], elapsed.toSec());
       }
+      joint_msg_.header.stamp = ros::Time::now();
+      joint_state_pub_.publish(joint_msg_);      
     }
     prev = ros::Time::now();
     r.sleep();

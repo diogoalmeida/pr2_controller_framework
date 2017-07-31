@@ -46,7 +46,7 @@ namespace manipulation_algorithms{
       while(ros::ok())
       {
         {
-          boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+          // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
           epsilon_ = computeNullSpaceTask();
           // std::cout << "joint values from optimization loop: ";
           // for (int i = 0; i < 7; i++)
@@ -88,12 +88,12 @@ namespace manipulation_algorithms{
     // std::cout << "alpha: " << alpha_ << " beta: " << beta_ << " km_: " << km_ << " max_nullspace_velocities: " << max_nullspace_velocities_ << " damping: " << damping_ << " gradient_delta: " << gradient_delta_ << std::endl;
 
     {
-      boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+      // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
       epsilon = epsilon_;
       // std::cout << "Epsilon: " << std::endl << epsilon << std::endl << std::endl;
     }
 
-    proj = (I  - J.transpose()*(J*J.transpose()).inverse()*J)*epsilon;
+    proj = (I  - J.transpose()*(J*J.transpose() + damping_*Matrix12d::Identity()).inverse()*J)*epsilon;
 
     for (int i = 0; i < 14; i++)
     {
@@ -150,7 +150,7 @@ namespace manipulation_algorithms{
 
   double ECTSController::getTaskCompatibility()
   {
-    boost::lock_guard<boost::mutex> guard(optimization_mutex_);
+    // boost::lock_guard<boost::mutex> guard(optimization_mutex_);
     return current_cm_;
   }
 
@@ -186,7 +186,7 @@ namespace manipulation_algorithms{
 
   double ECTSController::computeTransmissionRatio(const MatrixECTS &J, const Vector12d &u)
   {
-    Matrix12d dJJ = (J*J.transpose()).inverse();
+    Matrix12d dJJ = (J*J.transpose() + damping_*Matrix12d::Identity()).inverse();
     double quad = u.transpose()*dJJ*u;
 
     // std::cout << "quad: " << quad << std::endl;

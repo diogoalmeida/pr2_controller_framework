@@ -166,9 +166,9 @@ bool RobotSimulator::setPose(const std::string &end_effector_link, const std::ve
       std::cout << desired_pose[i] << " ";
     }
     std::cout << std::endl;
-    
+
     ROS_INFO("Joint values: ");
-    
+
     for (int i = 0; i < 7; i++)
     {
       std::cout << joint_state_[arm].q(i) << " ";

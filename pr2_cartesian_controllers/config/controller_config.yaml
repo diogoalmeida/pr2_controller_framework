@@ -123,3 +123,5 @@ mechanism_controller:
     optimization_rate: 500
     gradient_delta: 0.001
     max_nullspace_velocities: 0.5
+    joint_update_threshold: 0.001
+    joint_threshold_count_limit: 10

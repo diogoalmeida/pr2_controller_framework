@@ -8,3 +8,4 @@ float64 nullspace_gain
 ---
 
 ---
+float64[] joint_commands

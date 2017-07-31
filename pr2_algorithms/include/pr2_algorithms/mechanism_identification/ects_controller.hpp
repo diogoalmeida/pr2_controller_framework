@@ -94,15 +94,16 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     **/
     void setNullspaceGain(double km);
   private:
-    double alpha_, damping_, current_cm_, km_, optimization_hz_, gradient_delta_, max_nullspace_velocities_;
+    double alpha_, damping_, current_cm_, km_, optimization_hz_, gradient_delta_, max_nullspace_velocities_, joint_updt_threshold_;
     Matrix12d K_;
-    int beta_;
+    int beta_, joint_threshold_count_lim_;
     boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_1_;
     boost::shared_ptr<KDL::ChainJntToJacSolver> jac_solver_2_;
     std::vector<Vector12d> u_list_;
     KDL::JntArray q1_, q2_;
     Vector3d r_1_, r_2_;
-    Vector14d epsilon_;
+    Vector14d epsilon_, prev_out_;
+    std::vector<int> thres_count_;
     boost::thread optimization_thread_;
     boost::mutex optimization_mutex_;
     dynamic_reconfigure::Server<pr2_algorithms::ectsConfig> dyncfg_server_;

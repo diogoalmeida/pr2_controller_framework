@@ -21,6 +21,11 @@ namespace manipulation_algorithms{
     r_2_ = Vector3d::Zero();
     dyncfg_cb_ = boost::bind(&ECTSController::reconfigureCallback, this, _1, _2);
     dyncfg_server_.setCallback(dyncfg_cb_);
+    prev_out_ = Vector14d::Zero();
+    for (int i = 0; i < 14; i++)
+    {
+      thres_count_.push_back(0);
+    }
   }
 
   ECTSController::~ECTSController()
@@ -67,7 +72,7 @@ namespace manipulation_algorithms{
     Matrix14d I = Matrix14d::Identity();
     Matrix12d damped_inverse;
     Vector12d total_twist;
-    Vector14d q_dot, epsilon = Vector14d::Zero(), proj;
+    Vector14d q_dot, epsilon = Vector14d::Zero(), proj, out;
 
     q1_ = q1;
     q2_ = q2;
@@ -99,8 +104,33 @@ namespace manipulation_algorithms{
       }
     }
 
+    out = J.transpose()*damped_inverse.colPivHouseholderQr().solve(total_twist) + proj;
+
+    for (int i = 0; i < 14; i++)
+    {
+      if (std::abs(out[i] - prev_out_[i]) > joint_updt_threshold_)
+      {
+        thres_count_[i] ++;
+        if (thres_count_[i] > joint_threshold_count_lim_)
+        {
+          thres_count_[i] = 0;
+        }
+        else
+        {
+          out[i] = prev_out_[i];
+        }
+      }
+      else
+      {
+        thres_count_[i] = 0;
+      }
+
+    }
+
+    prev_out_ = out;
+
     // std::cout << "Proj: " << std::endl << proj.transpose() << std::endl << std::endl;
-    return J.transpose()*damped_inverse.ldlt().solve(total_twist) + proj;
+    return out;
   }
 
   void ECTSController::reconfigureCallback(const pr2_algorithms::ectsConfig &config, uint32_t level)
@@ -274,6 +304,18 @@ namespace manipulation_algorithms{
     if (!n.getParam("/mechanism_controller/ects_controller/max_nullspace_velocities", max_nullspace_velocities_))
     {
       ROS_ERROR("Missing value for maximum nullspace joint velocities(/mechanism_controller/ects_controller/max_nullspace_velocities)");
+      return false;
+    }
+
+    if (!n.getParam("/mechanism_controller/ects_controller/joint_update_threshold", joint_updt_threshold_))
+    {
+      ROS_ERROR("Missing value for the threshold for joint velocities updates (/mechanism_controller/ects_controller/joint_update_threshold)");
+      return false;
+    }
+
+    if (!n.getParam("/mechanism_controller/ects_controller/joint_threshold_count_limit", joint_threshold_count_lim_))
+    {
+      ROS_ERROR("Missing value for the threshold counter limit (/mechanism_controller/ects_controller/joint_threshold_count_limit)");
       return false;
     }
 

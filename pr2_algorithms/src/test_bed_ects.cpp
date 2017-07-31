@@ -99,6 +99,7 @@ int main(int argc, char ** argv)
   ros::init(argc, argv, "test_bed");
   ros::NodeHandle n("~");
   pr2_algorithms::TestBedECTSFeedback feedback_msg;
+  pr2_algorithms::ECTSDebugFeedback actionlib_feedback;
   urdf::Model model;
   KDL::Tree tree;
   Eigen::Affine3d pc_eig;
@@ -324,7 +325,13 @@ int main(int argc, char ** argv)
       rot_pub.publish(rot_marker);
 
       out = controller->control(pc - eef2, pc - eef1, l_q, r_q, command_twist.block<6,1>(0,0), command_twist.block<6,1>(6,0));
+      actionlib_feedback.joint_commands.clear();
 
+      for (int i = 0; i < 14; i++)
+      {
+        actionlib_feedback.joint_commands.push_back(out[i]);
+      }
+      action_server->publishFeedback(actionlib_feedback);
       // std::cout << out.transpose() << std::endl << std::endl;
       simulator.setJointVelocities(end_effector_link[left_arm], out.block<7, 1>(0, 0));
       simulator.setJointVelocities(end_effector_link[right_arm], out.block<7, 1>(7, 0));

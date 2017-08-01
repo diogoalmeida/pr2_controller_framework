@@ -4,7 +4,7 @@ RobotSimulator::RobotSimulator(double frequency = 10)
 {
   urdf::Model model;
   ros::NodeHandle n("~");
-  
+
   if(!model.initParam("/robot_description")){
       ROS_ERROR("ERROR getting robot description (/robot_description)");
       return;

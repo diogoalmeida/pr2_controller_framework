@@ -25,7 +25,6 @@ namespace cartesian_controllers {
     use_nullspace_ = false;
     has_joint_positions_ = false;
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
-    ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
     cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
     cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle("mechanism_identification_config")));
@@ -70,6 +69,8 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = false;
       has_joint_positions_ = false;
     }
+
+    ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
 
     if(!ects_controller_->getParams(nh_))
     {
@@ -289,6 +290,7 @@ namespace cartesian_controllers {
     Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
 
+    boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
       return lastState(current_state);
@@ -296,8 +298,6 @@ namespace cartesian_controllers {
 
     // TODO: This should be handled in the template class
     has_state_ = false;
-
-    boost::lock_guard<boost::mutex> guard(reference_mutex_);
 
     if(!getChainJointState(current_state, chain_[surface_arm_], joint_positions_[surface_arm_], joint_velocities_[surface_arm_]))
     {

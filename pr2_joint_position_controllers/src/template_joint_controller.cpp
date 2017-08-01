@@ -195,14 +195,16 @@ void TemplateJointController::resetAllocableVariables()
   ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
-  cartesian_controller_.reset();
 }
 
 bool TemplateJointController::allocateVariables()
 {
   pr2_mechanism_model::JointState *joint;
-
-  cartesian_controller_ = initializeController();
+  
+  if (!cartesian_controller_)
+  {
+    cartesian_controller_ = initializeController();
+  }
 
   if (!n_.getParam("/common/actuated_joint_names", joint_names_))
   {

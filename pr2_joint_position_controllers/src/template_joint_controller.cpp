@@ -40,15 +40,13 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 
 void TemplateJointController::starting()
 {
-  if (velocity_joint_controllers_.size() == 0)
-  {
-    allocateVariables();
-  }
-
+  pr2_mechanism_model::JointState *joint_state;
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
+    joint_state = robot_->getJointState(joint_names_[i]);
     position_joint_controllers_[i]->reset();
     velocity_joint_controllers_[i]->reset();
+    last_active_joint_position_[i] = joint_state->position_;
     time_of_last_cycle_[i] = robot_->getTime();
   }
   time_of_last_manipulation_call_ = robot_->getTime();
@@ -67,8 +65,6 @@ void TemplateJointController::stopping()
     feedback_thread_.interrupt();
     feedback_thread_.join();
   }
-
-  // resetAllocableVariables();
 
   ROS_INFO("Joint controller stopped successfully!");
 }

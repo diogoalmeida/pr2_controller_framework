@@ -68,7 +68,7 @@ void TemplateJointController::stopping()
     feedback_thread_.join();
   }
 
-  resetAllocableVariables();
+  // resetAllocableVariables();
 
   ROS_INFO("Joint controller stopped successfully!");
 }

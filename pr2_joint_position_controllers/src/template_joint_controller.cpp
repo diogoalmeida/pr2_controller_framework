@@ -223,6 +223,13 @@ bool TemplateJointController::allocateVariables()
     ROS_ERROR("Joint controller initialized with no joint names");
     return false;
   }
+  
+  position_joint_controllers_.resize(joint_names_.size());
+  velocity_joint_controllers_.resize(joint_names_.size());
+  time_of_last_cycle_.resize(joint_names_.size());
+  ff_joint_controllers_.resize(joint_names_.size());
+  last_active_joint_position_.resize(joint_names_.size());
+  modified_velocity_references_.resize(joint_names_.size());
 
   for(int i = 0; i < joint_names_.size(); i++) // initialize the position joint controllers. Expecting one set of PID gains per actuated joint
   {
@@ -235,8 +242,8 @@ bool TemplateJointController::allocateVariables()
     ROS_DEBUG("Pushing a controller for joint %s.", joint_names_[i].c_str());
 
     // create a controller instance and give it a unique namespace for setting the controller gains
-    position_joint_controllers_.push_back(boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid()));
-    modified_velocity_references_.push_back(0);
+    position_joint_controllers_[i] = boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid());
+    modified_velocity_references_[i] = 0.0;
     joint = robot_->getJointState(joint_names_[i]);
 
     if (!joint)
@@ -249,7 +256,7 @@ bool TemplateJointController::allocateVariables()
       ROS_DEBUG("Allocating a controller for joint %s.", joint_names_[i].c_str());
     }
 
-    last_active_joint_position_.push_back(joint->position_);
+    last_active_joint_position_[i] = joint->position_;
     position_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/position_loop_gains/" + joint_names_[i]));
   }
 
@@ -269,9 +276,9 @@ bool TemplateJointController::allocateVariables()
     }
 
     // create a controller instance and give it a unique namespace for setting the controller gains
-    velocity_joint_controllers_.push_back(boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid()));
-    time_of_last_cycle_.push_back(robot_->getTime());
-    ff_joint_controllers_.push_back(ff_gain);
+    velocity_joint_controllers_[i]= boost::shared_ptr<control_toolbox::Pid>(new control_toolbox::Pid());
+    time_of_last_cycle_[i]= robot_->getTime();
+    ff_joint_controllers_[i]= ff_gain;
     velocity_joint_controllers_[i]->init(ros::NodeHandle(n_, "/common/velocity_loop_gains/" + joint_names_[i]));
   }
 

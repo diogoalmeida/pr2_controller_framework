@@ -11,7 +11,7 @@ namespace cartesian_controllers {
       ros::shutdown();
       exit(0);
     }
-
+    
     has_initial_ = false; // used to set the initial pose for one identification action run
     startActionlib();
     finished_acquiring_goal_ = false;
@@ -291,7 +291,8 @@ namespace cartesian_controllers {
     KDL::Twist comp_twist;
     Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
-
+    
+    ROS_INFO("UPDATING CONTROL");
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {

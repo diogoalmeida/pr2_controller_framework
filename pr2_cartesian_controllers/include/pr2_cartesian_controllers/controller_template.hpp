@@ -373,16 +373,16 @@ void ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::initializeSo
   KDL::JntArray optimal_values, weights;
 
   getJointLimits(chain, min_limits, max_limits);
-  ROS_INFO("Min limits rows: %d, min limits columns: %d", min_limits.rows(), min_limits.columns());
+  ROS_DEBUG("Min limits rows: %d, min limits columns: %d", min_limits.rows(), min_limits.columns());
   optimal_values.resize(chain.getNrOfJoints());
   weights.resize(chain.getNrOfJoints());
 
-  ROS_INFO("Joint limits: ");
+  ROS_DEBUG("Joint limits: ");
   for (unsigned int i = 0; i < chain.getNrOfJoints(); i++) // define the optimal joint values as the one that's as far away from joint limits as possible
   {
     optimal_values(i) = (min_limits(i) + max_limits(i))/2;
 
-    ROS_INFO("Joint: %d, min_limit: %.2f, max_limit: %.2f, optimal_value: %.2f", i, min_limits(i), max_limits(i), optimal_values(i));
+    ROS_DEBUG("Joint: %d, min_limit: %.2f, max_limit: %.2f, optimal_value: %.2f", i, min_limits(i), max_limits(i), optimal_values(i));
 
     if (min_limits(i) == max_limits(i)) // Do not weight in joints with no limits in the nullspace optimization method
     {

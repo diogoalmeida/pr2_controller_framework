@@ -292,7 +292,6 @@ namespace cartesian_controllers {
     Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
     
-    ROS_INFO("UPDATING CONTROL");
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {

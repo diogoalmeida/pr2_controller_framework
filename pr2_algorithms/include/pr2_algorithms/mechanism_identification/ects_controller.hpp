@@ -106,7 +106,7 @@ typedef Eigen::Matrix<double, 14, 1> Vector14d;
     std::vector<int> thres_count_;
     boost::thread optimization_thread_;
     boost::mutex optimization_mutex_;
-    dynamic_reconfigure::Server<pr2_algorithms::ectsConfig> dyncfg_server_;
+    boost::shared_ptr<dynamic_reconfigure::Server<pr2_algorithms::ectsConfig> > dyncfg_server_;
     dynamic_reconfigure::Server<pr2_algorithms::ectsConfig>::CallbackType dyncfg_cb_;
 
     /**

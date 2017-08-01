@@ -249,7 +249,6 @@ void MechanismClient::preemptCB()
 {
   ROS_WARN("The mechanism client was preempted!");
   action_server_->setPreempted();
-  controller_runner_.unloadAll();
   current_action_.clear();
 }
 
@@ -392,7 +391,6 @@ void MechanismClient::runExperiment()
       
       while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
-        // controller_runner_.unloadAll();
         // Send rod arm to right initial pose
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);

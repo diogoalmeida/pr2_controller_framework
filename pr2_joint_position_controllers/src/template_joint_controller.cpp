@@ -195,6 +195,7 @@ void TemplateJointController::resetAllocableVariables()
   ff_joint_controllers_.clear();
   last_active_joint_position_.clear();
   modified_velocity_references_.clear();
+  cartesian_controller_.reset();
 }
 
 bool TemplateJointController::allocateVariables()

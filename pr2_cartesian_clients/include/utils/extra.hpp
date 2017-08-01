@@ -35,6 +35,7 @@ namespace pr2_cartesian_clients{
     {
       if (!server->isActive()) // got preempted
       {
+        ROS_WARN("Cancelling client goals");
         client->cancelAllGoals();
         return false;
       }

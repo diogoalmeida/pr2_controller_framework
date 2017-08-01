@@ -40,6 +40,8 @@ bool TemplateJointController::init(pr2_mechanism_model::RobotState *robot, ros::
 
 void TemplateJointController::starting()
 {
+  cartesian_controller_ = initializeController();
+  
   pr2_mechanism_model::JointState *joint_state;
   for(int i = 0; i < velocity_joint_controllers_.size(); i++)
   {
@@ -48,6 +50,7 @@ void TemplateJointController::starting()
     velocity_joint_controllers_[i]->reset();
     last_active_joint_position_[i] = joint_state->position_;
     time_of_last_cycle_[i] = robot_->getTime();
+    modified_velocity_references_[i] = 0.0;
   }
   time_of_last_manipulation_call_ = robot_->getTime();
 

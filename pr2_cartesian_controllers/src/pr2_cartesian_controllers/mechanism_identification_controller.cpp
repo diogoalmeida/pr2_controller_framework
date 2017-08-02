@@ -11,15 +11,18 @@ namespace cartesian_controllers {
       ros::shutdown();
       exit(0);
     }
-    
+
     has_initial_ = false; // used to set the initial pose for one identification action run
     startActionlib();
     finished_acquiring_goal_ = false;
     pc_pub_ = nh_.advertise<visualization_msgs::Marker>("pc", 1);
+    pc_est_pub_ = nh_.advertise<visualization_msgs::Marker>("pc_est", 1);
     p1_pub_ = nh_.advertise<visualization_msgs::Marker>("p1", 1);
     p2_pub_ = nh_.advertise<visualization_msgs::Marker>("p2", 1);
     r1_pub_ = nh_.advertise<visualization_msgs::Marker>("r1", 1);
+    r1_est_pub_ = nh_.advertise<visualization_msgs::Marker>("r1_est", 1);
     r2_pub_ = nh_.advertise<visualization_msgs::Marker>("r2", 1);
+    r2_est_pub_ = nh_.advertise<visualization_msgs::Marker>("r2_est", 1);
     trans_pub_ = nh_.advertise<visualization_msgs::Marker>("trans", 1);
     rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
     use_nullspace_ = false;
@@ -64,7 +67,6 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::goalCB()
   {
-    ROS_INFO("Mechanism identification got new goal");
     boost::shared_ptr<const pr2_cartesian_controllers::MechanismIdentificationGoal> goal = action_server_->acceptNewGoal();
     {
       boost::lock_guard<boost::mutex>guard(reference_mutex_);
@@ -143,7 +145,7 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::publishFeedback()
   {
-    visualization_msgs::Marker pc_marker, p1_marker, p2_marker, r1_marker, r2_marker, trans_marker, rot_marker;
+    visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker;
     geometry_msgs::Vector3 r_vec;
     geometry_msgs::WrenchStamped surface_wrench;
 
@@ -184,6 +186,16 @@ namespace cartesian_controllers {
     rot_marker = trans_marker;
     rot_marker.color.r = 0.0;
     rot_marker.color.b = 1.0;
+    pc_est_marker = pc_marker;
+    pc_est_marker.id = 6;
+    pc_est_marker.color.g = 1.0;
+    r1_est_marker = r1_marker;
+    r1_est_marker.id = 7;
+    r1_est_marker.color.r = 0.5;
+    r2_est_marker = r2_marker;
+    r2_est_marker.id = 8;
+    r2_est_marker.color.r = 0.0;
+    r2_est_marker.color.b = 0.5;
 
     try
     {
@@ -201,10 +213,13 @@ namespace cartesian_controllers {
           rot_marker.header.stamp = ros::Time::now();
 
           tf::poseEigenToMsg(pc_, pc_marker.pose);
+          tf::poseEigenToMsg(pc_est_, pc_est_marker.pose);
           tf::poseEigenToMsg(p1_, p1_marker.pose);
           tf::poseEigenToMsg(p2_, p2_marker.pose);
           getMarkerPoints(p1_.translation(), pc_.translation(), r1_marker);
+          getMarkerPoints(p1_.translation(), pc_est_.translation(), r1_est_marker);
           getMarkerPoints(p2_.translation(), pc_.translation(), r2_marker);
+          getMarkerPoints(p2_.translation(), pc_est_.translation(), r2_est_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_marker);
 
@@ -291,7 +306,7 @@ namespace cartesian_controllers {
     KDL::Twist comp_twist;
     Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
-    
+
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
     {
@@ -358,21 +373,28 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       estimator_.initialize(Eigen::Vector3d::Zero());
+      adaptive_controller_.initEstimates(translational_dof_ground, rotational_dof_ground); // Initialize with ground truth for now TODO: add wrong initial estimate
       elapsed_ = ros::Time(0);
       has_initial_ = true;
     }
 
     elapsed_ += dt;
+    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+    pc_.linear() =  p1_.linear();
+    pc_est_.linear() =  p1_.linear();
 
     if (use_estimates_)
     {
       // TODO
+      pc_est_.translation() = estimator_.estimate(eef1, eef_twist_eig[rod_arm_], wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+      ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+      adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
     }
     else
     {
       translational_dof_est_ = translational_dof_ground;
       rotational_dof_est_ = rotational_dof_ground;
-      pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+      pc_est_ = pc_;
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
 
@@ -387,7 +409,6 @@ namespace cartesian_controllers {
         ects_controller_->addOptimizationDirection(transmission_direction);
       }
     }
-    pc_.linear() =  p1_.linear();
 
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
     tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);

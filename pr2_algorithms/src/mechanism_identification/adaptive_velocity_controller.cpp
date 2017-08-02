@@ -52,6 +52,12 @@ namespace manipulation_algorithms{
     r_ = r;
   }
 
+  void AdaptiveController::getEstimates(Eigen::Vector3d &t, Eigen::Vector3d &r)
+  {
+    t = t_;
+    r = r_;
+  }
+
   bool AdaptiveController::getParams(const ros::NodeHandle &n)
   {
     // if (!n.getParam("/ects_controller/alpha", alpha_))

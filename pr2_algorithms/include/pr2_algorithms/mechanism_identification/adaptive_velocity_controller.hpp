@@ -40,6 +40,13 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
     **/
     void initEstimates(const Eigen::Vector3d &t, const Eigen::Vector3d &r);
 
+    /**
+      Return the current estimates.
+      @param t Current translational DOF estimate.
+      @param r Current rotational DOF estimate.
+    **/
+    void getEstimates(Eigen::Vector3d &t, Eigen::Vector3d &r);
+
   private:
     double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, torque_d_, v_d_amp_, w_d_amp_, time_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_;
     Eigen::Vector3d t_, r_, int_force_, int_torque_;

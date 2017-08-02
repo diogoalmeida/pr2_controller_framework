@@ -50,9 +50,9 @@ private:
   int rod_arm_, surface_arm_;
   double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, rod_length_, joint_error_lim_;
   std::vector<KDL::Frame> eef_to_grasp_;
-  Eigen::Affine3d pc_, p1_, p2_;
+  Eigen::Affine3d pc_, p1_, p2_, pc_est_;
   Eigen::Vector3d translational_dof_est_, rotational_dof_est_;
-  ros::Publisher pc_pub_, p1_pub_, p2_pub_, r1_pub_, r2_pub_, wrench2_pub_, trans_pub_, rot_pub_;
+  ros::Publisher pc_pub_, pc_est_pub_, p1_pub_, p2_pub_, r1_pub_, r1_est_pub_, r2_pub_, r2_est_pub_, wrench2_pub_, trans_pub_, rot_pub_;
   std::vector<double> comp_gains_;
   ros::Time elapsed_;
 

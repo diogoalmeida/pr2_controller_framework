@@ -20,7 +20,7 @@ namespace manipulation_algorithms{
     r_1_ = Vector3d::Zero();
     r_2_ = Vector3d::Zero();
     dyncfg_cb_ = boost::bind(&ECTSController::reconfigureCallback, this, _1, _2);
-    dyncfg_server_.reset(new dynamic_reconfigure::Server<pr2_algorithms::ectsConfig>(ros::NodeHandle("ects_config")));
+    dyncfg_server_.reset(new dynamic_reconfigure::Server<pr2_algorithms::ectsConfig>(ros::NodeHandle(ros::this_node::getNamespace() + "/ects_config")));
     dyncfg_server_->setCallback(dyncfg_cb_);
     prev_out_ = Vector14d::Zero();
     for (int i = 0; i < 14; i++)

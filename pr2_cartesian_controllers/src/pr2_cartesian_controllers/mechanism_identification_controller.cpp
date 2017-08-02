@@ -224,10 +224,13 @@ namespace cartesian_controllers {
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_marker);
 
           pc_pub_.publish(pc_marker);
+          pc_est_pub_.publish(pc_est_marker);
           p1_pub_.publish(p1_marker);
           p2_pub_.publish(p2_marker);
           r1_pub_.publish(r1_marker);
+          r1_est_pub_.publish(r1_est_marker);
           r2_pub_.publish(r2_marker);
+          r2_est_pub_.publish(r2_est_marker);
           trans_pub_.publish(trans_marker);
           rot_pub_.publish(rot_marker);
 

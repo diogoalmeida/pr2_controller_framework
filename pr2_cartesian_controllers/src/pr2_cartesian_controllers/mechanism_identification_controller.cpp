@@ -30,8 +30,6 @@ namespace cartesian_controllers {
     // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
     cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
-    cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle(ros::this_node::getName() + "/mechanism_identification_config")));
-    cfg_server_->setCallback(cfg_callback_);
   }
 
   MechanismIdentificationController::~MechanismIdentificationController()
@@ -74,6 +72,8 @@ namespace cartesian_controllers {
       has_joint_positions_ = false;
     }
 
+    cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle(ros::this_node::getName() + "/mechanism_identification_config")));
+    cfg_server_->setCallback(cfg_callback_);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
 
     if(!ects_controller_->getParams(nh_))

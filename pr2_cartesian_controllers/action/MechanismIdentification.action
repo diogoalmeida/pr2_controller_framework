@@ -8,6 +8,7 @@ float64 wd_amplitude
 float64 wd_frequency
 float64 nullspace_gain
 bool use_nullspace
+bool use_estimates
 
 int32 LEFT_ARM = 0
 int32 RIGHT_ARM = 1

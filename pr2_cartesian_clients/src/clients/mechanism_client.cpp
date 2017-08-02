@@ -71,6 +71,12 @@ bool MechanismClient::loadParams()
     return false;
   }
   
+  if(!nh_.getParam("experiment/use_estimates", use_estimates_))
+  {
+    ROS_ERROR("No use_estimates defined (experiment/use_estimates)");
+    return false;
+  }
+  
   if(!nh_.getParam("experiment/use_nullspace", use_nullspace_))
   {
     ROS_ERROR("No use_nullspace defined (experiment/use_nullspace)");
@@ -275,6 +281,7 @@ void MechanismClient::goalCB()
       rod_arm_ = goal->rod_arm;
       surface_arm_ = goal->surface_arm;
       use_nullspace_ = goal->use_nullspace;
+      use_estimates_ = goal->use_estimates;
       km_ = goal->nullspace_gain;
 
       if (goal->randomize_desired_state)
@@ -495,6 +502,7 @@ void MechanismClient::runExperiment()
         mechanism_goal.wd_frequency = wd_freq_;
         mechanism_goal.goal_force = goal_force_;
         mechanism_goal.use_nullspace = use_nullspace_;
+        mechanism_goal.use_estimates = use_estimates_;
         mechanism_goal.nullspace_gain = km_;
 
         bool mechanism_timeout = false;

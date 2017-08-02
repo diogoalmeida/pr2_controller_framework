@@ -15,6 +15,7 @@ initialization:
 
 experiment:
   use_nullspace: true
+  use_estimates: false
   nullspace_gain: 0.01
   feedback_rate: 1
   rod_arm: 1 # 0 - left; 1 - right

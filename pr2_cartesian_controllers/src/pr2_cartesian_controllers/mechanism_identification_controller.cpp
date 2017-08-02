@@ -102,6 +102,7 @@ namespace cartesian_controllers {
     wd_amp_ = goal->wd_amplitude;
     wd_freq_ = goal->wd_frequency;
     use_nullspace_ = goal->use_nullspace;
+    use_estimates_ = goal->use_estimates;
 
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);

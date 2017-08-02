@@ -91,7 +91,7 @@ namespace manipulation{
     std::string base_link_name_, surface_frame_name_;
     std::string gravity_compensation_service_name_;
     int num_of_experiments_, current_iter_, rod_arm_, surface_arm_;
-    bool use_vision_, sim_mode_, use_nullspace_;
+    bool use_vision_, sim_mode_, use_nullspace_, use_estimates_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 
     std::default_random_engine noise_generator_;

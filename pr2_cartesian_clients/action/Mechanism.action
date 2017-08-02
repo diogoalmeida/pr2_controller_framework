@@ -1,5 +1,6 @@
 # Empty goal
 bool use_goal # if false, will keep current values
+bool use_estimates
 bool use_nullspace
 int32 rod_arm
 int32 surface_arm

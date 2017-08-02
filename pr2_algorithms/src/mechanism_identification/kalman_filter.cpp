@@ -33,11 +33,11 @@ namespace manipulation_algorithms{
     A = computeSkewSymmetric(x_dot_e1.block<3,1>(3,0));
     C = -computeSkewSymmetric(wrench_e2.block<3,1>(0,0));
     c = -A*p_e1;
-    A += I;
+    // A += I;
 
     // process model
     P_hat = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
-    pc_ = A*pc_ + I*x_dot_e1.block<3,1>(0,0) + c;
+    pc_ = pc_ + (A*pc_ + I*x_dot_e1.block<3,1>(0,0) + c)*dt;
     innov = (wrench_e2.block<3,1>(3,0) + C*p_e2) - C*pc_;
     S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
     K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);

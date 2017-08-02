@@ -390,7 +390,7 @@ namespace cartesian_controllers {
     if (use_estimates_)
     {
       // TODO
-      pc_est_.translation() = estimator_.estimate(eef1, eef_twist_eig[rod_arm_], wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+      pc_est_.translation() = estimator_.estimate(eef1, eef_twist_eig[rod_arm_], eef2, wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;

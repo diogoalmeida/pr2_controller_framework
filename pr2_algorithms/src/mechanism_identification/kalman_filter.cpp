@@ -24,21 +24,21 @@ namespace manipulation_algorithms{
     return true;
   }
 
-  Eigen::Vector3d KalmanEstimator::estimate(const Eigen::Vector3d &p_e1, const Vector6d &x_dot_e1, const Vector6d &wrench_e1, double dt)
+  Eigen::Vector3d KalmanEstimator::estimate(const Eigen::Vector3d &p_e1, const Vector6d &x_dot_e1, const Eigen::Vector3d &p_e2, const Vector6d &wrench_e2, double dt)
   {
     Eigen::Matrix3d A, C, K, I, P_hat, S;
     Eigen::Vector3d innov, c;
 
     I = Eigen::Matrix3d::Identity();
     A = computeSkewSymmetric(x_dot_e1.block<3,1>(3,0));
-    C = -computeSkewSymmetric(wrench_e1.block<3,1>(0,0));
+    C = -computeSkewSymmetric(wrench_e2.block<3,1>(0,0));
     c = -A*p_e1;
     A += I;
 
     // process model
     P_hat = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
     pc_ = A*pc_ + I*x_dot_e1.block<3,1>(0,0) + c;
-    innov = (wrench_e1.block<3,1>(3,0) + C*p_e1) - C*pc_;
+    innov = (wrench_e2.block<3,1>(3,0) + C*p_e2) - C*pc_;
     S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
     K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);
     pc_ = pc_ + K*innov;

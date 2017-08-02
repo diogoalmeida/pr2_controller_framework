@@ -27,11 +27,12 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
       @param p_e1 The position of the rod piece end-effector.
       @param x_dot_e1 The rod piece end-effector twist.
-      @param wrench_e1 The measured wrench of the rod piece end-effector.
+      @param p_e2 The position of the surface piece end-effector.
+      @param wrench_e2 The measured wrench of the surface piece end-effector.
       @param dt The elapsed time between estimate steps.
       @output The joint position estimate pc.
     **/
-    Eigen::Vector3d estimate(const Eigen::Vector3d &p_e1, const Vector6d &x_dot_e1, const Vector6d &wrench_e1, double dt);
+    Eigen::Vector3d estimate(const Eigen::Vector3d &p_e1, const Vector6d &x_dot_e1, const Eigen::Vector3d &p_e2, const Vector6d &wrench_e2, double dt);
 
     /**
       Initialize the estimator

@@ -38,7 +38,7 @@ namespace manipulation_algorithms{
     // process model
     P_hat = A*P_.selfadjointView<Eigen::Upper>()*A.transpose() + R_;
     pc_ = pc_ + (A*pc_ + I*x_dot_e1.block<3,1>(0,0) + c)*dt;
-    innov = (wrench_e2.block<3,1>(3,0) + C*p_e2) - C*pc_;
+    innov = wrench_e2.block<3,1>(3,0) - C*(pc_ - p_e2);
     S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
     K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);
     pc_ = pc_ + K*innov;

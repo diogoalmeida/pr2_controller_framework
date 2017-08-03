@@ -29,10 +29,11 @@ private:
     @param pose The desired cartesian pose
     @param joint_positions The joint positions that will allow the end-effector to attain the desired pose.
     @param joint_names Vector of joint names for which we have a reference position.
+    @param arm The chain index
 
     @return True if the service provides a valid response. False otherwise.
   **/
-  bool getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names);
+  bool getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names, int arm);
 
   /**
     Get the desired reference position by namespace

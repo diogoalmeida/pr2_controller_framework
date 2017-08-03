@@ -79,17 +79,22 @@ namespace cartesian_controllers {
         }
       }
     }
+    else
+    {
+      arm_index_ = -1;
+    }
 
-    ROS_DEBUG("Got arm %d", arm_index_);
-    ROS_DEBUG("Available IK services:");
+    ROS_INFO("Got arm %d", arm_index_);
+    ROS_INFO("Available IK services:");
     for (int i = 0; i < NUM_ARMS; i++)
     {
+      ROS_INFO("i: %d, NUM_ARMS: %d", i, NUM_ARMS);
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
       pose[i] = goal->desired_pose[i];
-      ROS_DEBUG("%s", ik_service_name_[i].c_str());
-      ROS_DEBUG("%s", ik_info_service_name_[i].c_str());
+      ROS_INFO("%s", ik_service_name_[i].c_str());
+      ROS_INFO("%s", ik_info_service_name_[i].c_str());
 
-      if(!getDesiredJointPositions(pose[i], desired_joint_positions_[i], actuated_joint_names_[i]))
+      if(!getDesiredJointPositions(pose[i], desired_joint_positions_[i], actuated_joint_names_[i], i))
       {
         action_server_->setAborted();
         {
@@ -99,50 +104,51 @@ namespace cartesian_controllers {
       }
 
       tf::poseMsgToKDL(pose[i].pose, pose_reference_[i]);
-      finished_acquiring_goal_ = true;
-      loadParams();
-      for (int j = 0; j < desired_joint_positions_[i].rows(); i++)
+      for (int j = 0; j < desired_joint_positions_[i].rows(); j++)
       {
-        ROS_DEBUG("Position %d: %.2f", j, desired_joint_positions_[i](j));
+        ROS_INFO("Position %d: %.2f", j, desired_joint_positions_[i](j));
       }
+      ROS_INFO("i: %d, NUM_ARMS: %d", i, NUM_ARMS);
     }
 
+    finished_acquiring_goal_ = true;
+    loadParams();
     ROS_INFO("Move controller got a goal!");
   }
 
-  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names)
+  bool MoveController::getDesiredJointPositions(const geometry_msgs::PoseStamped &pose, KDL::JntArray &joint_positions, std::vector<std::string> &joint_names, int arm)
   {
     moveit_msgs::GetPositionIK ik_srv;
     moveit_msgs::GetKinematicSolverInfo::Request info_request;
     moveit_msgs::GetKinematicSolverInfo::Response info_response;
 
-    ROS_DEBUG("Waiting for %s", ik_service_name_[arm_index_].c_str());
-    if (!ros::service::waitForService(ik_service_name_[arm_index_], ros::Duration(2.0)))
+    ROS_INFO("Waiting for %s", ik_service_name_[arm].c_str());
+    if (!ros::service::waitForService(ik_service_name_[arm], ros::Duration(2.0)))
     {
-      ROS_ERROR("Could not connect to service %s", ik_service_name_[arm_index_].c_str());
+      ROS_ERROR("Could not connect to service %s", ik_service_name_[arm].c_str());
       return false;
     }
 
-    ROS_DEBUG("Waiting for %s", ik_info_service_name_[arm_index_].c_str());
-    if (!ros::service::waitForService(ik_info_service_name_[arm_index_], ros::Duration(2.0)))
+    ROS_INFO("Waiting for %s", ik_info_service_name_[arm].c_str());
+    if (!ros::service::waitForService(ik_info_service_name_[arm], ros::Duration(2.0)))
     {
-      ROS_ERROR("Could not connect to service %s", ik_info_service_name_[arm_index_].c_str());
+      ROS_ERROR("Could not connect to service %s", ik_info_service_name_[arm].c_str());
       return false;
     }
 
-    ROS_DEBUG("Creating service clients");
-    ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_[arm_index_]);
-    ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_[arm_index_]);
+    ROS_INFO("Creating service clients");
+    ros::ServiceClient ik_client = nh_.serviceClient<moveit_msgs::GetPositionIK>(ik_service_name_[arm]);
+    ros::ServiceClient info_client = nh_.serviceClient<moveit_msgs::GetKinematicSolverInfo>(ik_info_service_name_[arm]);
 
-    ROS_DEBUG("Requesting info on the arm %d", arm_index_);
+    ROS_INFO("Requesting info on the arm %d", arm);
 
     if (!info_client.call(info_request, info_response))
     {
-      ROS_ERROR("Error calling service %s", ik_info_service_name_[arm_index_].c_str());
+      ROS_ERROR("Error calling service %s", ik_info_service_name_[arm].c_str());
       return false;
     }
 
-    ik_srv.request.ik_request.ik_link_name = end_effector_link_[arm_index_];
+    ik_srv.request.ik_request.ik_link_name = end_effector_link_[arm];
     ik_srv.request.ik_request.pose_stamped = pose;
     ik_srv.request.ik_request.robot_state.joint_state.name = info_response.kinematic_solver_info.joint_names;
     ik_srv.request.ik_request.timeout = ros::Duration(5.0);
@@ -152,28 +158,28 @@ namespace cartesian_controllers {
       ik_srv.request.ik_request.robot_state.joint_state.position.push_back((info_response.kinematic_solver_info.limits[i].min_position + info_response.kinematic_solver_info.limits[i].max_position)/2.0);
     }
 
-    ROS_DEBUG("Requesting ik for the arm %d", arm_index_);
+    ROS_INFO("Requesting ik for the arm %d", arm);
 
     if (!ik_client.call(ik_srv))
     {
-      ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
+      ROS_ERROR("Error calling service %s. Error code: %d", ik_service_name_[arm].c_str(), ik_srv.response.error_code.val);
       return false;
     }
 
     if (ik_srv.response.error_code.val != ik_srv.response.error_code.SUCCESS)
     {
-      ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_[arm_index_].c_str(), ik_srv.response.error_code.val);
+      ROS_ERROR("Error in service %s response. Code: %d", ik_service_name_[arm].c_str(), ik_srv.response.error_code.val);
       return false;
     }
 
-    ROS_DEBUG("Resizing joint positions");
+    ROS_INFO("Resizing joint positions");
 
     joint_names.clear();
     joint_positions.resize(ik_srv.response.solution.joint_state.position.size());
 
     for (int i = 0; i < ik_srv.response.solution.joint_state.position.size(); i++)
     {
-      ROS_DEBUG("Assigning position %.2f", ik_srv.response.solution.joint_state.position[i]);
+      ROS_INFO("Assigning position %.2f", ik_srv.response.solution.joint_state.position[i]);
       joint_names.push_back(ik_srv.response.solution.joint_state.name[i]);
       joint_positions(i) = ik_srv.response.solution.joint_state.position[i];
     }
@@ -300,8 +306,11 @@ namespace cartesian_controllers {
     {
       for (int arm = 0; arm < NUM_ARMS; arm++)
       {
+        // ROS_DEBUG("Getting desired position for arm %d", arm);
+        // ROS_DEBUG("Want position for joint %s", joint_name.c_str());
         for (int i = 0; i < desired_joint_positions_[arm].rows(); i++)
         {
+          // ROS_DEBUG("Checking joint name %s", actuated_joint_names_[arm][i].c_str());
           if (actuated_joint_names_[arm][i] == joint_name)
           {
             return desired_joint_positions_[arm](i);
@@ -310,7 +319,7 @@ namespace cartesian_controllers {
       }
     }
 
-    ROS_ERROR("Tried getting desired position for joint name %s, which should not be controlled.", joint_name.c_str());
+    // ROS_ERROR("Tried getting desired position for joint name %s, which should not be controlled.", joint_name.c_str());
     return 0.0;
   }
 

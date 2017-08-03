@@ -349,7 +349,7 @@ namespace cartesian_controllers {
       q_dot[arm] = joint_velocities_[arm].qdot.data;
       eef_grasp_kdl[arm] = eef_kdl[arm]*eef_to_grasp_[arm];
       eef_grasp_vel_kdl[arm] = eef_vel_kdl[arm]*eef_to_grasp_[arm];
-      eef_twist[arm] = eef_grasp_vel_kdl[arm].GetTwist();
+      eef_twist[arm] = eef_grasp_kdl[arm]*eef_grasp_vel_kdl[arm].GetTwist();
       tf::transformKDLToEigen(eef_to_grasp_[arm], eef_to_grasp_eig[arm]);
       tf::transformKDLToEigen(eef_grasp_kdl[arm], grasp_point_frame[arm]);
       tf::twistKDLToEigen(eef_twist[arm], eef_twist_eig[arm]);

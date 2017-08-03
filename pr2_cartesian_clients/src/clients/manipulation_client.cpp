@@ -378,6 +378,8 @@ void ManipulationClient::runExperiment()
       ROS_INFO("Starting experiment!");
       current_iter = 1;
 
+      move_goal.desired_pose.resize(2);
+
       while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
         controller_runner_.unloadAll();
@@ -386,8 +388,10 @@ void ManipulationClient::runExperiment()
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
           current_action_ = move_action_name_;
         }
+
+        move_goal.is_single_arm = true;
         move_goal.arm = arm_;
-        move_goal.desired_pose = initial_eef_pose;
+        move_goal.desired_pose[arm_] = initial_eef_pose;
 
         if (!controller_runner_.runController(move_controller_name_))
         {

@@ -5,7 +5,9 @@ namespace cartesian_controllers {
                                         pr2_cartesian_controllers::MoveFeedback,
                                         pr2_cartesian_controllers::MoveResult>(),
     ik_service_name_(NUM_ARMS),
-    ik_info_service_name_(NUM_ARMS)
+    ik_info_service_name_(NUM_ARMS),
+    pose_reference_(NUM_ARMS),
+    desired_joint_positions_(NUM_ARMS)
   {
     if(!loadParams())
     {
@@ -14,6 +16,7 @@ namespace cartesian_controllers {
     }
 
     finished_acquiring_goal_ = false;
+    is_single_arm_ = true;
     startActionlib();
     target_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_target", 1);
     current_pub_ = nh_.advertise<visualization_msgs::Marker>("move_controller_current", 1);
@@ -41,7 +44,7 @@ namespace cartesian_controllers {
 
   void MoveController::goalCB()
   {
-    geometry_msgs::PoseStamped pose;
+    std::vector<geometry_msgs::PoseStamped> pose(NUM_ARMS);
 
     // It will take time to acquire the new joint positions, and I will have
     // accepted the goal already. This is a limitation of the goal callback
@@ -63,20 +66,30 @@ namespace cartesian_controllers {
       return;
     }
 
-    arm_index_ = goal->arm;
-    pose = goal->desired_pose;
+    is_single_arm_ = goal->is_single_arm;
+
+    if (is_single_arm_)
+    {
+      arm_index_ = goal->arm;
+      for (int i = 0; i < NUM_ARMS; i++) // will be ignore later on; prevents ik failure
+      {
+        if (i != arm_index_)
+        {
+          pose[i] = pose[arm_index_];
+        }
+      }
+    }
 
     ROS_DEBUG("Got arm %d", arm_index_);
     ROS_DEBUG("Available IK services:");
     for (int i = 0; i < NUM_ARMS; i++)
     {
+      boost::lock_guard<boost::mutex> guard(reference_mutex_);
+      pose[i] = goal->desired_pose[i];
       ROS_DEBUG("%s", ik_service_name_[i].c_str());
       ROS_DEBUG("%s", ik_info_service_name_[i].c_str());
-    }
 
-    {
-      boost::lock_guard<boost::mutex> guard(reference_mutex_);
-      if(!getDesiredJointPositions(pose, desired_joint_positions_, actuated_joint_names_[arm_index_]))
+      if(!getDesiredJointPositions(pose[i], desired_joint_positions_[i], actuated_joint_names_[i]))
       {
         action_server_->setAborted();
         {
@@ -85,14 +98,15 @@ namespace cartesian_controllers {
         return;
       }
 
-      tf::poseMsgToKDL(pose.pose, pose_reference_);
+      tf::poseMsgToKDL(pose[i].pose, pose_reference_[i]);
       finished_acquiring_goal_ = true;
       loadParams();
-      for (int i = 0; i < desired_joint_positions_.rows(); i++)
+      for (int j = 0; j < desired_joint_positions_[i].rows(); i++)
       {
-        ROS_DEBUG("Position %d: %.2f", i, desired_joint_positions_(i));
+        ROS_DEBUG("Position %d: %.2f", j, desired_joint_positions_[i](j));
       }
     }
+
     ROS_INFO("Move controller got a goal!");
   }
 
@@ -207,6 +221,11 @@ namespace cartesian_controllers {
 
   void MoveController::publishFeedback()
   {
+    if (!is_single_arm_) // NOT IMPLEMENTED
+    {
+      return;
+    }
+
     visualization_msgs::Marker reference_pose, current_pose;
     std_msgs::ColorRGBA object_color;
     Eigen::Vector3d r_1;
@@ -246,7 +265,7 @@ namespace cartesian_controllers {
           if(finished_acquiring_goal_) // prevent accessing the joint positions_ vector when it can be uninitialized
           {
             // fkpos_[arm_index_]->JntToCart(joint_positions_[arm_index_], current_eef);
-            tf::poseKDLToMsg(pose_reference_, reference_pose.pose);
+            tf::poseKDLToMsg(pose_reference_[arm_index_], reference_pose.pose);
             tf::poseKDLToMsg(current_eef, current_pose.pose);
 
             target_pub_.publish(reference_pose);
@@ -266,11 +285,28 @@ namespace cartesian_controllers {
 
   double MoveController::getDesiredPosition(const std::string &joint_name)
   {
-    for (int i = 0; i < desired_joint_positions_.rows(); i++)
+
+    if (is_single_arm_)
     {
-      if (actuated_joint_names_[arm_index_][i] == joint_name)
+      for (int i = 0; i < desired_joint_positions_[arm_index_].rows(); i++)
       {
-        return desired_joint_positions_(i);
+        if (actuated_joint_names_[arm_index_][i] == joint_name)
+        {
+          return desired_joint_positions_[arm_index_](i);
+        }
+      }
+    }
+    else
+    {
+      for (int arm = 0; arm < NUM_ARMS; arm++)
+      {
+        for (int i = 0; i < desired_joint_positions_[arm].rows(); i++)
+        {
+          if (actuated_joint_names_[arm][i] == joint_name)
+          {
+            return desired_joint_positions_[arm](i);
+          }
+        }
       }
     }
 
@@ -296,20 +332,36 @@ namespace cartesian_controllers {
     feedback_.joint_velocity_references.clear();
     feedback_.joint_velocity_errors.clear();
 
-    if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
+    if (is_single_arm_)
     {
-      ROS_ERROR("Failed to get chain joint state");
-      action_server_->setAborted();
-      return lastState(current_state);
-    }
+      if(!getChainJointState(current_state, chain_[arm_index_], joint_positions_[arm_index_], joint_velocities_[arm_index_]))
+      {
+        ROS_ERROR("Failed to get chain joint state");
+        action_server_->setAborted();
+        return lastState(current_state);
+      }
 
-    control_output = lastState(current_state, arm_index_);
+      control_output = lastState(current_state, arm_index_);
+    }
+    else
+    {
+      for (int i = 0; i < NUM_ARMS; i++)
+      {
+        if(!getChainJointState(current_state, chain_[i], joint_positions_[i], joint_velocities_[i]))
+        {
+          ROS_ERROR("Failed to get chain joint state");
+          action_server_->setAborted();
+          return lastState(current_state);
+        }
+      }
+      control_output = lastState(current_state);
+    }
 
     // 0 - Check success
     int success = 0;
     for (int i = 0; i < current_state.name.size(); i++)
     {
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+      if (!is_single_arm_ || hasJoint(chain_[arm_index_], current_state.name[i]))
       {
         double val = getDesiredPosition(current_state.name[i]);
         if (std::abs(val - current_state.position[i]) > error_threshold_)
@@ -323,16 +375,28 @@ namespace cartesian_controllers {
       }
     }
 
-    if (success == chain_[arm_index_].getNrOfJoints())
+    int success_num;
+
+    if (is_single_arm_)
+    {
+      success_num = chain_[arm_index_].getNrOfJoints();
+    }
+    else
+    {
+      success_num = NUM_ARMS*chain_[0].getNrOfJoints(); // Assumption: All arms have the same number of joints.
+    }
+
+    if (success == success_num)
     {
       action_server_->setSucceeded();
       return lastState(current_state);
     }
 
+
     // 1 - Compute position error
     for (int i = 0; i < current_state.name.size(); i++)
-    {      
-      if (hasJoint(chain_[arm_index_], current_state.name[i]))
+    {
+      if (!is_single_arm_ || hasJoint(chain_[arm_index_], current_state.name[i]))
       {
         double val = getDesiredPosition(current_state.name[i]);
         double e = 0;
@@ -363,7 +427,7 @@ namespace cartesian_controllers {
       else
       {
         double val = control_output.position[i] - current_state.position[i];
-        
+
         if (std::abs(val) > max_allowed_error_)
         {
           if (val > 0)
@@ -379,14 +443,6 @@ namespace cartesian_controllers {
       }
     }
 
-    // ROS_INFO("Outputing:");
-    // for(int i = 0; i < control_output.name.size(); i++)
-    // {
-    //   std::cout << control_output.name[i] << " ; " << control_output.position[i] << " ; " << control_output.velocity[i] << std::endl;
-    // }
-    // std::cout << std::endl;
-    // std::cout << std::endl;
-    // std::cout << std::endl;
     return control_output;
   }
 }

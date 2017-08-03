@@ -346,6 +346,8 @@ void FoldingClient::runExperiment()
       ROS_INFO("Starting experiment!");
       current_iter = 1;
 
+      move_goal.desired_pose.resize(2);
+
       while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
         // controller_runner_.unloadAll();
@@ -355,8 +357,9 @@ void FoldingClient::runExperiment()
           current_action_ = move_action_name_ + std::string(" (rod arm)");
         }
 
+        move_goal.is_single_arm = true;
         move_goal.arm = rod_arm_;
-        move_goal.desired_pose = initial_rod_pose_;
+        move_goal.desired_pose[rod_arm_] = initial_rod_pose_;
 
         if (!controller_runner_.runController(move_controller_name_))
         {
@@ -387,7 +390,7 @@ void FoldingClient::runExperiment()
 
         // Send the surface arm to the initial pose
         move_goal.arm = surface_arm_;
-        move_goal.desired_pose = initial_surface_pose_;
+        move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
 
         move_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,

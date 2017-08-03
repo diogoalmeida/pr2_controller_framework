@@ -44,10 +44,10 @@ private:
   double getDesiredPosition(const std::string &joint_name);
 
 private:
-  bool finished_acquiring_goal_;
+  bool finished_acquiring_goal_, is_single_arm_;
   // Controller values
-  KDL::Frame pose_reference_;
-  KDL::JntArray desired_joint_positions_;
+  std::vector<KDL::Frame> pose_reference_;
+  std::vector<KDL::JntArray> desired_joint_positions_;
   double velocity_gain_;
   double max_allowed_error_, error_threshold_;
   std::vector<std::string> ik_service_name_;

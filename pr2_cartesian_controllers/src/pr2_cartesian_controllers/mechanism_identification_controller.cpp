@@ -352,7 +352,7 @@ namespace cartesian_controllers {
       eef_twist[arm] = eef_grasp_kdl[arm].Inverse()*eef_grasp_vel_kdl[arm].GetTwist();
       tf::transformKDLToEigen(eef_to_grasp_[arm], eef_to_grasp_eig[arm]);
       tf::transformKDLToEigen(eef_grasp_kdl[arm], grasp_point_frame[arm]);
-      tf::twistKDLToEigen(eef_twist[arm], eef_twist_eig[arm]);
+      tf::twistKDLToEigen(eef_grasp_vel_kdl[arm].GetTwist(), eef_twist_eig[arm]);
       commanded_joint_velocities[arm] = KDL::JntArray(chain_[arm].getNrOfJoints());
       jac_solver_[arm]->JntToJac(joint_positions_[arm], kdl_jac);
       jacobian[arm] = kdl_jac.data;

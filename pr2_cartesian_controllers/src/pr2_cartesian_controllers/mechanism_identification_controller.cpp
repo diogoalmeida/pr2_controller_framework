@@ -376,7 +376,7 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      estimator_.initialize(p2_.translation());
+      estimator_.initialize((p1_.translation() + p2_.translation())/2);
       adaptive_controller_.initEstimates(translational_dof_ground, rotational_dof_ground); // Initialize with ground truth for now TODO: add wrong initial estimate
       elapsed_ = ros::Time(0);
       has_initial_ = true;
@@ -392,7 +392,7 @@ namespace cartesian_controllers {
       // TODO
       pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
       // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
-      ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+      ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
@@ -404,17 +404,17 @@ namespace cartesian_controllers {
       pc_est_ = pc_;
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
+    }
 
-      ects_controller_->clearOptimizationDirections();
-      if (use_nullspace_)
-      {
-        transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
-        transmission_direction.block<3,1>(6,0) = translational_dof_ground;
-        ects_controller_->addOptimizationDirection(transmission_direction);
-        transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
-        transmission_direction.block<3,1>(9,0) = rotational_dof_ground;
-        ects_controller_->addOptimizationDirection(transmission_direction);
-      }
+    ects_controller_->clearOptimizationDirections();
+    if (use_nullspace_)
+    {
+      transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
+      transmission_direction.block<3,1>(6,0) = translational_dof_est_;
+      ects_controller_->addOptimizationDirection(transmission_direction);
+      transmission_direction = Eigen::Matrix<double, 12, 1>::Zero();
+      transmission_direction.block<3,1>(9,0) = rotational_dof_est_;
+      ects_controller_->addOptimizationDirection(transmission_direction);
     }
 
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);

@@ -12,12 +12,11 @@ namespace manipulation_algorithms{
 
   AdaptiveController::~AdaptiveController(){}
 
-  Vector6d AdaptiveController::control(const Vector6d &wrench, double dt)
+  Vector6d AdaptiveController::control(const Vector6d &wrench, double v_d, double w_d, double dt)
   {
     Eigen::Vector3d force_error, torque_error, v_f, w_f;
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     Vector6d ref_twist;
-    double v_d, w_d;
 
     time_ += dt;
 
@@ -26,13 +25,11 @@ namespace manipulation_algorithms{
 
     int_force_ = computeIntegralTerm(int_force_, t_, force_error, dt);
     v_f = alpha_force_*force_error + beta_force_*int_force_;
-    v_d = v_d_amp_*sin(2*M_PI*v_freq*time_);
     ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f;
     t_ = t_ + -alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f*dt;
 
     int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
     w_f = alpha_torque_*torque_error + beta_torque_*int_torque_;
-    w_d = w_d_amp_*sin(2*M_PI*w_freq*time_);
     ref_twist.block<3,1>(3,0) = w_d*r_ - (I - r_*r_.transpose())*w_f;
     r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f*dt;
 
@@ -60,17 +57,41 @@ namespace manipulation_algorithms{
 
   bool AdaptiveController::getParams(const ros::NodeHandle &n)
   {
-    // if (!n.getParam("/ects_controller/alpha", alpha_))
-    // {
-    //   ROS_ERROR("Missing alpha gain (/ects_controller/alpha)");
-    //   return false;
-    // }
-    //
-    // if (!n.getParam("/ects_controller/beta", beta_))
-    // {
-    //   ROS_ERROR("Missing beta value (/ects_controller/beta)");
-    //   return false;
-    // }
+    if (!n.getParam("/adaptive_estimator/alpha_force", alpha_force_))
+    {
+      ROS_ERROR("Missing force gain (/adaptive_estimator/alpha_force)");
+      return false;
+    }
+    
+    if (!n.getParam("/adaptive_estimator/beta_force", beta_force_))
+    {
+      ROS_ERROR("Missing beta force value (/adaptive_estimator/beta_force)");
+      return false;
+    }
+
+    if (!n.getParam("/adaptive_estimator/alpha_adapt_t", alpha_adapt_t_))
+    {
+      ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_t)");
+      return false;
+    }
+
+    if (!n.getParam("/adaptive_estimator/alpha_torque", alpha_torque_))
+    {
+      ROS_ERROR("Missing torque gain (/adaptive_estimator/alpha_torque)");
+      return false;
+    }
+
+    if (!n.getParam("/adaptive_estimator/beta_torque", beta_torque_))
+    {
+      ROS_ERROR("Missing beta torque value (/adaptive_estimator/beta_torque)");
+      return false;
+    }
+
+    if (!n.getParam("/adaptive_estimator/alpha_adapt_r", alpha_adapt_r_))
+    {
+      ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_r)");
+      return false;
+    }
 
     return true;
   }

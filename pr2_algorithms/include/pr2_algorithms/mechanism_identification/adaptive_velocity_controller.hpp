@@ -27,10 +27,12 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
       estimates.
 
       @param wrench The required wrench for the estimation. This can be at the end-effector, as the force will match the contact point and the angular velocity has the same restrictions as the contact's.
+      @param v_d The desired linear velocity.
+      @param w_d The desired angular velocity.
       @param dt The elapsed time between calls.
       @return The control twist for the relative velocity between parts.
     **/
-    Vector6d control(const Vector6d &wrench, double dt);
+    Vector6d control(const Vector6d &wrench, double v_d, double w_d, double dt);
 
     /**
       Initialize the adaptive controller estimates.

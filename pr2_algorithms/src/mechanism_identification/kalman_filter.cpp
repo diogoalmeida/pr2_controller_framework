@@ -41,7 +41,7 @@ namespace manipulation_algorithms{
     innov = wrench_e2.block<3,1>(3,0) - C*(pc_ - p_e2);
     S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
     K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);
-    // pc_ = pc_ + K*innov;
+    pc_ = pc_ + K*innov;
     P_= (I - K*C)*P_hat.selfadjointView<Eigen::Upper>();
     // P_ = A*P_ + P_*A.transpose() + R_;
 

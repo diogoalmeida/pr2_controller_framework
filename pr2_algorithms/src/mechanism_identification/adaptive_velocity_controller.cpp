@@ -57,37 +57,37 @@ namespace manipulation_algorithms{
 
   bool AdaptiveController::getParams(const ros::NodeHandle &n)
   {
-    if (!n.getParam("/adaptive_estimator/alpha_force", alpha_force_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/alpha_force", alpha_force_))
     {
       ROS_ERROR("Missing force gain (/adaptive_estimator/alpha_force)");
       return false;
     }
     
-    if (!n.getParam("/adaptive_estimator/beta_force", beta_force_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/beta_force", beta_force_))
     {
       ROS_ERROR("Missing beta force value (/adaptive_estimator/beta_force)");
       return false;
     }
 
-    if (!n.getParam("/adaptive_estimator/alpha_adapt_t", alpha_adapt_t_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/alpha_adapt_t", alpha_adapt_t_))
     {
       ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_t)");
       return false;
     }
 
-    if (!n.getParam("/adaptive_estimator/alpha_torque", alpha_torque_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/alpha_torque", alpha_torque_))
     {
       ROS_ERROR("Missing torque gain (/adaptive_estimator/alpha_torque)");
       return false;
     }
 
-    if (!n.getParam("/adaptive_estimator/beta_torque", beta_torque_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/beta_torque", beta_torque_))
     {
       ROS_ERROR("Missing beta torque value (/adaptive_estimator/beta_torque)");
       return false;
     }
 
-    if (!n.getParam("/adaptive_estimator/alpha_adapt_r", alpha_adapt_r_))
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/alpha_adapt_r", alpha_adapt_r_))
     {
       ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_r)");
       return false;

@@ -610,8 +610,8 @@ template <class ActionClass, class ActionFeedback, class ActionResult>
 Eigen::Matrix<double, 6, 1> ControllerTemplate<ActionClass, ActionFeedback, ActionResult>::wrenchInFrame(int arm_index, const std::string &frame)
 {
   KDL::Wrench wrench_kdl;
-  geometry_msgs::PoseStamped sensor_to_desired_frame;
-  KDL::Frame sensor_to_desired_frame_kdl;
+  geometry_msgs::PoseStamped sensor_to_desired_frame, desired_frame_to_base;
+  KDL::Frame sensor_to_desired_frame_kdl, desired_frame_to_base_kdl;
   Eigen::Matrix<double, 6, 1> converted_wrench;
 
   // HACK: Always use arm 0, as arm 1 has a broken sensor
@@ -625,19 +625,23 @@ Eigen::Matrix<double, 6, 1> ControllerTemplate<ActionClass, ActionFeedback, Acti
   sensor_to_desired_frame.pose.orientation.y = 0;
   sensor_to_desired_frame.pose.orientation.z = 0;
   sensor_to_desired_frame.pose.orientation.w = 1;
+  desired_frame_to_base = sensor_to_desired_frame;
+  desired_frame_to_base.header.frame_id = frame;
 
   try
   {
     // obtain a vector from the wrench frame id to the desired ft frame
     listener_.transformPose(frame, sensor_to_desired_frame, sensor_to_desired_frame);
+    listener_.transformPose(base_link_, desired_frame_to_base, desired_frame_to_base);
   }
   catch (tf::TransformException ex)
   {
     ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
   }
-
+  
   tf::poseMsgToKDL(sensor_to_desired_frame.pose, sensor_to_desired_frame_kdl);
-  wrench_kdl = sensor_to_desired_frame_kdl*wrench_kdl;
+  tf::poseMsgToKDL(desired_frame_to_base.pose, desired_frame_to_base_kdl);
+  wrench_kdl = desired_frame_to_base_kdl.M*(sensor_to_desired_frame_kdl*wrench_kdl);
   tf::wrenchKDLToEigen(wrench_kdl, converted_wrench);
   return converted_wrench;
 }

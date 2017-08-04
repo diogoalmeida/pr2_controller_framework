@@ -27,7 +27,7 @@ namespace cartesian_controllers {
     rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
     use_nullspace_ = false;
     has_joint_positions_ = false;
-    // wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
+    wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
     cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
   }
@@ -240,11 +240,11 @@ namespace cartesian_controllers {
           tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
           tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
           tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
-    //       surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
-    //       tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
-    //       surface_wrench.header.stamp = ros::Time::now();
-    //       feedback_.surface_wrench = surface_wrench;
-    //       wrench2_pub_.publish(surface_wrench);
+          surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
+          tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
+          surface_wrench.header.stamp = ros::Time::now();
+          feedback_.surface_wrench = surface_wrench;
+          wrench2_pub_.publish(surface_wrench);
           feedback_.task_compatibility = ects_controller_->getTaskCompatibility();
           feedback_.alpha = ects_controller_->getAlpha();
           feedback_.absolute_twist.header.stamp = ros::Time::now();
@@ -376,7 +376,7 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      estimator_.initialize(Eigen::Vector3d::Zero());
+      estimator_.initialize(p2_.translation());
       adaptive_controller_.initEstimates(translational_dof_ground, rotational_dof_ground); // Initialize with ground truth for now TODO: add wrong initial estimate
       elapsed_ = ros::Time(0);
       has_initial_ = true;

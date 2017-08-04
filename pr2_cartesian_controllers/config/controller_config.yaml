@@ -109,9 +109,9 @@ mechanism_controller:
   k_force: 0.0
   estimator:
     Q:
-      data: [25, 0, 0,
-             0, 25, 0,
-             0, 0, 25]
+      data: [100, 0, 0,
+             0, 100, 0,
+             0, 0, 1]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,

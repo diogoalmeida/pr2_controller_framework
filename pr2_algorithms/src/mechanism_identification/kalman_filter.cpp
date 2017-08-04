@@ -11,12 +11,12 @@ namespace manipulation_algorithms{
 
   bool KalmanEstimator::getParams(const ros::NodeHandle &n)
   {
-    if(!parseMatrixData(Q_, "/mechanism_identification/estimator/Q", n))
+    if(!parseMatrixData(Q_, "/mechanism_controller/estimator/Q", n))
     {
       return false;
     }
 
-    if(!parseMatrixData(R_, "/mechanism_identification/estimator/R", n))
+    if(!parseMatrixData(R_, "/mechanism_controller/estimator/R", n))
     {
       return false;
     }

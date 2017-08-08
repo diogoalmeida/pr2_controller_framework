@@ -397,7 +397,7 @@ namespace cartesian_controllers {
     }
 
     elapsed_ += dt;
-    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     pc_.linear() =  p1_.linear();
     pc_est_.linear() =  p1_.linear();
 

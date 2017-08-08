@@ -1,15 +1,10 @@
 #include <ros/ros.h>
 #include <pr2_algorithms/folding_assembly/folding_assembly_estimator.hpp>
 #include <pr2_algorithms/TestBedFoldingFeedback.h>
-#include <pr2_cartesian_controllers/FoldingControllerAction.h>
 #include <cstdlib>
 #include <random>
 
 using namespace manipulation_algorithms;
-
-void feedbackCallback(const pr2_cartesian_controllers::FoldingControllerActionFeedback &msg)
-{
-}
 
 Eigen::Matrix3d skew(const Eigen::Vector3d &v)
 {
@@ -39,7 +34,6 @@ int main(int argc, char ** argv)
   std::normal_distribution<double> obs_noise(0.0, 0.0);
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedFoldingFeedback>("/test_bed/feedback", 1);
-  // ros::Subscriber sub = n.subscribe("/realtime_loop/dexterous_manipulation/feedback", 1, feedbackCallback);
 
   if (argc > 1)
   {

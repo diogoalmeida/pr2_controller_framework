@@ -2,7 +2,7 @@
 #include <pr2_algorithms/dexterous_manipulation/manipulation_control_algorithm.hpp>
 #include <pr2_algorithms/dexterous_manipulation/manipulation_ekf.hpp>
 #include <pr2_algorithms/TestBedManipulationFeedback.h>
-#include <pr2_cartesian_controllers/ManipulationControllerAction.h>
+//#include <pr2_cartesian_controllers/ManipulationControllerAction.h>
 #include <cstdlib>
 #include <random>
 
@@ -60,6 +60,7 @@ void updateSpring(double &spring, const double d_theta_e, const double d_theta_c
   spring = spring + spring_vel*dt;
 }
 
+/*
 void feedbackCallback(const pr2_cartesian_controllers::ManipulationControllerActionFeedback &msg)
 {
   real_u << msg.feedback.x_e_dot, msg.feedback.y_e_dot, msg.feedback.theta_e_dot;
@@ -69,6 +70,7 @@ void feedbackCallback(const pr2_cartesian_controllers::ManipulationControllerAct
   real_x_e << msg.feedback.x_e, msg.feedback.y_e, msg.feedback.theta_e;
   real_x_c << msg.feedback.x_c_2, msg.feedback.theta_c_2, real_f_y;
 }
+*/
 
 int main(int argc, char ** argv)
 {
@@ -90,7 +92,7 @@ int main(int argc, char ** argv)
   std::normal_distribution<double> obs_noise(0.0, 0.01);
 
   ros::Publisher pub = n.advertise<pr2_algorithms::TestBedManipulationFeedback>("/test_bed/feedback", 1);
-  ros::Subscriber sub = n.subscribe("/realtime_loop/dexterous_manipulation/feedback", 1, feedbackCallback);
+  //ros::Subscriber sub = n.subscribe("/realtime_loop/dexterous_manipulation/feedback", 1, feedbackCallback);
 
   x_d = Eigen::Vector3d::Zero();
   x_d[0] = 0.02;

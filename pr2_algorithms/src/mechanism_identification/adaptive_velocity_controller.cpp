@@ -48,6 +48,12 @@ namespace manipulation_algorithms{
     t_ = t;
     r_ = r;
   }
+  
+  void AdaptiveController::setReferenceWrench(double f_d, double torque_d)
+  {
+    f_d_ = f_d;
+    torque_d_ = torque_d;
+  }
 
   void AdaptiveController::getEstimates(Eigen::Vector3d &t, Eigen::Vector3d &r)
   {

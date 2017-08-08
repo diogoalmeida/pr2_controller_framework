@@ -41,6 +41,14 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
       @param r Initial rotational DOF estimate.
     **/
     void initEstimates(const Eigen::Vector3d &t, const Eigen::Vector3d &r);
+    
+    /**
+      Sets the magnitude of the desired wrench's force and torque.
+      
+      @param f_d Desired force magnitude.
+      @param torque_d Desired torque magnitude.
+    **/
+    void setReferenceWrench(double f_d, double torque_d);
 
     /**
       Return the current estimates.

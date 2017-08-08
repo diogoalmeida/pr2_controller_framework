@@ -101,6 +101,7 @@ namespace cartesian_controllers {
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
     goal_force_ = goal->goal_force;
+    goal_torque_ = goal->goal_torque;
     vd_amp_ = goal->vd_amplitude;
     vd_freq_ = goal->vd_frequency;
     wd_amp_ = goal->wd_amplitude;
@@ -396,6 +397,7 @@ namespace cartesian_controllers {
     {
       estimator_.initialize((p1_.translation() + p2_.translation())/2);
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground_).toRotationMatrix()*translational_dof_ground_, Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_); // Initialize with ground truth for now
+      adaptive_controller_.setReferenceWrench(goal_force_, goal_torque_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;
     }

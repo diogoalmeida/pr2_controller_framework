@@ -208,6 +208,12 @@ bool MechanismClient::loadParams()
     ROS_ERROR("Need to set goal_force (experiment/goal_force)");
     return false;
   }
+  
+  if(!nh_.getParam("experiment/goal_torque", goal_torque_))
+  {
+    ROS_ERROR("Need to set goal_torque (experiment/goal_torque)");
+    return false;
+  }
 
   if(!getPose("experiment/initial_pose/rod", initial_rod_pose_))
   {
@@ -289,7 +295,8 @@ void MechanismClient::goalCB()
       vd_freq_ = goal->vd_freq;
       wd_amp_ = goal->wd_amp;
       wd_freq_ = goal->wd_freq;
-      goal_force_ = goal->force;
+      goal_force_ = goal->goal_force;
+      goal_torque_ = goal->goal_torque;
       rod_arm_ = goal->rod_arm;
       surface_arm_ = goal->surface_arm;
       use_nullspace_ = goal->use_nullspace;
@@ -475,6 +482,7 @@ void MechanismClient::runExperiment()
         mechanism_goal.vd_frequency = vd_freq_;
         mechanism_goal.wd_frequency = wd_freq_;
         mechanism_goal.goal_force = goal_force_;
+        mechanism_goal.goal_torque = goal_torque_;
         mechanism_goal.use_nullspace = use_nullspace_;
         mechanism_goal.use_estimates = use_estimates_;
         mechanism_goal.nullspace_gain = km_;

@@ -30,7 +30,8 @@ experiment:
   vd_freq: 0.3
   wd_amp: 0.0
   wd_freq: 0.2
-  goal_force: 0.0
+  goal_force: 2.0
+  goal_torque: 0.01
   initial_pose:
     rod: [0.513, -0.177, -0.107, 0.670, 0.672, -0.234, 0.214]
     surface: [0.509, 0.326, -0.120, 0.198, 0.241, -0.655, 0.688]

@@ -4,6 +4,8 @@ bool use_estimates
 bool use_nullspace
 int32 rod_arm
 int32 surface_arm
+float64 goal_force
+float64 goal_torque
 float64 nullspace_gain
 float64 init_t_error
 float64 init_k_error
@@ -14,7 +16,6 @@ float64 vd_amp
 float64 wd_amp
 float64 vd_freq
 float64 wd_freq
-float64 force
 bool randomize_desired_state
 float64 x_min
 float64 x_max

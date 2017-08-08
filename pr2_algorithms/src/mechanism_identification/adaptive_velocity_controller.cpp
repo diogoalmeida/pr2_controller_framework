@@ -20,8 +20,8 @@ namespace manipulation_algorithms{
 
     time_ += dt;
 
-    force_error = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error = wrench.block<3,1>(3,0) - torque_d_*wrench.block<3,1>(3,0).normalized();
+    force_error = wrench.block<3,1>(0,0) - f_d_*t_.cross(r_);
+    torque_error = wrench.block<3,1>(3,0) - torque_d_*r_.cross(t_);
 
     int_force_ = computeIntegralTerm(int_force_, t_, force_error, dt);
     v_f = alpha_force_*force_error + beta_force_*int_force_;

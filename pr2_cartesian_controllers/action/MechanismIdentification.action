@@ -7,6 +7,8 @@ float64 vd_frequency
 float64 wd_amplitude
 float64 wd_frequency
 float64 nullspace_gain
+float64 init_t_error
+float64 init_k_error
 bool use_nullspace
 bool use_estimates
 

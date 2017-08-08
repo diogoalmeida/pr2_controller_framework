@@ -25,6 +25,8 @@ namespace cartesian_controllers {
     r2_est_pub_ = nh_.advertise<visualization_msgs::Marker>("r2_est", 1);
     trans_pub_ = nh_.advertise<visualization_msgs::Marker>("trans", 1);
     rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
+    init_t_error_ = 0;
+    init_k_error_ = 0;
     use_nullspace_ = false;
     has_joint_positions_ = false;
     wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
@@ -103,6 +105,8 @@ namespace cartesian_controllers {
     wd_freq_ = goal->wd_frequency;
     use_nullspace_ = goal->use_nullspace;
     use_estimates_ = goal->use_estimates;
+    init_t_error_ = goal->init_t_error;
+    init_k_error_ = goal->init_k_error;
 
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
@@ -377,7 +381,7 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       estimator_.initialize((p1_.translation() + p2_.translation())/2);
-      adaptive_controller_.initEstimates(translational_dof_ground, rotational_dof_ground); // Initialize with ground truth for now TODO: add wrong initial estimate
+      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground).toRotationMatrix()*translational_dof_ground, Eigen::AngleAxisd(init_k_error_, translational_dof_ground).toRotationMatrix()*rotational_dof_ground); // Initialize with ground truth for now
       elapsed_ = ros::Time(0);
       has_initial_ = true;
     }

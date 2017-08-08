@@ -17,6 +17,8 @@ experiment:
   use_nullspace: true
   use_estimates: false
   nullspace_gain: 0.01
+  init_t_error: 0.0
+  init_k_error: 0.0
   feedback_rate: 1
   rod_arm: 1 # 0 - left; 1 - right
   surface_arm: 0

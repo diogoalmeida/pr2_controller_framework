@@ -4,11 +4,11 @@ project(pr2_algorithms)
 find_package(
 catkin REQUIRED COMPONENTS
   roscpp
-	std_msgs
-	message_generation
+  std_msgs
+  message_generation
   eigen_conversions
   tf
-	kdl_parser
+  kdl_parser
   kdl_conversions
   actionlib_msgs
   visualization_msgs
@@ -27,13 +27,13 @@ generate_dynamic_reconfigure_options(
 add_message_files(
   FILES
   TestBedManipulationFeedback.msg
-	TestBedFoldingFeedback.msg
+  TestBedFoldingFeedback.msg
   TestBedECTSFeedback.msg
 )
 
 add_action_files(
-	DIRECTORY action
-	FILES ECTSDebug.action
+  DIRECTORY action
+  FILES ECTSDebug.action
 )
 
 generate_messages(

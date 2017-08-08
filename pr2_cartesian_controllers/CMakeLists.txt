@@ -4,16 +4,16 @@ project(pr2_cartesian_controllers)
 find_package(
 catkin REQUIRED COMPONENTS
   roscpp
-	std_msgs
-	geometry_msgs
+  std_msgs
+  geometry_msgs
   visualization_msgs
-	sensor_msgs
+  sensor_msgs
   actionlib_msgs
-	moveit_msgs
-	actionlib
-	kdl_parser
+  moveit_msgs
+  actionlib
+  kdl_parser
   kdl_conversions
-	message_generation
+  message_generation
   pr2_algorithms
   dynamic_reconfigure
 )

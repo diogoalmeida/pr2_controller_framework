@@ -24,7 +24,9 @@ namespace cartesian_controllers {
     r2_pub_ = nh_.advertise<visualization_msgs::Marker>("r2", 1);
     r2_est_pub_ = nh_.advertise<visualization_msgs::Marker>("r2_est", 1);
     trans_pub_ = nh_.advertise<visualization_msgs::Marker>("trans", 1);
+    trans_est_pub_ = nh_.advertise<visualization_msgs::Marker>("trans_est", 1);
     rot_pub_ = nh_.advertise<visualization_msgs::Marker>("rot", 1);
+    rot_est_pub_ = nh_.advertise<visualization_msgs::Marker>("rot_est", 1);
     init_t_error_ = 0;
     init_k_error_ = 0;
     use_nullspace_ = false;
@@ -150,7 +152,7 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::publishFeedback()
   {
-    visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker;
+    visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
     geometry_msgs::Vector3 r_vec;
     geometry_msgs::WrenchStamped surface_wrench;
 
@@ -201,6 +203,15 @@ namespace cartesian_controllers {
     r2_est_marker.id = 8;
     r2_est_marker.color.r = 0.0;
     r2_est_marker.color.b = 0.5;
+    trans_est_marker = trans_marker;
+    trans_est_marker.color.r = 0.5;
+    trans_est_marker.color.b = 0.5;
+    trans_est_marker.color.g = 0.0;
+    trans_est_marker.id = 9;
+    rot_est_marker = trans_est_marker;
+    rot_est_marker.id = 10;
+    rot_est_marker.color.r = 0.0;
+    rot_est_marker.color.g = 0.5;
 
     try
     {
@@ -225,8 +236,9 @@ namespace cartesian_controllers {
           getMarkerPoints(p1_.translation(), pc_est_.translation(), r1_est_marker);
           getMarkerPoints(p2_.translation(), pc_.translation(), r2_marker);
           getMarkerPoints(p2_.translation(), pc_est_.translation(), r2_est_marker);
-          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_marker);
-          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_ground_, trans_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_est_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_est_marker);
 
           pc_pub_.publish(pc_marker);
           pc_est_pub_.publish(pc_est_marker);
@@ -238,6 +250,8 @@ namespace cartesian_controllers {
           r2_est_pub_.publish(r2_est_marker);
           trans_pub_.publish(trans_marker);
           rot_pub_.publish(rot_marker);
+          trans_est_pub_.publish(trans_est_marker);
+          rot_est_pub_.publish(rot_est_marker);
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
           tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);
@@ -306,7 +320,7 @@ namespace cartesian_controllers {
     std::vector<KDL::Twist> command_twist(2);
     std::vector<KDL::JntArray> commanded_joint_velocities(2);
     std::vector<Eigen::Matrix<double, 6, 7> > jacobian(2);
-    Eigen::Vector3d translational_dof_ground, rotational_dof_ground, p1, p2, eef1, eef2,
+    Eigen::Vector3d p1, p2, eef1, eef2,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis,
                     out_vel_lin, out_vel_ang; // all in the base_link frame
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero(), transmission_direction;
@@ -362,8 +376,8 @@ namespace cartesian_controllers {
       jacobian[arm] = kdl_jac.data;
     }
 
-    rotational_dof_ground  = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);
-    translational_dof_ground = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
+    rotational_dof_ground_  = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);
+    translational_dof_ground_ = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
     p1 = grasp_point_frame[rod_arm_].translation();
     p2 = grasp_point_frame[surface_arm_].translation();
 
@@ -381,13 +395,13 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       estimator_.initialize((p1_.translation() + p2_.translation())/2);
-      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground).toRotationMatrix()*translational_dof_ground, Eigen::AngleAxisd(init_k_error_, translational_dof_ground).toRotationMatrix()*rotational_dof_ground); // Initialize with ground truth for now
+      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground_).toRotationMatrix()*translational_dof_ground_, Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_); // Initialize with ground truth for now
       elapsed_ = ros::Time(0);
       has_initial_ = true;
     }
 
     elapsed_ += dt;
-    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed that the rod is aligned with the x axis of the grasp frame
+    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     pc_.linear() =  p1_.linear();
     pc_est_.linear() =  p1_.linear();
 
@@ -398,16 +412,16 @@ namespace cartesian_controllers {
       // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
-      ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
-      ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
+      ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
+      ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }
     else
     {
-      translational_dof_est_ = translational_dof_ground;
-      rotational_dof_est_ = rotational_dof_ground;
+      translational_dof_est_ = translational_dof_ground_;
+      rotational_dof_est_ = rotational_dof_ground_;
       pc_est_ = pc_;
-      ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground;
-      ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground;
+      ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
+      ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }
 
     ects_controller_->clearOptimizationDirections();

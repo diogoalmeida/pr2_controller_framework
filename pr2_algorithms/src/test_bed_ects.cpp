@@ -1,7 +1,6 @@
 #include <ros/ros.h>
 #include <pr2_algorithms/mechanism_identification/ects_controller.hpp>
 #include <pr2_algorithms/TestBedECTSFeedback.h>
-#include <pr2_cartesian_controllers/MechanismIdentificationAction.h>
 #include <kdl/jntarrayvel.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/kdl.hpp>

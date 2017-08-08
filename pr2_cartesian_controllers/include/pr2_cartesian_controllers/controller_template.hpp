@@ -641,8 +641,8 @@ Eigen::Matrix<double, 6, 1> ControllerTemplate<ActionClass, ActionFeedback, Acti
   
   tf::poseMsgToKDL(sensor_to_desired_frame.pose, sensor_to_desired_frame_kdl);
   tf::poseMsgToKDL(desired_frame_to_base.pose, desired_frame_to_base_kdl);
-  // wrench_kdl = desired_frame_to_base_kdl.M*(sensor_to_desired_frame_kdl*wrench_kdl);
-  wrench_kdl = (sensor_to_desired_frame_kdl*wrench_kdl);
+  // wrench_kdl = (sensor_to_desired_frame_kdl*wrench_kdl);
+  wrench_kdl = desired_frame_to_base_kdl.M*(sensor_to_desired_frame_kdl*wrench_kdl);
   tf::wrenchKDLToEigen(wrench_kdl, converted_wrench);
   return converted_wrench;
 }

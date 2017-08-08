@@ -413,14 +413,15 @@ namespace cartesian_controllers {
     KDL::Wrench wrench_kdl;
     Eigen::Matrix<double, 6, 1> wrench_eig; 
     // Get wrench in surface frame written in base frame coordinates
-    tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
-    wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
-    tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
+    // tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
+    // wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
+    // tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
     
     if (use_estimates_)
     {
       // TODO
-      pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+      // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+      pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
       // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);

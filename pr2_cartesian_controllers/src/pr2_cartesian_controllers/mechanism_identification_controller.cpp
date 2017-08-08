@@ -4,7 +4,7 @@ namespace cartesian_controllers {
 
   MechanismIdentificationController::MechanismIdentificationController() : ControllerTemplate<pr2_cartesian_controllers::MechanismIdentificationAction,
                                                 pr2_cartesian_controllers::MechanismIdentificationFeedback,
-                                                pr2_cartesian_controllers::MechanismIdentificationResult>(), eef_to_grasp_(2)
+                                                pr2_cartesian_controllers::MechanismIdentificationResult>(), eef_to_grasp_(2), sensor_frame_to_base_(2)
   {
     if(!loadParams())
     {
@@ -134,6 +134,9 @@ namespace cartesian_controllers {
         pose_in.pose.orientation.w = 1;
         listener_.transformPose(end_effector_link_[i], pose_in, pose_out);
         tf::poseMsgToKDL(pose_out.pose, eef_to_grasp_[i]);
+        
+        listener_.transformPose(base_link_, pose_in, pose_out);
+        tf::poseMsgToKDL(pose_out.pose, sensor_frame_to_base_[i]);
       }
     }
     catch (tf::TransformException ex)
@@ -406,11 +409,18 @@ namespace cartesian_controllers {
     pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     pc_.linear() =  p1_.linear();
     pc_est_.linear() =  p1_.linear();
-
+    
+    KDL::Wrench wrench_kdl;
+    Eigen::Matrix<double, 6, 1> wrench_eig; 
+    // Get wrench in surface frame written in base frame coordinates
+    tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
+    wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
+    tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
+    
     if (use_estimates_)
     {
       // TODO
-      pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+      pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
       // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);

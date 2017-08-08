@@ -381,6 +381,15 @@ void MechanismClient::runExperiment()
         continue;
       }
       ROS_INFO("Move action succeeded!");
+      
+      // Zero the ft sensor readings
+      std_srvs::Empty srv;
+      if(!gravity_compensation_client_.call(srv))
+      {
+        ROS_ERROR("Error calling the gravity compensation server!");
+        // action_server_->setAborted();
+        // return;
+      }
 
       ROS_INFO("Place mechanism");
       std::cin.get();
@@ -418,15 +427,12 @@ void MechanismClient::runExperiment()
         }
         ROS_INFO("Move action succeeded!");
 
-        // Zero the ft sensor readings
-        std_srvs::Empty srv;
-
-        if(!gravity_compensation_client_.call(srv))
-        {
-          ROS_ERROR("Error calling the gravity compensation server!");
-          // action_server_->setAborted();
-          // return;
-        }
+        // if(!gravity_compensation_client_.call(srv))
+        // {
+        //   ROS_ERROR("Error calling the gravity compensation server!");
+        //   // action_server_->setAborted();
+        //   // return;
+        // }
 
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);

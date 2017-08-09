@@ -266,7 +266,7 @@ namespace cartesian_controllers {
           Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
           tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
           pc_transform.setRotation(pc_orientation);
-          broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), base_link_, "mechanism_pc"));
+          broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
           tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);

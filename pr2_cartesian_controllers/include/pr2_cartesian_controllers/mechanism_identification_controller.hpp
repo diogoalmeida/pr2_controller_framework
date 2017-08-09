@@ -7,6 +7,7 @@
 #include <pr2_algorithms/mechanism_identification/adaptive_velocity_controller.hpp>
 #include <pr2_algorithms/mechanism_identification/kalman_filter.hpp>
 #include <tf/transform_broadcaster.h>
+#include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/Marker.h>
 #include <dynamic_reconfigure/server.h>
 #include <pr2_cartesian_controllers/MechanismIdentificationConfig.h>
@@ -52,7 +53,7 @@ private:
   std::vector<KDL::Frame> eef_to_grasp_, sensor_frame_to_base_;
   Eigen::Affine3d pc_, p1_, p2_, pc_est_;
   Eigen::Vector3d translational_dof_est_, rotational_dof_est_, translational_dof_ground_, rotational_dof_ground_;
-  ros::Publisher pc_pub_, pc_est_pub_, p1_pub_, p2_pub_, r1_pub_, r1_est_pub_, r2_pub_, r2_est_pub_, wrench2_pub_, trans_pub_, rot_pub_, trans_est_pub_, rot_est_pub_;
+  ros::Publisher pc_pub_, pc_est_pub_, p1_pub_, p2_pub_, r1_pub_, r1_est_pub_, r2_pub_, r2_est_pub_, wrench2_pub_, trans_pub_, rot_pub_, trans_est_pub_, rot_est_pub_, relative_twist_publisher_;
   std::vector<double> comp_gains_;
   ros::Time elapsed_;
 

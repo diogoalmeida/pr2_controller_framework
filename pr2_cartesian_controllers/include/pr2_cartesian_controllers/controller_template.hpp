@@ -297,8 +297,6 @@ protected:
   std::vector<Eigen::Matrix<double, 6, 1> > measured_wrench_;
   double force_d_;
   boost::shared_ptr<TwistController> twist_controller_;
-
-private:
   tf::TransformBroadcaster broadcaster_;
 };
 

@@ -32,6 +32,7 @@ namespace cartesian_controllers {
     use_nullspace_ = false;
     has_joint_positions_ = false;
     wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
+    relative_twist_publisher_ = nh_.advertise<geometry_msgs::WrenchStamped>("commanded_relative_twist", 1);
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
     cfg_callback_ = boost::bind(&MechanismIdentificationController::dynamicReconfigureCallback, this, _1, _2);
   }
@@ -157,8 +158,10 @@ namespace cartesian_controllers {
   void MechanismIdentificationController::publishFeedback()
   {
     visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
-    geometry_msgs::Vector3 r_vec;
+    geometry_msgs::Vector3 r_vec, linear_force_vel, angular_torque_vel;
+    Eigen::Vector3d linear_vel_eig, angular_vel_eig;
     geometry_msgs::WrenchStamped surface_wrench;
+    tf::Transform pc_transform;
 
     pc_marker.header.frame_id = chain_base_link_;
     pc_marker.ns = std::string("mechanism_identification");
@@ -256,6 +259,14 @@ namespace cartesian_controllers {
           rot_pub_.publish(rot_marker);
           trans_est_pub_.publish(trans_est_marker);
           rot_est_pub_.publish(rot_est_marker);
+          
+          adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
+          pc_transform.setOrigin( tf::Vector3(pc_.translation()[0], pc_.translation()[1], pc_.translation()[2]));
+          tf::Quaternion pc_orientation;
+          Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
+          tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
+          pc_transform.setRotation(pc_orientation);
+          broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), base_link_, "mechanism_pc"));
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
           tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);
@@ -424,6 +435,7 @@ namespace cartesian_controllers {
       // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
       // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrench_eig, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;

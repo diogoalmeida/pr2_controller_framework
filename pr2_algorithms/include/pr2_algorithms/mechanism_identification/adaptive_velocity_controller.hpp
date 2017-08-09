@@ -56,10 +56,18 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
       @param r Current rotational DOF estimate.
     **/
     void getEstimates(Eigen::Vector3d &t, Eigen::Vector3d &r);
+    
+    /**
+      Returns the current value of the force control components.
+      
+      @param v_f The current value of the force control component.
+      @param w_f The current value of the torque control component.
+    **/
+    void getForceControlValues(Eigen::Vector3d &v_f, Eigen::Vector3d &w_f);
 
   private:
     double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, torque_d_, v_d_amp_, w_d_amp_, time_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_;
-    Eigen::Vector3d t_, r_, int_force_, int_torque_;
+    Eigen::Vector3d t_, r_, int_force_, int_torque_, v_f_, w_f_;
 
     /**
       Compute the integral term in the wrench feedback component of the adaptive controller.

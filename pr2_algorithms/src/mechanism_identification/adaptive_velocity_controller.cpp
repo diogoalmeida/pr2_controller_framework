@@ -6,6 +6,8 @@ namespace manipulation_algorithms{
   {
     int_force_ = Eigen::Vector3d::Zero();
     int_torque_ = Eigen::Vector3d::Zero();
+    v_f_ = Eigen::Vector3d::Zero();
+    w_f_ = Eigen::Vector3d::Zero();
     t_ << 1, 0, 0;
     r_ << 0, 0, 1;
   }
@@ -14,7 +16,7 @@ namespace manipulation_algorithms{
 
   Vector6d AdaptiveController::control(const Vector6d &wrench, double v_d, double w_d, double dt)
   {
-    Eigen::Vector3d force_error, torque_error, v_f, w_f;
+    Eigen::Vector3d force_error, torque_error;
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     Vector6d ref_twist;
 
@@ -26,14 +28,14 @@ namespace manipulation_algorithms{
     // torque_error = wrench.block<3,1>(3,0) - torque_d_*wrench.block<3,1>(3,0).normalized();
 
     int_force_ = computeIntegralTerm(int_force_, t_, force_error, dt);
-    v_f = alpha_force_*force_error + beta_force_*int_force_;
-    ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f;
-    t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f*dt;
+    v_f_ = alpha_force_*force_error + beta_force_*int_force_;
+    ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f_;
+    t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
  
     int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
-    w_f = alpha_torque_*torque_error + beta_torque_*int_torque_;
-    ref_twist.block<3,1>(3,0) = w_d*r_ - (I - r_*r_.transpose())*w_f;
-    r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f*dt;
+    w_f_ = alpha_torque_*torque_error + beta_torque_*int_torque_;
+    ref_twist.block<3,1>(3,0) = w_d*r_ - (I - r_*r_.transpose())*w_f_;
+    r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f_*dt;
 
     return ref_twist;
   }
@@ -61,6 +63,12 @@ namespace manipulation_algorithms{
   {
     t = t_;
     r = r_;
+  }
+  
+  void AdaptiveController::getForceControlValues(Eigen::Vector3d &v_f, Eigen::Vector3d &w_f)
+  {
+    v_f = v_f_;
+    w_f = w_f_;
   }
 
   bool AdaptiveController::getParams(const ros::NodeHandle &n)

@@ -158,9 +158,9 @@ namespace cartesian_controllers {
   void MechanismIdentificationController::publishFeedback()
   {
     visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
-    geometry_msgs::Vector3 r_vec, linear_force_vel, angular_torque_vel;
+    geometry_msgs::Vector3 r_vec;
     Eigen::Vector3d linear_vel_eig, angular_vel_eig;
-    geometry_msgs::WrenchStamped surface_wrench;
+    geometry_msgs::WrenchStamped surface_wrench, force_control_twist;
     tf::Transform pc_transform;
 
     pc_marker.header.frame_id = chain_base_link_;
@@ -260,13 +260,19 @@ namespace cartesian_controllers {
           trans_est_pub_.publish(trans_est_marker);
           rot_est_pub_.publish(rot_est_marker);
           
-          adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
           pc_transform.setOrigin( tf::Vector3(pc_.translation()[0], pc_.translation()[1], pc_.translation()[2]));
           tf::Quaternion pc_orientation;
           Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
           tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
           pc_transform.setRotation(pc_orientation);
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
+          
+          adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
+          force_control_twist.header.frame_id = "mechanism_pc";
+          force_control_twist.header.stamp = ros::Time::now();
+          tf::vectorEigenToMsg(linear_vel_eig, force_control_twist.wrench.force);
+          tf::vectorEigenToMsg(angular_vel_eig, force_control_twist.wrench.torque);
+          relative_twist_publisher_.publish(force_control_twist);
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
           tf::vectorEigenToMsg(pc_.translation() - p2_.translation(), feedback_.r2);

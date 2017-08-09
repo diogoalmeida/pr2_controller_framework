@@ -67,8 +67,9 @@ namespace manipulation_algorithms{
   
   void AdaptiveController::getForceControlValues(Eigen::Vector3d &v_f, Eigen::Vector3d &w_f)
   {
-    v_f = v_f_;
-    w_f = w_f_;
+    Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+    v_f = (I - t_*t_.transpose())*v_f_;
+    w_f = (I - r_*r_.transpose())*w_f_;
   }
 
   bool AdaptiveController::getParams(const ros::NodeHandle &n)

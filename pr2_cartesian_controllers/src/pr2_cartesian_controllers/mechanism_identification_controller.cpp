@@ -261,9 +261,9 @@ namespace cartesian_controllers {
           rot_est_pub_.publish(rot_est_marker);
           
           pc_transform.setOrigin( tf::Vector3(pc_.translation()[0], pc_.translation()[1], pc_.translation()[2]));
-          tf::Quaternion pc_orientation;
-          Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
-          tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
+          tf::Quaternion pc_orientation(0, 0, 0);
+          // Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
+          // tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
           pc_transform.setRotation(pc_orientation);
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
           

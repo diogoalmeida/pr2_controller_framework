@@ -10,6 +10,7 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <pr2_cartesian_controllers/MechanismIdentificationAction.h>
+#include <pr2_controllers_msgs/Pr2GripperCommandAction.h>
 #include <pr2_cartesian_controllers/MoveAction.h>
 #include <pr2_cartesian_clients/MechanismAction.h>
 #include <pr2_cartesian_clients/LogMessages.h>
@@ -19,6 +20,8 @@
 #include <boost/thread.hpp>
 
 using namespace pr2_cartesian_clients;
+typedef actionlib::SimpleActionClient<pr2_controllers_msgs::Pr2GripperCommandAction> GripperClient;
+
 namespace manipulation{
 
   class MechanismClient
@@ -68,7 +71,28 @@ namespace manipulation{
       Makes sure the action clients cancel the goals and are properly deleted.
     **/
     void destroyActionClients();
-
+    
+    /**
+      Opens a gripper. (https://answers.ros.org/question/191637/pr2-hydro-easiest-way-to-close-a-gripper/)
+      
+      @param gripper_client Gripper action client.
+    **/
+    void openGripper(GripperClient* gripper_client);
+    
+    /**
+      Closes a gripper. (https://answers.ros.org/question/191637/pr2-hydro-easiest-way-to-close-a-gripper/)
+      
+      @param gripper_client Gripper action client.
+    **/
+    void closeGripper(GripperClient* gripper_client);
+    
+    /**
+      Sets a gripper to null efftor.
+      
+      @param gripper_client Gripper action client.
+    **/
+    void softGripper(GripperClient* gripper_client);
+    
   private:
     boost::thread feedback_thread_;
     boost::mutex reference_mutex_;
@@ -81,6 +105,7 @@ namespace manipulation{
     actionlib::SimpleActionClient<pr2_cartesian_controllers::MechanismIdentificationAction> *mechanism_action_client_;
     actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction> *move_action_client_;
     actionlib::SimpleActionServer<pr2_cartesian_clients::MechanismAction> *action_server_; // Allows user-triggered preemption
+    GripperClient *left_gripper_client_, *right_gripper_client_;
     std::string move_action_name_, mechanism_action_name_, approach_action_name_, cartesian_client_action_name_, current_action_, logging_service_;
     double server_timeout_, feedback_hz_;
     double move_action_time_limit_, mechanism_action_time_limit_;

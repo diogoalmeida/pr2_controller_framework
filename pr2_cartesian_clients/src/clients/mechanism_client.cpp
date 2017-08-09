@@ -17,6 +17,8 @@ MechanismClient::MechanismClient()
   mechanism_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MechanismIdentificationAction>(mechanism_action_name_, true);
   move_action_client_ = new actionlib::SimpleActionClient<pr2_cartesian_controllers::MoveAction>(move_action_name_, true);
   action_server_ = new actionlib::SimpleActionServer<pr2_cartesian_clients::MechanismAction>(nh_, cartesian_client_action_name_, false);
+  right_gripper_client_ = new GripperClient("r_gripper_controller/gripper_action", true);
+  left_gripper_client_ = new GripperClient("l_gripper_controller/gripper_action", true);
   action_server_->registerGoalCallback(boost::bind(&MechanismClient::goalCB, this));
   action_server_->registerPreemptCallback(boost::bind(&MechanismClient::preemptCB, this));
   feedback_thread_ = boost::thread(&MechanismClient::publishFeedback, this);
@@ -48,6 +50,18 @@ void MechanismClient::destroyActionClients()
     move_action_client_->cancelAllGoals();
     delete move_action_client_;
     move_action_client_ = nullptr;
+  }
+  
+  if (right_gripper_client_)
+  {
+    delete right_gripper_client_;
+    right_gripper_client_ = nullptr;
+  }
+  
+  if (left_gripper_client_)
+  {
+    delete left_gripper_client_;
+    left_gripper_client_ = nullptr;
   }
 }
 
@@ -332,6 +346,38 @@ void MechanismClient::goalCB()
   }
 }
 
+void MechanismClient::openGripper(GripperClient* gripper_client)
+{
+  pr2_controllers_msgs::Pr2GripperCommandGoal open;
+  open.command.position = 0.10;
+  open.command.max_effort = 50.0; 
+
+  ROS_INFO("Sending open goal");
+  gripper_client->sendGoal(open);
+  gripper_client->waitForResult();
+}
+
+void MechanismClient::closeGripper(GripperClient* gripper_client)
+{
+  pr2_controllers_msgs::Pr2GripperCommandGoal squeeze;
+  squeeze.command.position = 0.0;
+  squeeze.command.max_effort = 50.0;  
+
+  ROS_INFO("Sending squeeze goal");
+  gripper_client->sendGoal(squeeze);
+  gripper_client->waitForResult();
+}
+
+void MechanismClient::softGripper(GripperClient* gripper_client)
+{
+  pr2_controllers_msgs::Pr2GripperCommandGoal soft;
+  soft.command.position = 0.0;
+  soft.command.max_effort = 0.0;  
+
+  ROS_INFO("Sending soft goal");
+  gripper_client->sendGoal(soft);
+}
+
 void MechanismClient::runExperiment()
 {
   ros::Time init, curr;
@@ -397,9 +443,15 @@ void MechanismClient::runExperiment()
         // action_server_->setAborted();
         // return;
       }
-
+      
+      openGripper(left_gripper_client_);
+      openGripper(right_gripper_client_);
+      softGripper(left_gripper_client_);
+      softGripper(right_gripper_client_);
       ROS_INFO("Place mechanism");
       std::cin.get();
+      closeGripper(left_gripper_client_);
+      closeGripper(right_gripper_client_);
 
       while(action_server_->isActive() && current_iter <= num_of_experiments_)
       {
@@ -526,6 +578,10 @@ void MechanismClient::runExperiment()
 
       ROS_INFO("Experiment done!");
       controller_runner_.unloadAll();
+      openGripper(left_gripper_client_);
+      softGripper(left_gripper_client_);
+      openGripper(right_gripper_client_);
+      softGripper(right_gripper_client_);
       action_server_->setSucceeded();
     }
     else

@@ -46,6 +46,7 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
   private:
     Eigen::Vector3d pc_;
     Eigen::Matrix3d P_, Q_, R_;
+    double confidence_level_;
   };
 }
 #endif

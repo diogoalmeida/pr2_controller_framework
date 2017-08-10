@@ -116,6 +116,8 @@ mechanism_controller:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
+    confidence_level: 1
+      
   ects_controller:
     alpha: 0.5
     beta: 1

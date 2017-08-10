@@ -49,11 +49,11 @@ namespace manipulation_algorithms{
     innov = wrench_e2.block<3,1>(3,0) - C*(pc_ - p_e2);
     S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
     
-    normalized_error = (innov.transpose()*S.llt().solve(innov))[0]*confidence_level_;
-    
-    std::cout << "norm_error: " << normalized_error << std::endl;
-    
-    if (normalized_error < 0.1)
+    // normalized_error = (innov.transpose()*S.llt().solve(innov))[0]*confidence_level_;
+    // 
+    // std::cout << "norm_error: " << normalized_error << std::endl;
+    // 
+    // if (normalized_error < 0.1)
     {
       K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);
       pc_ = pc_ + K*innov;

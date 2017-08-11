@@ -66,6 +66,8 @@ namespace cartesian_controllers {
     wd_amp_ = config.wd_amp;
     wd_freq_ = config.wd_freq;
     use_nullspace_ = config.use_nullspace;
+    estimator_.setObserverGain(config.constant_observer_gain);
+    ects_controller_->setNullspaceGain(config.nullspace_gain);
   }
 
   void MechanismIdentificationController::goalCB()

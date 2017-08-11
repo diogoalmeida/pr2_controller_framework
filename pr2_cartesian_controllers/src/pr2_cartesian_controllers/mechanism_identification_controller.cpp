@@ -435,16 +435,17 @@ namespace cartesian_controllers {
     pc_est_.linear() =  p1_.linear();
 
     KDL::Wrench wrench_kdl;
-    Eigen::Matrix<double, 6, 1> wrench_eig, wrench_eig_modified; 
+    Eigen::Matrix<double, 6, 1> wrench_eig, wrench_eig_modified;
+    Eigen::Vector3d surface_normal; 
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
     tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
     wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
-
+    
+    surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
     wrench_eig_modified = wrench_eig;
-    wrench_eig_modified.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose())*wrench_eig.block<3, 1>(0,0);
-    wrench_eig_modified.block<3, 1>(0,0) = (I - translational_dof_ground_*translational_dof_ground_.transpose())*wrench_eig.block<3, 1>(0,0);
+    wrench_eig_modified.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
     wrench_eig_modified.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
 
     if (use_estimates_)
@@ -452,15 +453,15 @@ namespace cartesian_controllers {
       // TODO
       if (use_kalman_gain_)
       {
-        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
+        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
         // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
         // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       }
       else
       {
-        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec());
+        // pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec());
       }
 
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());

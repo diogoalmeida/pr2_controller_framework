@@ -299,7 +299,7 @@ namespace cartesian_controllers {
           
           Eigen::Vector3d surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
           KDL::Wrench wrench_kdl;
-          tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
+          // tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
           // KDL::Rotation rot_t, rot_k, rot_n;
           // KDL::Vector t, k, n;
           //   
@@ -322,7 +322,9 @@ namespace cartesian_controllers {
           // wrench_kdl = rot_n*wrench_kdl;
           
           // tf::wrenchKDLToMsg(wrench_kdl, surface_wrench.wrench);
-          tf::wrenchEigenToMsg(wrench_eig_modified_, surface_wrench.wrench);
+          tf::wrenchEigenToKDL(wrench_eig_modified_, wrench_kdl);
+          wrench_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*wrench_kdl;
+          tf::wrenchKDLToMsg(wrench_kdl, surface_wrench.wrench);
           
           wrench2_pub_.publish(surface_wrench);
           feedback_.task_compatibility = ects_controller_->getTaskCompatibility();

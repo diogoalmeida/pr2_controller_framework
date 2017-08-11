@@ -502,10 +502,10 @@ namespace cartesian_controllers {
     wrench_kdl = rot_n*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig_modified);
     
-    wrench_eig_modified = wrench_eig;
-    wrench_eig_modified.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
+    // wrench_eig_modified = wrench_eig;
+    // wrench_eig_modified.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
     // wrench_eig_modified.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
-    wrench_eig_modified.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
+    // wrench_eig_modified.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
 
     if (use_estimates_)
     {

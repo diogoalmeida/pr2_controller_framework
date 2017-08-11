@@ -31,6 +31,7 @@ namespace cartesian_controllers {
     init_k_error_ = 0;
     use_nullspace_ = false;
     has_joint_positions_ = false;
+    use_kalman_gain_ = true;
     wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     relative_twist_publisher_ = nh_.advertise<geometry_msgs::WrenchStamped>("commanded_relative_twist", 1);
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
@@ -68,6 +69,7 @@ namespace cartesian_controllers {
     use_nullspace_ = config.use_nullspace;
     estimator_.setObserverGain(config.constant_observer_gain);
     ects_controller_->setNullspaceGain(config.nullspace_gain);
+    use_kalman_gain_ = config.use_kalman_gain;
   }
 
   void MechanismIdentificationController::goalCB()
@@ -137,7 +139,7 @@ namespace cartesian_controllers {
         pose_in.pose.orientation.w = 1;
         listener_.transformPose(end_effector_link_[i], pose_in, pose_out);
         tf::poseMsgToKDL(pose_out.pose, eef_to_grasp_[i]);
-        
+
         listener_.transformPose(base_link_, pose_in, pose_out);
         tf::poseMsgToKDL(pose_out.pose, sensor_frame_to_base_[i]);
       }
@@ -261,14 +263,14 @@ namespace cartesian_controllers {
           rot_pub_.publish(rot_marker);
           trans_est_pub_.publish(trans_est_marker);
           rot_est_pub_.publish(rot_est_marker);
-          
+
           pc_transform.setOrigin( tf::Vector3(pc_.translation()[0], pc_.translation()[1], pc_.translation()[2]));
           tf::Quaternion pc_orientation(0, 0, 0);
           // Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
           // tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
           pc_transform.setRotation(pc_orientation);
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
-          
+
           adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
           force_control_twist.header.frame_id = "mechanism_pc";
           force_control_twist.header.stamp = ros::Time::now();
@@ -428,7 +430,7 @@ namespace cartesian_controllers {
     pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     pc_.linear() =  p1_.linear();
     pc_est_.linear() =  p1_.linear();
-    
+
     KDL::Wrench wrench_kdl;
     Eigen::Matrix<double, 6, 1> wrench_eig, wrench_eig_modified; 
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
@@ -436,19 +438,27 @@ namespace cartesian_controllers {
     tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
     wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
-    
+
     wrench_eig_modified = wrench_eig;
     wrench_eig_modified.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose())*wrench_eig.block<3, 1>(0,0);
     wrench_eig_modified.block<3, 1>(0,0) = (I - translational_dof_ground_*translational_dof_ground_.transpose())*wrench_eig.block<3, 1>(0,0);
     wrench_eig_modified.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
-    
+
     if (use_estimates_)
     {
       // TODO
-      // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-      pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
-      // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
-      // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
+      if (use_kalman_gain_)
+      {
+        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
+        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+        // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
+      }
+      else
+      {
+        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec());
+      }
+
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrench_eig, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);

@@ -29,6 +29,9 @@ namespace cartesian_controllers {
     rot_est_pub_ = nh_.advertise<visualization_msgs::Marker>("rot_est", 1);
     init_t_error_ = 0;
     init_k_error_ = 0;
+    rotation_t_ = 0;
+    rotation_k_ = 0;
+    rotation_n_ = 0;
     use_nullspace_ = false;
     has_joint_positions_ = false;
     use_kalman_gain_ = true;
@@ -67,6 +70,9 @@ namespace cartesian_controllers {
     wd_amp_ = config.wd_amp;
     wd_freq_ = config.wd_freq;
     use_nullspace_ = config.use_nullspace;
+    rotation_t_ = config.rotation_t;
+    rotation_k_ = config.rotation_k;
+    rotation_n_ = config.rotation_n;
     estimator_.setObserverGain(config.constant_observer_gain);
     if (ects_controller_)
     {
@@ -444,9 +450,31 @@ namespace cartesian_controllers {
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
     
     surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
-    wrench_eig_modified = wrench_eig;
+    // Eigen::AngleAxisd rot_t_eig(rotation_t_, translational_dof_ground_);
+    // Eigen::AngleAxisd rot_k_eig(rotation_k_, rotational_dof_ground_);
+    // Eigen::AngleAxisd rot_n_eig(rotation_n_, surface_normal);
+    KDL::Rotation rot_t, rot_k, rot_n;
+    KDL::Vector t, k, n;
+      
+    t.x(translational_dof_ground_[0]);
+    t.y(translational_dof_ground_[1]);
+    t.z(translational_dof_ground_[2]);
+    k.x(rotational_dof_ground_[0]);
+    k.y(rotational_dof_ground_[1]);
+    k.z(rotational_dof_ground_[2]);
+    n.x(surface_normal[0]);
+    n.y(surface_normal[1]);
+    n.z(surface_normal[2]);
+    
+    rot_t.Rot(t, rotation_t_);
+    rot_k.Rot(k, rotation_k_);
+    rot_n.Rot(n, rotation_n_);
+    
+    tf::wrenchKDLToEigen(rot_n*(rot_k*(rot_t*wrench_kdl)), wrench_eig_modified);
+    
+    // wrench_eig_modified = wrench_eig;
     // wrench_eig_modified.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
-    wrench_eig_modified.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
+    // wrench_eig_modified.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
     // wrench_eig_modified.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
 
     if (use_estimates_)

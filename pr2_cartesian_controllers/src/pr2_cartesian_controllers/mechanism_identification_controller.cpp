@@ -68,7 +68,10 @@ namespace cartesian_controllers {
     wd_freq_ = config.wd_freq;
     use_nullspace_ = config.use_nullspace;
     estimator_.setObserverGain(config.constant_observer_gain);
-    ects_controller_->setNullspaceGain(config.nullspace_gain);
+    if (ects_controller_)
+    {
+      ects_controller_->setNullspaceGain(config.nullspace_gain);
+    }
     use_kalman_gain_ = config.use_kalman_gain;
   }
 
@@ -449,14 +452,15 @@ namespace cartesian_controllers {
       // TODO
       if (use_kalman_gain_)
       {
-        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
+        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec()); // HACK: Test KF without normal force components
         // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
         // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       }
       else
       {
-        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec());
+        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        // pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified, dt.toSec());
       }
 
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());

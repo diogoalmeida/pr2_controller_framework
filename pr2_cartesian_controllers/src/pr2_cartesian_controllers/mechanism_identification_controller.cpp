@@ -455,7 +455,7 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      estimator_.initialize((p1_.translation() + p2_.translation())/2);
+      estimator_.initialize(p2_.translation());
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground_).toRotationMatrix()*translational_dof_ground_, Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_); // Initialize with ground truth for now
       adaptive_controller_.setReferenceWrench(goal_force_, goal_torque_);
       elapsed_ = ros::Time(0);

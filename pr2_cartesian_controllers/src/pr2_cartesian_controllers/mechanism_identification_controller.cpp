@@ -296,6 +296,33 @@ namespace cartesian_controllers {
           tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
           surface_wrench.header.stamp = ros::Time::now();
           feedback_.surface_wrench = surface_wrench;
+          
+          Eigen::Vector3d surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
+          KDL::Wrench wrench_kdl;
+          tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
+          KDL::Rotation rot_t, rot_k, rot_n;
+          KDL::Vector t, k, n;
+            
+          t.x(translational_dof_ground_[0]);
+          t.y(translational_dof_ground_[1]);
+          t.z(translational_dof_ground_[2]);
+          k.x(rotational_dof_ground_[0]);
+          k.y(rotational_dof_ground_[1]);
+          k.z(rotational_dof_ground_[2]);
+          n.x(surface_normal[0]);
+          n.y(surface_normal[1]);
+          n.z(surface_normal[2]);
+          
+          rot_t = rot_t.Rot(t, rotation_t_);
+          rot_k = rot_k.Rot(k, rotation_k_);
+          rot_n = rot_n.Rot(n, rotation_n_);
+          
+          wrench_kdl = rot_t*wrench_kdl;
+          wrench_kdl = rot_k*wrench_kdl;
+          wrench_kdl = rot_n*wrench_kdl;
+          
+          tf::wrenchKDLToMsg(wrench_kdl, surface_wrench.wrench);
+          
           wrench2_pub_.publish(surface_wrench);
           feedback_.task_compatibility = ects_controller_->getTaskCompatibility();
           feedback_.alpha = ects_controller_->getAlpha();
@@ -466,9 +493,9 @@ namespace cartesian_controllers {
     n.y(surface_normal[1]);
     n.z(surface_normal[2]);
     
-    rot_t.Rot(t, rotation_t_);
-    rot_k.Rot(k, rotation_k_);
-    rot_n.Rot(n, rotation_n_);
+    rot_t = rot_t.Rot(t, rotation_t_);
+    rot_k = rot_k.Rot(k, rotation_k_);
+    rot_n = rot_n.Rot(n, rotation_n_);
     
     wrench_kdl = rot_t*wrench_kdl;
     wrench_kdl = rot_k*wrench_kdl;

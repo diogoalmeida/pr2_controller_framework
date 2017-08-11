@@ -470,7 +470,10 @@ namespace cartesian_controllers {
     rot_k.Rot(k, rotation_k_);
     rot_n.Rot(n, rotation_n_);
     
-    tf::wrenchKDLToEigen(rot_n*(rot_k*(rot_t*wrench_kdl)), wrench_eig_modified);
+    wrench_kdl = rot_t*wrench_kdl;
+    wrench_kdl = rot_k*wrench_kdl;
+    wrench_kdl = rot_n*wrench_kdl;
+    tf::wrenchKDLToEigen(wrench_kdl, wrench_eig_modified);
     
     // wrench_eig_modified = wrench_eig;
     // wrench_eig_modified.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;

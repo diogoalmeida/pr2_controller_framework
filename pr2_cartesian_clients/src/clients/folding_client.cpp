@@ -354,11 +354,11 @@ void FoldingClient::runExperiment()
         // Send rod arm to right initial pose
         {
           boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = move_action_name_ + std::string(" (rod arm)");
+          current_action_ = move_action_name_;
         }
 
-        move_goal.is_single_arm = true;
-        move_goal.arm = rod_arm_;
+        move_goal.is_single_arm = false;
+        move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
         move_goal.desired_pose[rod_arm_] = initial_rod_pose_;
 
         if (!controller_runner_.runController(move_controller_name_))
@@ -372,27 +372,6 @@ void FoldingClient::runExperiment()
         controller_runner_.stopController("r_arm_controller");
 
         bool move_timeout = false;
-        if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
-                              pr2_cartesian_controllers::MoveGoal,
-                              pr2_cartesian_clients::FoldingAction>
-                                (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
-        {
-          ROS_ERROR("Error in the move action. Aborting.");
-          action_server_->setAborted();
-          continue;
-        }
-        ROS_INFO("Move action succeeded!");
-
-        {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = move_action_name_ + std::string(" (surface arm)");
-        }
-
-        // Send the surface arm to the initial pose
-        move_goal.arm = surface_arm_;
-        move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
-
-        move_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
                               pr2_cartesian_controllers::MoveGoal,
                               pr2_cartesian_clients::FoldingAction>

@@ -29,6 +29,7 @@ add_message_files(
   TestBedManipulationFeedback.msg
   TestBedFoldingFeedback.msg
   TestBedECTSFeedback.msg
+  TestKalmanFeedback.msg
 )
 
 add_action_files(
@@ -82,4 +83,8 @@ add_dependencies(test_bed_folding pr2_algorithms_generate_messages_cpp)
 
 add_executable(test_bed_ects src/test_bed_ects.cpp src/robot_simulator.cpp)
 target_link_libraries(test_bed_ects ects_controller ${catkin_LIBRARIES})
+add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp pr2_algorithms_gencfg)
+
+add_executable(test_kalman src/test_kalman.cpp)
+target_link_libraries(test_kalman kalman_filter ${catkin_LIBRARIES})
 add_dependencies(test_bed_ects pr2_algorithms_generate_messages_cpp pr2_algorithms_gencfg)

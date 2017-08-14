@@ -15,6 +15,7 @@
 #include <visualization_msgs/Marker.h>
 #include <actionlib/server/simple_action_server.h>
 #include <cstdlib>
+#include <algorithm>
 
 using namespace manipulation_algorithms;
 
@@ -52,6 +53,23 @@ void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d
 void wrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
   tf::wrenchMsgToEigen(msg->wrench, measured_wrench_);
+  measured_wrench_[1] = 1.87*measured_wrench_[1];
+}
+
+double avgMedian(std::vector<double> v)
+{
+  int i = 0;
+  double avg = 0.0;
+  std::sort(v.begin(), v.end());
+  
+  while(i < v.size()/2)
+  {
+    avg += v[i];
+    i++;
+  }
+  
+  avg = avg/i;
+  return avg;
 }
 
 int main(int argc, char ** argv)
@@ -66,7 +84,7 @@ int main(int argc, char ** argv)
   Vector14d out = Vector14d::Zero();
   ros::Duration dt, elapsed;
   tf::TransformListener listener;
-  ros::Rate r(100);
+  ros::Rate r(1000);
   KDL::Frame pose_frame;
   double max_time, epsilon;
   std::string ft_frame_id, ft_topic;
@@ -113,13 +131,16 @@ int main(int argc, char ** argv)
   elapsed = ros::Time::now() - init_time;
   pc = Eigen::Vector3d::Zero();
   bool acquired_dof = false;
-  double trans_estimate = 0.0, rot_estimate = 0.0, normal_estimate = 0.0; // computation along these directions
+  int window_size = 100;
+  std::vector<double> trans_estimate(window_size, 0), rot_estimate(window_size, 0), normal_estimate(window_size, 0); // computation along these directions
+  int i = 0;
+  
   while (ros::ok())
   {
     ros::spinOnce();
     dt = ros::Time::now() - prev_time;
     elapsed = ros::Time::now() - init_time;
-
+    
     pc = estimator.estimate(Eigen::Vector3d::Zero(), Vector6d::Zero(), Eigen::Vector3d::Zero(), measured_wrench_, dt.toSec());
     pc_eig.translation() = pc;
 
@@ -127,13 +148,22 @@ int main(int argc, char ** argv)
     pc_pub.publish(pc_marker);
 
     feedback_msg.computations.clear();
-    trans_estimate = measured_wrench_[4]/measured_wrench_[2];
-    rot_estimate = measured_wrench_[3]/measured_wrench_[2];
-    normal_estimate = measured_wrench_[3]/measured_wrench_[1];
+    if (std::abs(measured_wrench_[0])> 0.1 && std::abs(measured_wrench_[1]) > 0.1 && std::abs(measured_wrench_[2]) > 0.1)
+    {
+      trans_estimate[i] = measured_wrench_[5]/(measured_wrench_[1]);
+      rot_estimate[i] = measured_wrench_[3]/measured_wrench_[1];
+      normal_estimate[i] = measured_wrench_[3]/measured_wrench_[2];
+    }
+    
+    i++;
+    if (i > window_size)
+    {
+      i = 0;
+    }
 
-    feedback_msg.computations.push_back(trans_estimate);
-    feedback_msg.computations.push_back(rot_estimate);
-    feedback_msg.computations.push_back(normal_estimate);
+    feedback_msg.computations.push_back(avgMedian(trans_estimate));
+    feedback_msg.computations.push_back(avgMedian(rot_estimate));
+    feedback_msg.computations.push_back(avgMedian(normal_estimate));
 
     prev_time = ros::Time::now();
     pub.publish(feedback_msg);

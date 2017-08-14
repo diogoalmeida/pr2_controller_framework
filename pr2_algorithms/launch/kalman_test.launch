@@ -1,7 +1,7 @@
 <launch>
   <rosparam command="load" file="$(find pr2_cartesian_controllers)/config/controller_config.yaml"/>
   <node name="test_kalman" pkg="pr2_algorithms" type="test_kalman" output="screen">
-    <rosparam param="frame_id">"l_force_torque_link"</rosparam>
-    <rosparam param="wrench_topic">"/l_ft_sensor/ft_compensated"</rosparam>
+    <rosparam param="frame_id">"l_gripper_tool_frame"</rosparam>
+    <rosparam param="wrench_topic">"/realtime_loop/surface_frame_wrench"</rosparam>
   </node>
 </launch>

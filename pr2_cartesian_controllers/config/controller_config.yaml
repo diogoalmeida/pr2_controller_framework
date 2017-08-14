@@ -90,9 +90,9 @@ folding_controller:
   k_force: 0 #-0.005
   estimator:
     Q:
-      data: [0.001, 0, 0,
-             0, 0.001, 0,
-             0, 0, 0.001]
+      data: [50.1, 0, 0,
+             0, 50.001, 0,
+             0, 0, 50.001]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,
@@ -117,6 +117,7 @@ mechanism_controller:
              0, 0.01, 0,
              0, 0, 0.01]
     constant_gain: 0.001
+    adjust_y_force: 1.87 # Obtained from experiments with the force torque sensor
 
   ects_controller:
     alpha: 0.5

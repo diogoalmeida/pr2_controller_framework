@@ -26,6 +26,12 @@ namespace manipulation_algorithms{
       ROS_ERROR("Missing constant gain (/mechanism_controller/estimator/constant_gain)");
       return false;
     }
+    
+    if(!n.getParam("/mechanism_controller/estimator/adjust_y_force", adjust_y_force_))
+    {
+      ROS_ERROR("Missing y force scale factor (/mechanism_controller/estimator/adjust_y_force)");
+      return false;
+    }
 
     return true;
   }
@@ -64,6 +70,7 @@ namespace manipulation_algorithms{
     w1 = x_dot_e1.block<3, 1>(3, 0);
     force = wrench_e2.block<3,1>(0, 0);
     torque = wrench_e2.block<3,1>(3, 0);
+    force[1] = adjust_y_force_*force[1]; // compensates for sensor miscalibration
     
     A = computeSkewSymmetric(w1);
     C = -computeSkewSymmetric(force);

@@ -476,8 +476,9 @@ namespace cartesian_controllers {
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
     tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
-    // wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
+    wrench_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
+    // wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
     
     surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
     // Eigen::AngleAxisd rot_t_eig(rotation_t_, translational_dof_ground_);

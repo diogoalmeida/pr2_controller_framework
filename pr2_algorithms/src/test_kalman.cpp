@@ -113,6 +113,7 @@ int main(int argc, char ** argv)
   elapsed = ros::Time::now() - init_time;
   pc = Eigen::Vector3d::Zero();
   bool acquired_dof = false;
+  double trans_estimate = 0.0, rot_estimate = 0.0, normal_estimate = 0.0; // computation along these directions
   while (ros::ok())
   {
     ros::spinOnce();
@@ -125,6 +126,14 @@ int main(int argc, char ** argv)
     tf::poseEigenToMsg(pc_eig, pc_marker.pose);
     pc_pub.publish(pc_marker);
 
+    feedback_msg.computations.clear();
+    trans_estimate = measured_wrench_[4]/measured_wrench_[2];
+    rot_estimate = measured_wrench_[3]/measured_wrench_[2];
+    normal_estimate = measured_wrench_[3]/measured_wrench_[1];
+
+    feedback_msg.computations.push_back(trans_estimate);
+    feedback_msg.computations.push_back(rot_estimate);
+    feedback_msg.computations.push_back(normal_estimate);
 
     prev_time = ros::Time::now();
     pub.publish(feedback_msg);

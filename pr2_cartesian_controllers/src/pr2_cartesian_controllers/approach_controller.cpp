@@ -46,7 +46,7 @@ namespace cartesian_controllers {
         approach_direction_ = approach_direction_/approach_direction_.norm();
         initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_);
         success = true;
-        sleep(0.01);
+        sleep(0.1);
       }
       catch (tf::TransformException ex)
       {

@@ -28,6 +28,7 @@ namespace cartesian_controllers {
     
     while (attempts < 5)
     {
+      sleep(0.1);
       try
       {
         listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
@@ -46,7 +47,6 @@ namespace cartesian_controllers {
         approach_direction_ = approach_direction_/approach_direction_.norm();
         initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_);
         success = true;
-        sleep(0.1);
       }
       catch (tf::TransformException ex)
       {

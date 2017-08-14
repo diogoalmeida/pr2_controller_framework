@@ -23,29 +23,41 @@ namespace cartesian_controllers {
     twist = goal->approach_command;
     approach_direction_msg.header = twist.header;
     approach_direction_msg.vector = twist.twist.linear;
-    try
+    bool success = false;
+    int attempts = 0;
+    
+    while (attempts < 5)
     {
-      listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
-      twist.header = approach_direction_msg.header;
-      twist.twist.linear = approach_direction_msg.vector;
-      tf::twistMsgToKDL(twist.twist, velocity_reference_);
-
-      feedback_.velocity_reference.clear();
-      for (int i = 0; i < 6; i++)
+      sleep(0.1);
+      try
       {
-        feedback_.velocity_reference.push_back(velocity_reference_(i));
+        listener_.transformVector(base_link_, approach_direction_msg, approach_direction_msg);
+        twist.header = approach_direction_msg.header;
+        twist.twist.linear = approach_direction_msg.vector;
+        tf::twistMsgToKDL(twist.twist, velocity_reference_);
+        
+        feedback_.velocity_reference.clear();
+        for (int i = 0; i < 6; i++)
+        {
+          feedback_.velocity_reference.push_back(velocity_reference_(i));
+        }
+        
+        force_threshold_ = goal->contact_force;
+        approach_direction_ << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
+        approach_direction_ = approach_direction_/approach_direction_.norm();
+        initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_);
+        success = true;
       }
-
-      force_threshold_ = goal->contact_force;
-      approach_direction_ << velocity_reference_.vel.data[0], velocity_reference_.vel.data[1], velocity_reference_.vel.data[2];
-      approach_direction_ = approach_direction_/approach_direction_.norm();
-      initial_force_ = wrenchInFrame(arm_index_, base_link_).block<3,1>(0,0).dot(approach_direction_);
+      catch (tf::TransformException ex)
+      {
+        ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
+        attempts++;
+      }
     }
-    catch (tf::TransformException ex)
+    if (!success)
     {
-      ROS_ERROR("TF exception in %s: %s", action_name_.c_str(), ex.what());
-      action_server_->setAborted();
-      return;
+        action_server_->setAborted();
+        return;
     }
 
     loadParams();
@@ -150,7 +162,7 @@ namespace cartesian_controllers {
     KDL::Frame current_pose;
     KDL::Twist twist_comp;
 
-    if (!action_server_->isActive())
+    if (!action_server_->isActive() || !reference_mutex_.try_lock())
     {
       return lastState(current_state);
     }

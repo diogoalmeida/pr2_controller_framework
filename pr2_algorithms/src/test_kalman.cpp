@@ -69,11 +69,23 @@ int main(int argc, char ** argv)
   ros::Rate r(100);
   KDL::Frame pose_frame;
   double max_time, epsilon;
-  std::string ft_frame_id("UCE0B233");
+  std::string ft_frame_id, ft_topic;
   pr2_algorithms::TestKalmanFeedback feedback_msg;
   visualization_msgs::Marker pc_marker;
 
   ros::Publisher pc_pub = n.advertise<visualization_msgs::Marker>("pc", 1);
+  
+  if(!n.getParam("frame_id", ft_frame_id))
+  {
+    ROS_ERROR("Missing frame id");
+    return -1;
+  }
+  
+  if(!n.getParam("wrench_topic", ft_topic))
+  {
+    ROS_ERROR("Missing wrench topic");
+    return -1;
+  }
 
   pc_marker.header.frame_id = ft_frame_id;
   pc_marker.ns = std::string("mechanism_identification");
@@ -87,7 +99,7 @@ int main(int argc, char ** argv)
   pc_marker.color.r = 1.0;
   pc_marker.color.a = 1.0;
 
-  ros::Subscriber wrench_sub = n.subscribe("/optoforce_node/wrench_UCE0B233", 1, wrenchCallback);
+  ros::Subscriber wrench_sub = n.subscribe(ft_topic, 1, wrenchCallback);
   ros::Publisher pub = n.advertise<pr2_algorithms::TestKalmanFeedback>("/test_bed/feedback", 1);
   manipulation_algorithms::KalmanEstimator estimator;
   if (!estimator.getParams(n))

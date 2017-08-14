@@ -476,7 +476,7 @@ namespace cartesian_controllers {
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
     tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
-    wrench_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*wrench_kdl;
+    wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
     // wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
     
@@ -509,8 +509,8 @@ namespace cartesian_controllers {
     
     wrench_eig_modified_ = wrench_eig;
     // wrench_eig_modified_.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
-    wrench_eig_modified_.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
-    wrench_eig_modified_.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
+    // wrench_eig_modified_.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
+    // wrench_eig_modified_.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
 
     if (use_estimates_)
     {

@@ -418,15 +418,15 @@ void FoldingClient::runExperiment()
         approach_goal.contact_force = approach_force_;
 
         bool approach_timeout = false;
-        if (!monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
-                              pr2_cartesian_controllers::GuardedApproachGoal,
-                              pr2_cartesian_clients::FoldingAction>
-                                (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_, approach_timeout))
-        {
-          ROS_ERROR("Error in the approach action. Aborting.");
-          action_server_->setAborted();
-          continue;
-        }
+        // if (!monitorActionGoal<pr2_cartesian_controllers::GuardedApproachAction,
+        //                       pr2_cartesian_controllers::GuardedApproachGoal,
+        //                       pr2_cartesian_clients::FoldingAction>
+        //                         (approach_action_client_, approach_goal, action_server_, server_timeout_, approach_action_time_limit_, approach_timeout))
+        // {
+        //   ROS_ERROR("Error in the approach action. Aborting.");
+        //   action_server_->setAborted();
+        //   continue;
+        // }
 
         ROS_INFO("Approach action succeeded!");
         {

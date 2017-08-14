@@ -53,7 +53,7 @@ void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d
 void wrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
   tf::wrenchMsgToEigen(msg->wrench, measured_wrench_);
-  measured_wrench_[1] = 1.87*measured_wrench_[1];
+  // measured_wrench_[1] = 1.87*measured_wrench_[1];
 }
 
 double avgMedian(std::vector<double> v)

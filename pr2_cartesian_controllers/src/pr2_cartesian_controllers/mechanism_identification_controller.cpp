@@ -539,8 +539,8 @@ namespace cartesian_controllers {
       rot_est_kdl.x(rotational_dof_est_[0]);
       rot_est_kdl.y(rotational_dof_est_[1]);
       rot_est_kdl.z(rotational_dof_est_[2]);
-      trans_est_kdl = sensor_frame_to_base_[surface_arm_].M*trans_est_kdl;
-      rot_est_kdl = sensor_frame_to_base_[surface_arm_].M*rot_est_kdl;
+      trans_est_kdl = eef_grasp_kdl[surface_arm_].M*trans_est_kdl;
+      rot_est_kdl = eef_grasp_kdl[surface_arm_].M*rot_est_kdl;
       translational_dof_est_[0] = trans_est_kdl.x();
       translational_dof_est_[1] = trans_est_kdl.y();
       translational_dof_est_[2] = trans_est_kdl.z();

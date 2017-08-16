@@ -35,8 +35,8 @@ namespace manipulation_algorithms{
     int_force_ = computeIntegralTerm(int_force_, t_, force_error, dt);
     v_f_ = alpha_force_*force_error + beta_force_*int_force_;
     ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f_;
-    // t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
-    t_ = t_ - alpha_adapt_t_*1*(I - t_*t_.transpose())*v_f_*dt;
+    t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
+    // t_ = t_ - alpha_adapt_t_*1*(I - t_*t_.transpose())*v_f_*dt;
  
     int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
     w_f_ = alpha_torque_*torque_error + beta_torque_*int_torque_;

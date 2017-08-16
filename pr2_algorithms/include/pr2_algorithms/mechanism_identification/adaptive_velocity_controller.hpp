@@ -66,7 +66,7 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
     void getForceControlValues(Eigen::Vector3d &v_f, Eigen::Vector3d &w_f);
 
   private:
-    double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, torque_d_, v_d_amp_, w_d_amp_, time_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_;
+    double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, torque_d_, v_d_amp_, w_d_amp_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_, torque_slack_;
     Eigen::Vector3d t_, r_, int_force_, int_torque_, v_f_, w_f_;
 
     /**

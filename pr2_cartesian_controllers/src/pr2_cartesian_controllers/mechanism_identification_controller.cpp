@@ -275,8 +275,6 @@ namespace cartesian_controllers {
 
           pc_transform.setOrigin( tf::Vector3(pc_.translation()[0], pc_.translation()[1], pc_.translation()[2]));
           tf::Quaternion pc_orientation(0, 0, 0);
-          // Eigen::Quaterniond pc_orientation_eig(pc_.rotation());
-          // tf::quaternionEigenToTF (pc_orientation_eig, pc_orientation);
           pc_transform.setRotation(pc_orientation);
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
 
@@ -295,38 +293,9 @@ namespace cartesian_controllers {
           surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
           tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
           surface_wrench.header.stamp = ros::Time::now();
-          feedback_.surface_wrench = surface_wrench;
-          
-          Eigen::Vector3d surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
-          KDL::Wrench wrench_kdl;
-          // tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
-          // KDL::Rotation rot_t, rot_k, rot_n;
-          // KDL::Vector t, k, n;
-          //   
-          // t.x(translational_dof_ground_[0]);
-          // t.y(translational_dof_ground_[1]);
-          // t.z(translational_dof_ground_[2]);
-          // k.x(rotational_dof_ground_[0]);
-          // k.y(rotational_dof_ground_[1]);
-          // k.z(rotational_dof_ground_[2]);
-          // n.x(surface_normal[0]);
-          // n.y(surface_normal[1]);
-          // n.z(surface_normal[2]);
-          // 
-          // rot_t = rot_t.Rot(t, rotation_t_);
-          // rot_k = rot_k.Rot(k, rotation_k_);
-          // rot_n = rot_n.Rot(n, rotation_n_);
-          // 
-          // wrench_kdl = rot_t*wrench_kdl;
-          // wrench_kdl = rot_k*wrench_kdl;
-          // wrench_kdl = rot_n*wrench_kdl;
-          
-          // tf::wrenchKDLToMsg(wrench_kdl, surface_wrench.wrench);
-          tf::wrenchEigenToKDL(wrench_eig_modified_, wrench_kdl);
-          wrench_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*wrench_kdl;
-          tf::wrenchKDLToMsg(wrench_kdl, surface_wrench.wrench);
-          
+          feedback_.surface_wrench = surface_wrench;          
           wrench2_pub_.publish(surface_wrench);
+          
           feedback_.task_compatibility = ects_controller_->getTaskCompatibility();
           feedback_.alpha = ects_controller_->getAlpha();
           feedback_.absolute_twist.header.stamp = ros::Time::now();
@@ -365,6 +334,21 @@ namespace cartesian_controllers {
     }
 
     if (!getParam("/mechanism_controller/joint_error_lim", joint_error_lim_))
+    {
+      return false;
+    }
+    
+    if(!getParam("/mechanism_controller/estimator/adjust_x_force", adjust_x_force_))
+    {
+      return false;
+    }
+    
+    if(!getParam("/mechanism_controller/estimator/adjust_y_force", adjust_y_force_))
+    {
+      return false;
+    }
+    
+    if(!getParam("/mechanism_controller/estimator/adjust_z_force", adjust_z_force_))
     {
       return false;
     }
@@ -475,37 +459,44 @@ namespace cartesian_controllers {
     Eigen::Vector3d surface_normal; 
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
-    tf::wrenchEigenToKDL(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), wrench_kdl);
+    wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
+    wrench_eig[0] = adjust_x_force_*wrench_eig[0]; // compensates for miscalibration
+    wrench_eig[1] = adjust_y_force_*wrench_eig[1];
+    wrench_eig[2] = adjust_z_force_*wrench_eig[2]; 
+    wrench_eig[3] = wrench_eig[3]/adjust_z_force_;
+    wrench_eig[4] = wrench_eig[4]/adjust_z_force_;
+    wrench_eig[5] = wrench_eig[5]/adjust_y_force_;
+    tf::wrenchEigenToKDL(wrench_eig, wrench_kdl);
     wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
     // wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
     
-    surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
-    // Eigen::AngleAxisd rot_t_eig(rotation_t_, translational_dof_ground_);
-    // Eigen::AngleAxisd rot_k_eig(rotation_k_, rotational_dof_ground_);
-    // Eigen::AngleAxisd rot_n_eig(rotation_n_, surface_normal);
-    KDL::Rotation rot_t, rot_k, rot_n;
-    KDL::Vector t, k, n;
-      
-    t.x(translational_dof_ground_[0]);
-    t.y(translational_dof_ground_[1]);
-    t.z(translational_dof_ground_[2]);
-    k.x(rotational_dof_ground_[0]);
-    k.y(rotational_dof_ground_[1]);
-    k.z(rotational_dof_ground_[2]);
-    n.x(surface_normal[0]);
-    n.y(surface_normal[1]);
-    n.z(surface_normal[2]);
+    // surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
+    // // Eigen::AngleAxisd rot_t_eig(rotation_t_, translational_dof_ground_);
+    // // Eigen::AngleAxisd rot_k_eig(rotation_k_, rotational_dof_ground_);
+    // // Eigen::AngleAxisd rot_n_eig(rotation_n_, surface_normal);
+    // KDL::Rotation rot_t, rot_k, rot_n;
+    // KDL::Vector t, k, n;
+    //   
+    // t.x(translational_dof_ground_[0]);
+    // t.y(translational_dof_ground_[1]);
+    // t.z(translational_dof_ground_[2]);
+    // k.x(rotational_dof_ground_[0]);
+    // k.y(rotational_dof_ground_[1]);
+    // k.z(rotational_dof_ground_[2]);
+    // n.x(surface_normal[0]);
+    // n.y(surface_normal[1]);
+    // n.z(surface_normal[2]);
+    // 
+    // rot_t = rot_t.Rot(t, rotation_t_);
+    // rot_k = rot_k.Rot(k, rotation_k_);
+    // rot_n = rot_n.Rot(n, rotation_n_);
+    // 
+    // wrench_kdl = rot_t*wrench_kdl;
+    // wrench_kdl = rot_k*wrench_kdl;
+    // wrench_kdl = rot_n*wrench_kdl;
     
-    rot_t = rot_t.Rot(t, rotation_t_);
-    rot_k = rot_k.Rot(k, rotation_k_);
-    rot_n = rot_n.Rot(n, rotation_n_);
-    
-    wrench_kdl = rot_t*wrench_kdl;
-    wrench_kdl = rot_k*wrench_kdl;
-    wrench_kdl = rot_n*wrench_kdl;
-    
-    tf::wrenchKDLToEigen(wrench_kdl, wrench_eig_modified_);
+    // tf::wrenchKDLToEigen(wrench_kdl, wrench_eig_modified_);
     
     wrench_eig_modified_ = wrench_eig;
     // wrench_eig_modified_.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
@@ -528,7 +519,8 @@ namespace cartesian_controllers {
         // pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec());
       }
 
-      ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrench_eig, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
@@ -556,25 +548,33 @@ namespace cartesian_controllers {
 
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
     tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);
+    
+    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+    tf::twistKDLToEigen(comp_twist, comp_twist_eig);
+    ects_twist.block<6,1>(6,0) += comp_twist_eig;
+    // ikvel_[rod_arm_]->CartToJnt(joint_positions_[rod_arm_], comp_twist, commanded_joint_velocities[rod_arm_]);
+    // comp_twist = twist_controller_->computeError(eef_grasp_kdl[surface_arm_], eef_grasp_kdl[rod_arm_]);
+    // ikvel_[surface_arm_]->CartToJnt(joint_positions_[surface_arm_], comp_twist, commanded_joint_velocities[surface_arm_]);
 
-    // comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
     // tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
-    joint_commands = ects_controller_->control(pc_.translation() - eef1, pc_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
+    // joint_commands = ects_controller_->control(pc_.translation() - eef1, pc_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
+    joint_commands = ects_controller_->control(pc_est_.translation() - eef1, pc_est_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)
     {
+      commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
+      commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
+      
       if (std::abs(target_joint_positions_[rod_arm_](i) - joint_positions_[rod_arm_](i)) < joint_error_lim_)
       {
-        target_joint_positions_[rod_arm_](i) += joint_commands[i]*dt.toSec();
+        target_joint_positions_[rod_arm_](i) += commanded_joint_velocities[rod_arm_](i)*dt.toSec();
       }
 
       if (std::abs(target_joint_positions_[surface_arm_](i) - joint_positions_[surface_arm_](i)) < joint_error_lim_)
       {
-        target_joint_positions_[surface_arm_](i) += joint_commands[i + 7]*dt.toSec();
+        target_joint_positions_[surface_arm_](i) += commanded_joint_velocities[surface_arm_](i)*dt.toSec();
       }
 
-      commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
-      commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
     }
 
     std::vector<int> joint_index(2, 0);

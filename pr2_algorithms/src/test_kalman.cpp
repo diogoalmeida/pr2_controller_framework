@@ -53,7 +53,7 @@ void getMarkerPoints(const Eigen::Vector3d &initial_point, const Eigen::Vector3d
 void wrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 {
   tf::wrenchMsgToEigen(msg->wrench, measured_wrench_);
-  // measured_wrench_[1] = 1.87*measured_wrench_[1];
+  measured_wrench_[1] = 2.04*measured_wrench_[1];
 }
 
 double avgMedian(std::vector<double> v)
@@ -150,7 +150,7 @@ int main(int argc, char ** argv)
     feedback_msg.computations.clear();
     if (std::abs(measured_wrench_[0])> 0.1 && std::abs(measured_wrench_[1]) > 0.1 && std::abs(measured_wrench_[2]) > 0.1)
     {
-      trans_estimate[i] = measured_wrench_[5]/(measured_wrench_[1]);
+      trans_estimate[i] = measured_wrench_[4]/(measured_wrench_[2]);
       rot_estimate[i] = measured_wrench_[3]/measured_wrench_[1];
       normal_estimate[i] = measured_wrench_[3]/measured_wrench_[2];
     }
@@ -162,8 +162,8 @@ int main(int argc, char ** argv)
     }
 
     feedback_msg.computations.push_back(avgMedian(trans_estimate));
-    feedback_msg.computations.push_back(avgMedian(rot_estimate));
-    feedback_msg.computations.push_back(avgMedian(normal_estimate));
+    // feedback_msg.computations.push_back(avgMedian(rot_estimate));
+    // feedback_msg.computations.push_back(avgMedian(normal_estimate));
 
     prev_time = ros::Time::now();
     pub.publish(feedback_msg);

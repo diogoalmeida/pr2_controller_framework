@@ -385,12 +385,15 @@ void FoldingClient::runExperiment()
 
         // Zero the ft sensor readings
         std_srvs::Empty srv;
-
-        if(!gravity_compensation_client_.call(srv))
+        for (int i = 0; i < 5; i++)
         {
-          ROS_ERROR("Error calling the gravity compensation server!");
-          action_server_->setAborted();
-          return;
+          if(!gravity_compensation_client_.call(srv))
+          {
+            ROS_ERROR("Error calling the gravity compensation server!");
+            // action_server_->setAborted();
+            // return;
+          }
+          sleep(0.1);
         }
 
         {

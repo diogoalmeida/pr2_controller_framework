@@ -59,7 +59,7 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
   private:
     Eigen::Vector3d pc_;
     Eigen::Matrix3d P_, Q_, R_;
-    double constant_gain_, adjust_y_force_;
+    double constant_gain_;
   };
 }
 #endif

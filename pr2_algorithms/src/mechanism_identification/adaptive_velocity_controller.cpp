@@ -20,17 +20,23 @@ namespace manipulation_algorithms{
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     Vector6d ref_twist;
 
-    time_ += dt;
-
     force_error = wrench.block<3,1>(0,0) - f_d_*t_.cross(r_);
     // force_error = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error = wrench.block<3,1>(3,0) - torque_d_*r_.cross(t_);
+    torque_error = wrench.block<3,1>(3,0) - torque_d_*r_;
+    torque_error = (I - r_.cross(t_)*(r_.cross(t_)).transpose())*torque_error;
+    
+    if (torque_error.norm() < torque_slack_)
+    {
+      torque_error = Eigen::Vector3d::Zero();
+    }
+    // std::cout << "torque_error norm: " << torque_error.norm() << std::endl;
     // torque_error = wrench.block<3,1>(3,0) - torque_d_*wrench.block<3,1>(3,0).normalized();
 
     int_force_ = computeIntegralTerm(int_force_, t_, force_error, dt);
     v_f_ = alpha_force_*force_error + beta_force_*int_force_;
     ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f_;
-    t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
+    // t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
+    t_ = t_ - alpha_adapt_t_*1*(I - t_*t_.transpose())*v_f_*dt;
  
     int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
     w_f_ = alpha_torque_*torque_error + beta_torque_*int_torque_;
@@ -107,6 +113,12 @@ namespace manipulation_algorithms{
     if (!n.getParam("/mechanism_controller/adaptive_estimator/alpha_adapt_r", alpha_adapt_r_))
     {
       ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_r)");
+      return false;
+    }
+    
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/torque_slack", torque_slack_))
+    {
+      ROS_ERROR("Missing torque slack value (/adaptive_estimator/torque_slack)");
       return false;
     }
 

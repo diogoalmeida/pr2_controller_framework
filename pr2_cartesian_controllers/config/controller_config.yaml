@@ -15,7 +15,7 @@ common:
     alpha: 0.5
     maxiter: 200
     nso_weights: 1
-  feedback_rate: 10
+  feedback_rate: 100
   force_torque_topic:
     arm_1: /l_ft_sensor/ft_compensated
     arm_2: /l_ft_sensor/ft_compensated_echo
@@ -100,7 +100,7 @@ folding_controller:
 
 mechanism_controller:
   action_server_name: mechanism_controller
-  rotational_gains: [0, 0, 0, 0, 0, 0] #[0, -1, 0, 0, 1, 0]
+  rotational_gains: [0, 0, 0, 0, 1, 0] #[0, -1, 0, 0, 1, 0]
   joint_error_lim: 0.025
   use_estimates: false
   rod_length: 0.10
@@ -117,7 +117,9 @@ mechanism_controller:
              0, 0.01, 0,
              0, 0, 0.01]
     constant_gain: 0.001
-    adjust_y_force: 1.87 # Obtained from experiments with the force torque sensor
+    adjust_x_force: 1.0  # Obtained from experiments with the force torque sensor
+    adjust_y_force: 2.04 #1.87 
+    adjust_z_force: 1.24
 
   ects_controller:
     alpha: 0.5
@@ -130,9 +132,10 @@ mechanism_controller:
     joint_threshold_count_limit: 10
 
   adaptive_estimator:
-    alpha_force: 0 #0.005
-    beta_force: 0 #0.004
-    alpha_adapt_t: 0.0 #20.1
-    alpha_torque: 0.0
-    beta_torque: 0.0 
+    alpha_force: 0.01
+    beta_force: 0 #0.001
+    alpha_adapt_t: 20.1
+    alpha_torque: 0.5
+    beta_torque: 0.05 
     alpha_adapt_r: 0.0
+    torque_slack: 0.0 # compensates for sensor bias. We don't want the robot to induce torque at the contact point

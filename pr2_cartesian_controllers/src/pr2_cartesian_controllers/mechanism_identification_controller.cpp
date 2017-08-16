@@ -376,6 +376,7 @@ namespace cartesian_controllers {
     KDL::Twist comp_twist;
     Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
+    Eigen::Vector3d rot_ground_in_frame = Eigen::Vector3d::Zero(), trans_ground_in_frame = Eigen::Vector3d::Zero();
 
     boost::lock_guard<boost::mutex> guard(reference_mutex_);
     if (!action_server_->isActive() || !finished_acquiring_goal_) // TODO: should be moved to parent class
@@ -425,7 +426,9 @@ namespace cartesian_controllers {
     }
 
     rotational_dof_ground_  = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);
+    rot_ground_in_frame[1] = 1;
     translational_dof_ground_ = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
+    trans_ground_in_frame[0] = 1;
     p1 = grasp_point_frame[rod_arm_].translation();
     p2 = grasp_point_frame[surface_arm_].translation();
 
@@ -443,7 +446,7 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       estimator_.initialize(p2_.translation());
-      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rotational_dof_ground_).toRotationMatrix()*translational_dof_ground_, Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_); // Initialize with ground truth for now
+      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceWrench(goal_force_, goal_torque_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;

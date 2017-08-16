@@ -525,6 +525,7 @@ namespace cartesian_controllers {
       // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       KDL::Twist twist_adaptive;
+      KDL::Vector trans_est_kdl, rot_est_kdl;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
@@ -532,6 +533,21 @@ namespace cartesian_controllers {
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
       ects_twist.block<6,1>(6,0) = twist_adaptive_eig;
       adaptive_controller_.getEstimates(translational_dof_est_, rotational_dof_est_);
+      trans_est_kdl.x(translational_dof_est_[0]);
+      trans_est_kdl.y(translational_dof_est_[1]);
+      trans_est_kdl.z(translational_dof_est_[2]);
+      rot_est_kdl.x(rotational_dof_est_[0]);
+      rot_est_kdl.y(rotational_dof_est_[1]);
+      rot_est_kdl.z(rotational_dof_est_[2]);
+      trans_est_kdl = sensor_frame_to_base_[surface_arm_].M*trans_est_kdl;
+      rot_est_kdl = sensor_frame_to_base_[surface_arm_].M*rot_est_kdl;
+      translational_dof_est_[0] = trans_est_kdl.x();
+      translational_dof_est_[1] = trans_est_kdl.y();
+      translational_dof_est_[2] = trans_est_kdl.z();
+      rotational_dof_est_[0] = rot_est_kdl.x();
+      rotational_dof_est_[1] = rot_est_kdl.y();
+      rotational_dof_est_[2] = rot_est_kdl.z();
+      
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }

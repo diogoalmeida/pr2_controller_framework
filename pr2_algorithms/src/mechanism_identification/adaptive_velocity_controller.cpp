@@ -22,6 +22,7 @@ namespace manipulation_algorithms{
 
     normal = t_.cross(r_);
     torque_d = virtual_stick.cross(f_d_*normal);
+    stick_ = virtual_stick;
 
     force_error_ = wrench.block<3,1>(0,0) - f_d_*normal;
     // force_error_ = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
@@ -58,10 +59,13 @@ namespace manipulation_algorithms{
     return prev + (I - v*v.transpose())*error*dt;
   }
   
-  void AdaptiveController::getErrors(Eigen::Vector3d &force_e, Eigen::Vector3d &torque_e)
+  void AdaptiveController::getErrors(Eigen::Vector3d &force_e, Eigen::Vector3d &torque_e, Eigen::Vector3d &desired_force, Eigen::Vector3d &desired_torque)
   {
+    Eigen::Vector3d normal = t_.cross(r_);
     force_e = force_error_;
     torque_e = torque_error_;
+    desired_force = f_d_*normal;
+    desired_torque = stick_.cross(desired_force);
   }
   
   void AdaptiveController::initEstimates(const Eigen::Vector3d &t, const Eigen::Vector3d &r)

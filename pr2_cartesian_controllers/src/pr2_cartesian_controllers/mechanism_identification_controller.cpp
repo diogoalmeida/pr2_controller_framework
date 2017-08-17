@@ -374,7 +374,7 @@ namespace cartesian_controllers {
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero(), transmission_direction;
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
-    Eigen::Matrix<double, 6, 1> comp_twist_eig, estimated_pc_twist;
+    Eigen::Matrix<double, 6, 1> comp_twist_eig;
     KDL::Jacobian kdl_jac(7);
     Eigen::Vector3d rot_ground_in_frame = Eigen::Vector3d::Zero(), trans_ground_in_frame = Eigen::Vector3d::Zero();
 
@@ -524,22 +524,10 @@ namespace cartesian_controllers {
 
       // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
-      KDL::Twist twist_adaptive, twist_pc_est_kdl;
+      KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl;
-      Eigen::Vector3d w1, w2;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
-      
-      w1 = eef_twist_eig[rod_arm_].block<3,1>(3,0);
-      w2 = eef_twist_eig[surface_arm_].block<3,1>(3,0);
-      
-      estimated_pc_twist.block<3,1>(0,0) = -(pc_est_.translation() - eef1).cross(w1) + (pc_est_.translation() - eef2).cross(w2) + eef_twist_eig[rod_arm_].block<3,1>(0,0) - eef_twist_eig[rod_arm_].block<3,1>(0,0);
-      estimated_pc_twist.block<3,1>(3,0) = w1 - w2;
-      tf::twistEigenToKDL(estimated_pc_twist, twist_pc_est_kdl);
-      twist_pc_est_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*twist_pc_est_kdl;
-      tf::twistKDLToEigen(twist_pc_est_kdl, estimated_pc_twist);
-      
-      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), estimated_pc_twist, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
-      
+      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);

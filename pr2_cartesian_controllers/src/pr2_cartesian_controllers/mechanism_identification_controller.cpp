@@ -532,7 +532,7 @@ namespace cartesian_controllers {
       // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
-      Eigen::Vector3d r_2 = pc_est_.translation() - eef2;
+      Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation();
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       
       r_2_kdl.x(r_2[0]); 

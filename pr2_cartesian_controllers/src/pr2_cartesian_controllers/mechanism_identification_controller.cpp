@@ -525,9 +525,19 @@ namespace cartesian_controllers {
       // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       KDL::Twist twist_adaptive;
-      KDL::Vector trans_est_kdl, rot_est_kdl;
+      KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
+      Eigen::Vector3d r_2 = pc_est_.translation() - eef2;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
-      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), pc_est_.translation() - eef2, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      
+      r_2_kdl.x(r_2[0]); 
+      r_2_kdl.y(r_2[1]); 
+      r_2_kdl.z(r_2[2]); 
+      r_2_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*r_2_kdl;
+      r_2[0] = r_2_kdl.x();
+      r_2[1] = r_2_kdl.y();
+      r_2[2] = r_2_kdl.z();
+      
+      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), r_2, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);

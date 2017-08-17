@@ -51,13 +51,13 @@ void MechanismClient::destroyActionClients()
     delete move_action_client_;
     move_action_client_ = nullptr;
   }
-  
+
   if (right_gripper_client_)
   {
     delete right_gripper_client_;
     right_gripper_client_ = nullptr;
   }
-  
+
   if (left_gripper_client_)
   {
     delete left_gripper_client_;
@@ -102,13 +102,13 @@ bool MechanismClient::loadParams()
     ROS_ERROR("No nullspace_gain defined (experiment/nullspace_gain)");
     return false;
   }
-  
+
   if(!nh_.getParam("experiment/init_t_error", init_t_error_))
   {
     ROS_ERROR("No initial translational dof error defined (experiment/init_t_error)");
     return false;
   }
-  
+
   if(!nh_.getParam("experiment/init_k_error", init_k_error_))
   {
     ROS_ERROR("No initial rotational dof error defined (experiment/init_k_error)");
@@ -222,12 +222,6 @@ bool MechanismClient::loadParams()
     ROS_ERROR("Need to set goal_force (experiment/goal_force)");
     return false;
   }
-  
-  if(!nh_.getParam("experiment/goal_torque", goal_torque_))
-  {
-    ROS_ERROR("Need to set goal_torque (experiment/goal_torque)");
-    return false;
-  }
 
   if(!getPose("experiment/initial_pose/rod", initial_rod_pose_))
   {
@@ -310,7 +304,6 @@ void MechanismClient::goalCB()
       wd_amp_ = goal->wd_amp;
       wd_freq_ = goal->wd_freq;
       goal_force_ = goal->goal_force;
-      goal_torque_ = goal->goal_torque;
       rod_arm_ = goal->rod_arm;
       surface_arm_ = goal->surface_arm;
       use_nullspace_ = goal->use_nullspace;
@@ -350,7 +343,7 @@ void MechanismClient::openGripper(GripperClient* gripper_client)
 {
   pr2_controllers_msgs::Pr2GripperCommandGoal open;
   open.command.position = 0.10;
-  open.command.max_effort = 50.0; 
+  open.command.max_effort = 50.0;
 
   ROS_INFO("Sending open goal");
   gripper_client->sendGoal(open);
@@ -361,7 +354,7 @@ void MechanismClient::closeGripper(GripperClient* gripper_client)
 {
   pr2_controllers_msgs::Pr2GripperCommandGoal squeeze;
   squeeze.command.position = 0.0;
-  squeeze.command.max_effort = 50.0;  
+  squeeze.command.max_effort = 50.0;
 
   ROS_INFO("Sending squeeze goal");
   gripper_client->sendGoal(squeeze);
@@ -372,7 +365,7 @@ void MechanismClient::softGripper(GripperClient* gripper_client)
 {
   pr2_controllers_msgs::Pr2GripperCommandGoal soft;
   soft.command.position = 0.0;
-  soft.command.max_effort = 0.0;  
+  soft.command.max_effort = 0.0;
 
   ROS_INFO("Sending soft goal");
   gripper_client->sendGoal(soft);
@@ -434,7 +427,7 @@ void MechanismClient::runExperiment()
         continue;
       }
       ROS_INFO("Move action succeeded!");
-      
+
       // Zero the ft sensor readings
       std_srvs::Empty srv;
       for (int i = 0; i < 5; i++)
@@ -445,9 +438,9 @@ void MechanismClient::runExperiment()
           // action_server_->setAborted();
           // return;
         }
-        sleep(0.1);
+        sleep(1.0);
       }
-      
+
       openGripper(left_gripper_client_);
       openGripper(right_gripper_client_);
       softGripper(left_gripper_client_);
@@ -538,7 +531,6 @@ void MechanismClient::runExperiment()
         mechanism_goal.vd_frequency = vd_freq_;
         mechanism_goal.wd_frequency = wd_freq_;
         mechanism_goal.goal_force = goal_force_;
-        mechanism_goal.goal_torque = goal_torque_;
         mechanism_goal.use_nullspace = use_nullspace_;
         mechanism_goal.use_estimates = use_estimates_;
         mechanism_goal.nullspace_gain = km_;

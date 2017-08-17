@@ -14,19 +14,20 @@ namespace manipulation_algorithms{
 
   AdaptiveController::~AdaptiveController(){}
 
-  Vector6d AdaptiveController::control(const Vector6d &wrench, double v_d, double w_d, double dt)
+  Vector6d AdaptiveController::control(const Vector6d &wrench, const Eigen::Vector3d &virtual_stick, double v_d, double w_d, double dt)
   {
-    Eigen::Vector3d force_error, torque_error, normal;
+    Eigen::Vector3d force_error, torque_error, normal, torque_d;
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     Vector6d ref_twist;
-    
+
     normal = t_.cross(r_);
+    torque_d = virtual_stick.cross(f_d_*normal);
 
     force_error = wrench.block<3,1>(0,0) - f_d_*normal;
     // force_error = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error = wrench.block<3,1>(3,0).dot(t_)*t_ - torque_d_*t_;
+    torque_error = wrench.block<3,1>(3,0) - torque_d; // must depend on the desired force and virtual stick
     // torque_error = (I - normal*normal.transpose())*torque_error;
-    
+
     if (torque_error.norm() < torque_slack_)
     {
       torque_error = Eigen::Vector3d::Zero();
@@ -40,10 +41,10 @@ namespace manipulation_algorithms{
     t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
     t_ = t_/t_.norm();
     // t_ = t_ - alpha_adapt_t_*1*(I - t_*t_.transpose())*v_f_*dt;
- 
-    int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
+
+    int_torque_ += torque_error*dt;
     w_f_ = alpha_torque_*torque_error + beta_torque_*int_torque_;
-    ref_twist.block<3,1>(3,0) = w_d*r_ - (I - r_*r_.transpose())*w_f_;
+    ref_twist.block<3,1>(3,0) = w_d*r_ - w_f_; // The ects framework will compensate the virtual sticks
     r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f_*dt;
     r_ = r_/r_.norm();
 
@@ -62,11 +63,10 @@ namespace manipulation_algorithms{
     t_ = t;
     r_ = r;
   }
-  
-  void AdaptiveController::setReferenceWrench(double f_d, double torque_d)
+
+  void AdaptiveController::setReferenceForce(double f_d)
   {
     f_d_ = f_d;
-    torque_d_ = torque_d;
   }
 
   void AdaptiveController::getEstimates(Eigen::Vector3d &t, Eigen::Vector3d &r)
@@ -74,7 +74,7 @@ namespace manipulation_algorithms{
     t = t_;
     r = r_;
   }
-  
+
   void AdaptiveController::getForceControlValues(Eigen::Vector3d &v_f, Eigen::Vector3d &w_f)
   {
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
@@ -89,7 +89,7 @@ namespace manipulation_algorithms{
       ROS_ERROR("Missing force gain (/adaptive_estimator/alpha_force)");
       return false;
     }
-    
+
     if (!n.getParam("/mechanism_controller/adaptive_estimator/beta_force", beta_force_))
     {
       ROS_ERROR("Missing beta force value (/adaptive_estimator/beta_force)");
@@ -119,7 +119,7 @@ namespace manipulation_algorithms{
       ROS_ERROR("Missing translational dof adaptation value (/adaptive_estimator/alpha_adapt_r)");
       return false;
     }
-    
+
     if (!n.getParam("/mechanism_controller/adaptive_estimator/torque_slack", torque_slack_))
     {
       ROS_ERROR("Missing torque slack value (/adaptive_estimator/torque_slack)");

@@ -115,7 +115,6 @@ namespace cartesian_controllers {
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
     goal_force_ = goal->goal_force;
-    goal_torque_ = goal->goal_torque;
     vd_amp_ = goal->vd_amplitude;
     vd_freq_ = goal->vd_frequency;
     wd_amp_ = goal->wd_amplitude;
@@ -294,9 +293,9 @@ namespace cartesian_controllers {
           surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
           tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
           surface_wrench.header.stamp = ros::Time::now();
-          feedback_.surface_wrench = surface_wrench;          
+          feedback_.surface_wrench = surface_wrench;
           wrench2_pub_.publish(surface_wrench);
-          
+
           feedback_.task_compatibility = ects_controller_->getTaskCompatibility();
           feedback_.alpha = ects_controller_->getAlpha();
           feedback_.absolute_twist.header.stamp = ros::Time::now();
@@ -338,17 +337,17 @@ namespace cartesian_controllers {
     {
       return false;
     }
-    
+
     if(!getParam("/mechanism_controller/estimator/adjust_x_force", adjust_x_force_))
     {
       return false;
     }
-    
+
     if(!getParam("/mechanism_controller/estimator/adjust_y_force", adjust_y_force_))
     {
       return false;
     }
-    
+
     if(!getParam("/mechanism_controller/estimator/adjust_z_force", adjust_z_force_))
     {
       return false;
@@ -448,7 +447,7 @@ namespace cartesian_controllers {
     {
       estimator_.initialize(p2_.translation());
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
-      adaptive_controller_.setReferenceWrench(goal_force_, goal_torque_);
+      adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;
     }
@@ -528,7 +527,7 @@ namespace cartesian_controllers {
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
-      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), pc_est_.translation() - eef2, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);

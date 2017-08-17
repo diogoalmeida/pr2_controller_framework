@@ -535,7 +535,7 @@ namespace cartesian_controllers {
       estimated_pc_twist.block<3,1>(0,0) = -(pc_est_.translation() - eef1).cross(w1) + (pc_est_.translation() - eef2).cross(w2) + eef_twist_eig[rod_arm_].block<3,1>(0,0) - eef_twist_eig[rod_arm_].block<3,1>(0,0);
       estimated_pc_twist.block<3,1>(3,0) = w1 - w2;
       tf::twistEigenToKDL(estimated_pc_twist, twist_pc_est_kdl);
-      twist_pc_est_kdl = sensor_frame_to_base_[surface_arm_].M*twist_pc_est_kdl;
+      twist_pc_est_kdl = sensor_frame_to_base_[surface_arm_].M.Inverse()*twist_pc_est_kdl;
       tf::twistKDLToEigen(twist_pc_est_kdl, estimated_pc_twist);
       
       twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), estimated_pc_twist, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());

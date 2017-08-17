@@ -46,7 +46,7 @@ namespace manipulation_algorithms{
     int_torque_ += torque_error_*dt;
     w_f_ = alpha_torque_*torque_error_ + beta_torque_*int_torque_;
     ref_twist.block<3,1>(3,0) = w_d*r_ - w_f_; // The ects framework will compensate the virtual sticks
-    r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f_*dt;
+    r_ = r_ - alpha_adapt_r_*w_d*w_f_*dt;
     r_ = r_/r_.norm();
 
     return ref_twist;

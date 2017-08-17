@@ -36,12 +36,14 @@ namespace manipulation_algorithms{
     v_f_ = alpha_force_*force_error + beta_force_*int_force_;
     ref_twist.block<3,1>(0,0) = v_d*t_ - (I - t_*t_.transpose())*v_f_;
     t_ = t_ - alpha_adapt_t_*v_d*(I - t_*t_.transpose())*v_f_*dt;
+    t_.normalized();
     // t_ = t_ - alpha_adapt_t_*1*(I - t_*t_.transpose())*v_f_*dt;
  
     int_torque_ = computeIntegralTerm(int_torque_, r_, torque_error, dt);
     w_f_ = alpha_torque_*torque_error + beta_torque_*int_torque_;
     ref_twist.block<3,1>(3,0) = w_d*r_ - (I - r_*r_.transpose())*w_f_;
     r_ = r_ - alpha_adapt_r_*w_d*(I - r_*r_.transpose())*w_f_*dt;
+    r_.normalized();
 
     return ref_twist;
   }

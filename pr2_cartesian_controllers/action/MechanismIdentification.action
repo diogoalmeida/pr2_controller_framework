@@ -30,3 +30,5 @@ geometry_msgs/Vector3 pc
 geometry_msgs/WrenchStamped surface_wrench
 float64 task_compatibility
 float64 alpha
+float64 force_error
+float64 torque_error

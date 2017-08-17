@@ -138,4 +138,4 @@ mechanism_controller:
     alpha_torque: 0.05
     beta_torque: 0 #0.005 
     alpha_adapt_r: 400.0
-    torque_slack: 0.0 # compensates for sensor bias. We don't want the robot to induce torque at the contact point
+    torque_slack: 0.3 # compensates for sensor bias. We don't want the robot to induce torque at the contact point

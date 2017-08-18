@@ -4,6 +4,8 @@
     <rosparam file="$(find pr2_cartesian_clients)/config/mechanism_client_config.yaml" command="load"/>
   </node>
 
-  <node pkg="pr2_cartesian_clients" type="data_logger.py" name="data_logger"  output="screen"/>
+  <node pkg="pr2_cartesian_clients" type="data_logger.py" name="data_logger"  output="screen">
+    <rosparam file="$(find pr2_cartesian_clients)/config/data_logger.yaml" command="load"/>
+  </node>
 
 </launch>

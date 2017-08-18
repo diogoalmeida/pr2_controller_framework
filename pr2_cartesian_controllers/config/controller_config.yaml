@@ -123,9 +123,9 @@ mechanism_controller:
     
   rotational_estimator:
     Q:
-      data: [0.25, 0, 0,
-             0, 0.25, 0,
-             0, 0, 0.25]
+      data: [10, 0, 0,
+             0, 10, 0,
+             0, 0, 10]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,

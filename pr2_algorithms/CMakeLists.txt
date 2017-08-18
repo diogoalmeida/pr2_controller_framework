@@ -70,6 +70,9 @@ target_link_libraries(ects_controller ${catkin_LIBRARIES})
 add_library(kalman_filter src/mechanism_identification/kalman_filter.cpp src/algorithm_base.cpp)
 target_link_libraries(kalman_filter ${catkin_LIBRARIES})
 
+add_library(rotational_kalman src/mechanism_identification/rotational_kalman.cpp src/algorithm_base.cpp)
+target_link_libraries(rotational_kalman ${catkin_LIBRARIES})
+
 add_library(adaptive_velocity_controller src/mechanism_identification/adaptive_velocity_controller.cpp src/algorithm_base.cpp)
 target_link_libraries(adaptive_velocity_controller ${catkin_LIBRARIES})
 

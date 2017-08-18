@@ -73,7 +73,7 @@ namespace cartesian_controllers {
     rotation_t_ = config.rotation_t;
     rotation_k_ = config.rotation_k;
     rotation_n_ = config.rotation_n;
-    estimator_.setObserverGain(config.constant_observer_gain);
+    kalman_estimator_.setObserverGain(config.constant_observer_gain);
     if (ects_controller_)
     {
       ects_controller_->setNullspaceGain(config.nullspace_gain);
@@ -106,7 +106,13 @@ namespace cartesian_controllers {
       return;
     }
 
-    if(!estimator_.getParams(nh_))
+    if(!kalman_estimator_.getParams(nh_))
+    {
+      action_server_->setAborted(result_);
+      return;
+    }
+
+    if (!rot_estimator_.getParams(nh_))
     {
       action_server_->setAborted(result_);
       return;
@@ -451,7 +457,8 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
-      estimator_.initialize(p2_.translation());
+      kalman_estimator_.initialize(p2_.translation());
+      rot_estimator_.initialize(Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_);
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
@@ -517,22 +524,22 @@ namespace cartesian_controllers {
       // TODO
       if (use_kalman_gain_)
       {
-        pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec()); // HACK: Test KF without normal force  
-        // pc_est_.translation() = estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
+        pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec()); // HACK: Test KF without normal force  
+        // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
         // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       }
       else
       {
-        pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec());
+        pc_est_.translation() = kalman_estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        // pc_est_.translation() = kalman_estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec());
       }
 
       // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
       // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
-      Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation();
+      Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation(), w_r;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       
       r_2_kdl.x(r_2[0]); 
@@ -552,18 +559,20 @@ namespace cartesian_controllers {
       trans_est_kdl.x(translational_dof_est_[0]);
       trans_est_kdl.y(translational_dof_est_[1]);
       trans_est_kdl.z(translational_dof_est_[2]);
-      rot_est_kdl.x(rotational_dof_est_[0]);
-      rot_est_kdl.y(rotational_dof_est_[1]);
-      rot_est_kdl.z(rotational_dof_est_[2]);
+      // rot_est_kdl.x(rotational_dof_est_[0]);
+      // rot_est_kdl.y(rotational_dof_est_[1]);
+      // rot_est_kdl.z(rotational_dof_est_[2]);
       trans_est_kdl = eef_grasp_kdl[surface_arm_].M*trans_est_kdl;
-      rot_est_kdl = eef_grasp_kdl[surface_arm_].M*rot_est_kdl;
+      // rot_est_kdl = eef_grasp_kdl[surface_arm_].M*rot_est_kdl;
       translational_dof_est_[0] = trans_est_kdl.x();
       translational_dof_est_[1] = trans_est_kdl.y();
       translational_dof_est_[2] = trans_est_kdl.z();
-      rotational_dof_est_[0] = rot_est_kdl.x();
-      rotational_dof_est_[1] = rot_est_kdl.y();
+      // rotational_dof_est_[0] = rot_est_kdl.x();
+      // rotational_dof_est_[1] = rot_est_kdl.y();
       rotational_dof_est_[2] = rot_est_kdl.z();
-      
+      w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
+      rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
+
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }

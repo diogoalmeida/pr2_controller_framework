@@ -44,7 +44,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS roscpp std_msgs message_generation tf kdl_conversions robot_state_publisher
   INCLUDE_DIRS include
-  LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator kalman_filter adaptive_velocity_controller ects_controller
+  LIBRARIES manipulation_control_algorithm manipulation_ekf folding_assembly_controller folding_assembly_estimator kalman_filter adaptive_velocity_controller ects_controller rotational_kalman
 )
 
 include_directories(

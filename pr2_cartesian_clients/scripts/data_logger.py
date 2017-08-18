@@ -128,6 +128,6 @@ if __name__ == '__main__':
             sub_type = pr2_cartesian_controllers.msg.MechanismControllerActionFeedback
         else:
             rospy.logerr("unknwon log type: " + log_type)
-            break
+            exit()
 
         rospy.spin()

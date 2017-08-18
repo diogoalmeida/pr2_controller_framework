@@ -459,6 +459,7 @@ namespace cartesian_controllers {
     {
       kalman_estimator_.initialize(p2_.translation());
       rot_estimator_.initialize(Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_);
+      rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_;
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
@@ -573,10 +574,10 @@ namespace cartesian_controllers {
       translational_dof_est_[2] = trans_est_kdl.z();
       // rotational_dof_est_[0] = rot_est_kdl.x();
       // rotational_dof_est_[1] = rot_est_kdl.y();
-      rotational_dof_est_[2] = rot_est_kdl.z();
+      // rotational_dof_est_[2] = rot_est_kdl.z();
       w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
       
-      if (std::abs(w_d) > 0.01)
+      if (std::abs(w_d) > 0.005)
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }

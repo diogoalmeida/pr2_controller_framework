@@ -38,8 +38,7 @@ namespace manipulation_algorithms{
 
   private:
     Eigen::Vector3d k_;
-    Eigen::Matrix3d P_, R_;
-    double q_;
+    Eigen::Matrix3d P_, R_, Q_;
   };
 }
 #endif

@@ -11,9 +11,8 @@ namespace manipulation_algorithms{
 
   bool RotationalEstimator::getParams(const ros::NodeHandle &n)
   {
-    if(!n.getParam("/mechanism_controller/rotational_estimator/q", q_))
+    if(!parseMatrixData(Q_, "/mechanism_controller/rotational_estimator/Q", n))
     {
-      ROS_ERROR("Missing observational noise (/mechanism_controller/rotational_estimator/q)");
       return false;
     }
 
@@ -27,21 +26,27 @@ namespace manipulation_algorithms{
 
   Eigen::Vector3d RotationalEstimator::estimate(const Eigen::Vector3d &w_r, double dt)
   {
-    Eigen::Matrix3d I, P_hat;
-    Eigen::Vector3d K;
-    double innov, S;
+    Eigen::Matrix3d I, P_hat, K, S, C = Eigen::Matrix3d::Zero();
+    Eigen::Vector3d innov = Eigen::Vector3d::Zero();
+    double w_norm;
 
     I = Eigen::Matrix3d::Identity();
 
     // process model
+    w_norm = w_r.norm();
     P_hat = R_;
-    innov = w_r.norm() - std::abs(w_r.dot(k_));
-    S = w_r.transpose()*P_hat.selfadjointView<Eigen::Upper>()*w_r + q_;
+    if (w_norm > 0)
+    {
+      C = I - w_r*w_r.transpose()/(w_norm*w_norm);
+      innov = C*k_;
+    }
 
-    K = P_hat.selfadjointView<Eigen::Upper>()*w_r/S;
+    S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
+
+    K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);
     k_ = k_ + K*innov;
     k_ = k_/k_.norm();
-    P_= (I - K*w_r.transpose())*P_hat.selfadjointView<Eigen::Upper>();
+    P_= (I - K*C.transpose())*P_hat.selfadjointView<Eigen::Upper>();
 
     return k_;
   }

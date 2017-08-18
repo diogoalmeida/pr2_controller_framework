@@ -35,7 +35,7 @@ namespace manipulation_algorithms{
 
     // process model
     P_hat = R_;
-    innov = std::abs(w_r.dot(k_)) - w_r.norm();
+    innov = -w_r.dot(k_) - w_r.norm();
     S = w_r.transpose()*P_hat.selfadjointView<Eigen::Upper>()*w_r + q_;
 
     K = P_hat.selfadjointView<Eigen::Upper>()*w_r/S;

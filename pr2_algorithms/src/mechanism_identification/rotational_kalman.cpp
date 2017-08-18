@@ -40,6 +40,7 @@ namespace manipulation_algorithms{
 
     K = P_hat.selfadjointView<Eigen::Upper>()*w_r/S;
     k_ = k_ + K*innov;
+    k_ = k_/k_.norm();
     P_= (I - K*w_r.transpose())*P_hat.selfadjointView<Eigen::Upper>();
 
     return k_;

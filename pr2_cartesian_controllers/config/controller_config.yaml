@@ -97,12 +97,6 @@ folding_controller:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
-  rotational_estimator:
-    q: 50
-    R:
-      data: [0.01, 0, 0,
-             0, 0.01, 0,
-             0, 0, 0.01]
 
 mechanism_controller:
   action_server_name: mechanism_controller
@@ -126,6 +120,13 @@ mechanism_controller:
     adjust_x_force: 1.0  # Obtained from experiments with the force torque sensor
     adjust_y_force: 2.04 #1.87 
     adjust_z_force: 1.24
+    
+  rotational_estimator:
+    q: 0.01
+    R:
+      data: [0.01, 0, 0,
+             0, 0.01, 0,
+             0, 0, 0.01]
 
   ects_controller:
     alpha: 0.5

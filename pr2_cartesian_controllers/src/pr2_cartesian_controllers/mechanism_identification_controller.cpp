@@ -541,7 +541,11 @@ namespace cartesian_controllers {
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
       Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation(), w_r, discard;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
+      double v_d, w_d;
       
+      v_d = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec());
+      w_d = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec());
+
       r_2_kdl.x(r_2[0]); 
       r_2_kdl.y(r_2[1]); 
       r_2_kdl.z(r_2[2]); 
@@ -550,7 +554,7 @@ namespace cartesian_controllers {
       r_2[1] = r_2_kdl.y();
       r_2[2] = r_2_kdl.z();
       
-      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), r_2, vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
+      twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), r_2, v_d, w_d, dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
@@ -572,7 +576,7 @@ namespace cartesian_controllers {
       rotational_dof_est_[2] = rot_est_kdl.z();
       w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
       
-      if (w_r.norm() > 0.01)
+      if (w_d > 0.03)
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }

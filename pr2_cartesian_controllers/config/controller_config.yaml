@@ -100,7 +100,7 @@ folding_controller:
 
 mechanism_controller:
   action_server_name: mechanism_controller
-  rotational_gains: [0, 0, 0, 0, 1, 0] #[0, 0, 0, 0, 1, 0]
+  rotational_gains: [0, 0, 0, 0, 0, 0] #[0, 0, 0, 0, 1, 0]
   joint_error_lim: 0.025
   use_estimates: false
   rod_length: 0.10
@@ -122,7 +122,7 @@ mechanism_controller:
     adjust_z_force: 1.24
     
   rotational_estimator:
-    q: 0.1
+    q: 0.5
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,

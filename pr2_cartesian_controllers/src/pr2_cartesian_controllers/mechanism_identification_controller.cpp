@@ -458,7 +458,7 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       kalman_estimator_.initialize(p2_.translation());
-      rot_estimator_.initialize(Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_);
+      rot_estimator_.initialize(Eigen::AngleAxisd(init_k_error_, translational_dof_ground_.cross(rotational_dof_ground_)).toRotationMatrix()*rotational_dof_ground_);
       rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_;
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceForce(goal_force_);

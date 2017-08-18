@@ -382,7 +382,7 @@ namespace cartesian_controllers {
     std::vector<Eigen::Matrix<double, 6, 7> > jacobian(2);
     Eigen::Vector3d p1, p2, eef1, eef2,
                     contact_force, contact_torque, surface_tangent_in_grasp, rotation_axis,
-                    out_vel_lin, out_vel_ang; // all in the base_link frame
+                    out_vel_lin, out_vel_ang, surface_normal; // all in the base_link frame
     Eigen::Matrix<double, 12, 1> ects_twist = Eigen::Matrix<double, 12, 1>::Zero(), transmission_direction;
     Eigen::Matrix<double, 14, 1> joint_commands;
     KDL::Twist comp_twist;
@@ -440,6 +440,7 @@ namespace cartesian_controllers {
     rotational_dof_ground_  = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,1);
     rot_ground_in_frame[1] = 1;
     translational_dof_ground_ = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,0);
+    surface_normal = grasp_point_frame[surface_arm_].matrix().block<3,1>(0,2);
     trans_ground_in_frame[0] = 1;
     p1 = grasp_point_frame[rod_arm_].translation();
     p2 = grasp_point_frame[surface_arm_].translation();
@@ -458,8 +459,8 @@ namespace cartesian_controllers {
     if (!has_initial_)
     {
       kalman_estimator_.initialize(p2_.translation());
-      rot_estimator_.initialize(Eigen::AngleAxisd(init_k_error_, translational_dof_ground_.cross(rotational_dof_ground_)).toRotationMatrix()*rotational_dof_ground_);
-      rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, translational_dof_ground_).toRotationMatrix()*rotational_dof_ground_;
+      rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, surface_normal).toRotationMatrix()*rotational_dof_ground_;
+      rot_estimator_.initialize(rotational_dof_est_);
       adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
@@ -473,7 +474,6 @@ namespace cartesian_controllers {
 
     KDL::Wrench wrench_kdl;
     Eigen::Matrix<double, 6, 1> wrench_eig;
-    Eigen::Vector3d surface_normal; 
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
     wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);

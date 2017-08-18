@@ -122,7 +122,7 @@ mechanism_controller:
     adjust_z_force: 1.24
     
   rotational_estimator:
-    q: 0.5
+    q: 0.25
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,

@@ -97,6 +97,12 @@ folding_controller:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
+  rotational_estimator:
+    q: 50
+    R:
+      data: [0.01, 0, 0,
+             0, 0.01, 0,
+             0, 0, 0.01]
 
 mechanism_controller:
   action_server_name: mechanism_controller

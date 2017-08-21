@@ -1,4 +1,4 @@
-logging_topic: /gazebo/mechanism_controller/feedback
+logging_topic: /realtime_loop/mechanism_controller/feedback
 toggle_logging_service: /data_logger/toggle
 log_directory: mechanism/tests
 log_type: mechanism

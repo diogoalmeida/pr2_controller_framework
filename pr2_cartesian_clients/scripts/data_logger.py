@@ -16,9 +16,7 @@ bag = None
 init_log_time = rospy.Time()
 max_log_duration = rospy.Duration(-1)
 log_directory_name = " "
-sub_type = None
 subscriber = None
-log_type = " "
 
 def feedbackCallback(feedback_msg):
     """Data that will be monitored."""
@@ -84,28 +82,30 @@ def loadParams():
     global log_directory_name
     global log_type
 
-    if rospy.has_param('logging_topic'):
-        subscription_topic_name = rospy.get_param("logging_topic")
+    ns = rospy.get_name()
+
+    if rospy.has_param(ns + '/logging_topic'):
+        subscription_topic_name = rospy.get_param(ns + "/logging_topic")
     else:
-        rospy.logerr("Missing logging topic name (logging_topic)")
+        rospy.logerr("Missing logging topic name (%s/logging_topic)" % (ns))
         return False
 
-    if rospy.has_param('toggle_logging_service'):
-        toggle_logging_service_name = rospy.get_param("toggle_logging_service")
+    if rospy.has_param(ns + '/toggle_logging_service'):
+        toggle_logging_service_name = rospy.get_param(ns + "/toggle_logging_service")
     else:
-        rospy.logerr("Missing toggle logging service name (toggle_logging_service)")
+        rospy.logerr("Missing toggle logging service name (%s/toggle_logging_service)" % (ns))
         return False
 
-    if rospy.has_param('log_directory'):
-        log_directory_name = rospy.get_param("log_directory")
+    if rospy.has_param(ns + '/log_directory'):
+        log_directory_name = rospy.get_param(ns + "/log_directory")
     else:
-        rospy.logerr("Missing toggle logging service name (log_directory)")
+        rospy.logerr("Missing toggle logging service name (%s/log_directory)" % (ns))
         return False
 
-    if rospy.has_param('log_type'):
-        log_type = rospy.get_param("log_type")
+    if rospy.has_param(ns + '/log_type'):
+        log_type = rospy.get_param(ns + "/log_type")
     else:
-        rospy.logerr("Missing toggle logging service name (log_type)")
+        rospy.logerr("Missing toggle logging service name (%s/log_type)" % (ns))
         return False
 
     return True
@@ -114,6 +114,8 @@ if __name__ == '__main__':
     rospy.init_node('data_logger')
     global sub_type
     global log_type
+
+    rospy.loginfo("Data logger started")
 
     if loadParams():
         logging_service = rospy.Service(toggle_logging_service_name, LogMessages, loggingCallback)

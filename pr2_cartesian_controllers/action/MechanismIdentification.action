@@ -34,3 +34,6 @@ float64 force_error
 float64 force_d
 float64 torque_error
 float64 torque_d
+float64 translational_angle_error
+float64 rotational_angle_error
+float64 pc_distance_error

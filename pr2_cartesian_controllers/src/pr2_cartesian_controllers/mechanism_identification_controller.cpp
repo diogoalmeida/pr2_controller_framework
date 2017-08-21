@@ -307,11 +307,14 @@ namespace cartesian_controllers {
           feedback_.absolute_twist.header.stamp = ros::Time::now();
           feedback_.relative_twist.header.stamp = ros::Time::now();
           adaptive_controller_.getErrors(force_e, torque_e, force_d, torque_d);
-          
+
           feedback_.force_error = force_e.norm();
           feedback_.force_d = force_d.norm();
           feedback_.torque_error = torque_e.norm();
           feedback_.torque_d = torque_d.norm();
+          feedback_.translational_angle_error = std::acos(translational_dof_ground_.dot(translational_dof_est_));
+          feedback_.rotational_angle_error = std::acos(rotational_dof_ground_.dot(rotational_dof_est_));
+          feedback_.pc_distance_error = (pc_est_.translation() - pc_.translation()).norm();
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

@@ -285,7 +285,7 @@ namespace cartesian_controllers {
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
 
           adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
-          force_control_twist.header.frame_id = chain_base_link_;
+          force_control_twist.header.frame_id = "mechanism_pc";
           force_control_twist.header.stamp = ros::Time::now();
           KDL::Twist twist_adaptive;
           Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
@@ -303,7 +303,7 @@ namespace cartesian_controllers {
           tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
           tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
           tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
-          surface_wrench.header.frame_id = "mechanism_pc";
+          surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
           tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
           surface_wrench.header.stamp = ros::Time::now();
           feedback_.surface_wrench = surface_wrench;

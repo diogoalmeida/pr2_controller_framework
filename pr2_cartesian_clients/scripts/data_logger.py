@@ -122,12 +122,12 @@ if __name__ == '__main__':
 
         if log_type == "debug":
             sub_type = pr2_algorithms.msg.TestBedFeedback
-        elif log_type == "mechanism":
+        elif log_type == "manipulation":
             sub_type = pr2_cartesian_controllers.msg.ManipulationControllerActionFeedback
         elif log_type == "folding":
             sub_type = pr2_cartesian_controllers.msg.FoldingControllerActionFeedback
         elif log_type == "mechanism":
-            sub_type = pr2_cartesian_controllers.msg.MechanismControllerActionFeedback
+            sub_type = pr2_cartesian_controllers.msg.MechanismIdentificationActionFeedback
         else:
             rospy.logerr("unknwon log type: " + log_type)
             exit()

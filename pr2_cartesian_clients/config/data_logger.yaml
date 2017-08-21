@@ -1,4 +1,4 @@
-logging_topic: /realtime_loop/dexterous_manipulation/feedback
+logging_topic: /gazebo/mechanism_controller/feedback
 toggle_logging_service: /data_logger/toggle
-log_directory: spring_no_adaptation_pivot
+log_directory: mechanism/tests
 log_type: mechanism

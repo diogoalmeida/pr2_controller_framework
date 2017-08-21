@@ -22,6 +22,7 @@ MechanismClient::MechanismClient()
   action_server_->registerGoalCallback(boost::bind(&MechanismClient::goalCB, this));
   action_server_->registerPreemptCallback(boost::bind(&MechanismClient::preemptCB, this));
   feedback_thread_ = boost::thread(&MechanismClient::publishFeedback, this);
+  current_iter_ = 0;
 }
 
 MechanismClient::~MechanismClient()

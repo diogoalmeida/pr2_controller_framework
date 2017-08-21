@@ -544,6 +544,7 @@ namespace cartesian_controllers {
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
       Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation(), w_r, discard;
+      Eigen::Vector3d rot_est_eig_frame, trans_est_eig_frame;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       double v_d, w_d;
       
@@ -563,10 +564,10 @@ namespace cartesian_controllers {
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
       ects_twist.block<6,1>(6,0) = twist_adaptive_eig;
-      adaptive_controller_.getEstimates(translational_dof_est_, discard);
-      trans_est_kdl.x(translational_dof_est_[0]);
-      trans_est_kdl.y(translational_dof_est_[1]);
-      trans_est_kdl.z(translational_dof_est_[2]);
+      adaptive_controller_.getEstimates(trans_est_eig_frame, rot_est_eig_frame);
+      trans_est_kdl.x(trans_est_eig_frame[0]);
+      trans_est_kdl.y(trans_est_eig_frame[1]);
+      trans_est_kdl.z(trans_est_eig_frame[2]);
       // rot_est_kdl.x(rotational_dof_est_[0]);
       // rot_est_kdl.y(rotational_dof_est_[1]);
       // rot_est_kdl.z(rotational_dof_est_[2]);
@@ -584,7 +585,14 @@ namespace cartesian_controllers {
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }
-      adaptive_controller_.initEstimates(translational_dof_est_, rotational_dof_est_); 
+      rot_est_kdl.x(rotational_dof_est_[0]);
+      rot_est_kdl.y(rotational_dof_est_[1]);
+      rot_est_kdl.z(rotational_dof_est_[2]);
+      rot_est_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*rot_est_kdl;
+      rot_est_eig_frame[0] = rot_est_kdl.x();
+      rot_est_eig_frame[1] = rot_est_kdl.y();
+      rot_est_eig_frame[2] = rot_est_kdl.z();
+      adaptive_controller_.initEstimates(trans_est_eig_frame, rot_est_eig_frame);
       
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;

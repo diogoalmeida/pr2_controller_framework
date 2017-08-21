@@ -584,7 +584,8 @@ namespace cartesian_controllers {
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }
-
+      adaptive_controller_.initEstimates(translational_dof_est_, rotational_dof_est_); 
+      
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }

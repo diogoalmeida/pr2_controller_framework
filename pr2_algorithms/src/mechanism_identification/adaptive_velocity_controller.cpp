@@ -21,7 +21,7 @@ namespace manipulation_algorithms{
     Vector6d ref_twist;
 
     normal = t_.cross(r_);
-    torque_d = virtual_stick.cross(f_d_*normal);
+    torque_d = Eigen::Vector3d::Zero();
     stick_ = virtual_stick;
 
     force_error_ = wrench.block<3,1>(0,0) - f_d_*normal;

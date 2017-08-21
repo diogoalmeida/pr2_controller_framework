@@ -285,10 +285,17 @@ namespace cartesian_controllers {
           broadcaster_.sendTransform(tf::StampedTransform(pc_transform, ros::Time::now(), chain_base_link_, "mechanism_pc"));
 
           adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
-          force_control_twist.header.frame_id = "mechanism_pc";
+          force_control_twist.header.frame_id = chain_base_link_;
           force_control_twist.header.stamp = ros::Time::now();
-          tf::vectorEigenToMsg(linear_vel_eig, force_control_twist.wrench.force);
-          tf::vectorEigenToMsg(angular_vel_eig, force_control_twist.wrench.torque);
+          KDL::Twist twist_adaptive;
+          Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
+          twist_adaptive_eig.block<3,1>(0,0) = linear_vel_eig;
+          twist_adaptive_eig.block<3,1>(3,0) = angular_vel_eig;
+          tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
+          twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
+          tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
+          tf::vectorEigenToMsg(twist_adaptive_eig.block<3,1>(0,0), force_control_twist.wrench.force);
+          tf::vectorEigenToMsg(twist_adaptive_eig.block<3,1>(3,0), force_control_twist.wrench.torque);
           relative_twist_publisher_.publish(force_control_twist);
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);

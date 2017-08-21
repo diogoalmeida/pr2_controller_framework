@@ -586,9 +586,9 @@ namespace cartesian_controllers {
       // rotational_dof_est_[0] = rot_est_kdl.x();
       // rotational_dof_est_[1] = rot_est_kdl.y();
       // rotational_dof_est_[2] = rot_est_kdl.z();
-      w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0); //eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
+      w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
       
-      if (std::abs(w_d) > 0.005)
+      if (std::abs(w_d) > -0.005)
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }

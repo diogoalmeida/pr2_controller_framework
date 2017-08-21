@@ -303,7 +303,7 @@ namespace cartesian_controllers {
           tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
           tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
           tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
-          surface_wrench.header.frame_id = ft_frame_id_[surface_arm_];
+          surface_wrench.header.frame_id = "mechanism_pc";
           tf::wrenchEigenToMsg(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), surface_wrench.wrench);
           surface_wrench.header.stamp = ros::Time::now();
           feedback_.surface_wrench = surface_wrench;

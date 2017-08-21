@@ -28,7 +28,7 @@ namespace manipulation_algorithms{
   {
     Eigen::Matrix3d I, P_hat, K, S, C = Eigen::Matrix3d::Zero();
     Eigen::Vector3d innov = Eigen::Vector3d::Zero(), w_normalized;
-    double w_norm;
+    double w_norm, sign;
 
     I = Eigen::Matrix3d::Identity();
 
@@ -37,8 +37,9 @@ namespace manipulation_algorithms{
     P_hat = R_;
     if (w_norm > 0)
     {
-      C = I - w_normalized*w_normalized.transpose();
-      innov = -C*k_;
+      sign = w_r.dot(k_)/(std::abs(w_r.dot(k_)));
+      C = sign*w_r.norm()*I;
+      innov = w_r - C*k_;
       S = C*P_hat.selfadjointView<Eigen::Upper>()*C.transpose() + Q_;
 
       K = P_hat.selfadjointView<Eigen::Upper>()*C.transpose()*S.llt().solve(I);

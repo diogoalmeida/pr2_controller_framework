@@ -27,13 +27,13 @@ namespace manipulation_algorithms{
   Eigen::Vector3d RotationalEstimator::estimate(const Eigen::Vector3d &w_r, double dt)
   {
     Eigen::Matrix3d I, P_hat, K, S, C = Eigen::Matrix3d::Zero();
-    Eigen::Vector3d innov = Eigen::Vector3d::Zero(), w_normalized;
+    Eigen::Vector3d innov = Eigen::Vector3d::Zero();
     double w_norm, sign;
 
     I = Eigen::Matrix3d::Identity();
 
     // process model
-    w_normalized = w_r.normalized();
+    w_norm = w_r.norm();
     P_hat = R_;
     if (w_norm > 0)
     {

@@ -466,7 +466,8 @@ void MechanismClient::runExperiment()
           action_server_->setAborted();
           continue;
         }
-
+        
+        sleep(1.0);
         controller_runner_.stopController("l_arm_controller");
         controller_runner_.stopController("r_arm_controller");
 
@@ -494,7 +495,6 @@ void MechanismClient::runExperiment()
           current_action_ = mechanism_action_name_;
           current_iter_ = current_iter;
         }
-
         controller_runner_.runController("l_arm_controller");
         controller_runner_.runController("r_arm_controller");
 
@@ -505,6 +505,7 @@ void MechanismClient::runExperiment()
           continue;
         }
 
+        sleep(1.0);
         controller_runner_.stopController("l_arm_controller");
         controller_runner_.stopController("r_arm_controller");
 

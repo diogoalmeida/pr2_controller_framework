@@ -23,7 +23,6 @@ MechanismClient::MechanismClient()
   action_server_->registerPreemptCallback(boost::bind(&MechanismClient::preemptCB, this));
   feedback_thread_ = boost::thread(&MechanismClient::publishFeedback, this);
   current_iter_ = 0;
-  scale_alpha_ = false;
 }
 
 MechanismClient::~MechanismClient()

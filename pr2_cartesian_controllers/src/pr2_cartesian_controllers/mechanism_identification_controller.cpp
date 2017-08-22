@@ -636,6 +636,7 @@ namespace cartesian_controllers {
     tf::twistEigenToMsg(ects_twist.block<6,1>(0,0), feedback_.absolute_twist.twist);
     tf::twistEigenToMsg(ects_twist.block<6,1>(6,0), feedback_.relative_twist.twist);
     feedback_.vs = ects_twist.block<3,1>(6,0).dot(translational_dof_est_);
+    feedback_.vforce = ects_twist.block<3,1>(6,0).dot(surface_normal);
     feedback_.wr = ects_twist.block<3,1>(9,0).dot(rotational_dof_est_);
     
     comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm

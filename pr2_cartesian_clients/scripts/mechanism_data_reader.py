@@ -112,6 +112,7 @@ if __name__ == '__main__':
             error_trans = np.array([])
             error_rot = np.array([])
             vs = np.array([])
+            vforce = np.array([])
             wr = np.array([])
             bag_name = bag_prefix
             bag = openBag(bag_name)
@@ -123,8 +124,9 @@ if __name__ == '__main__':
                 error_trans = np.append(error_trans, [msg.feedback.translational_angle_error])
                 error_rot = np.append(error_rot, [msg.feedback.rotational_angle_error])
                 # print(msg.feedback.relative_twist.twist.linear.x**2 + msg.feedback.relative_twist.twist.linear.y**2 + msg.feedback.relative_twist.twist.linear.z**2)
-                vs = np.append(vs, [np.sqrt(msg.feedback.relative_twist.twist.linear.x**2 + msg.feedback.relative_twist.twist.linear.y**2 + msg.feedback.relative_twist.twist.linear.z**2)])
-                wr = np.append(wr, [np.sqrt(msg.feedback.relative_twist.twist.angular.x**2 + msg.feedback.relative_twist.twist.angular.y**2 + msg.feedback.relative_twist.twist.angular.z**2)])
+                vs = np.append(vs, [msg.feedback.vs])
+                vforce = np.append(vforce, [msg.feedback.vforce])
+                wr = np.append(wr, [msg.feedback.wr])
 
             # Print one set of results
             if len(t) > 0:
@@ -134,6 +136,7 @@ if __name__ == '__main__':
                 plt.figure(1)
                 plt.subplot(411)
                 plt.plot(t, vs, 'k')
+                plt.plot(t, vforce, 'r')
                 plt.grid(True)
                 
                 plt.subplot(412)

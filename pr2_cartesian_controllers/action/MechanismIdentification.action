@@ -44,4 +44,5 @@ float64 translational_angle_error
 float64 rotational_angle_error
 float64 pc_distance_error
 float64 vs
+float64 vforce
 float64 wr

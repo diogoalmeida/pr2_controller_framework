@@ -176,7 +176,7 @@ namespace cartesian_controllers {
   void MechanismIdentificationController::publishFeedback()
   {
     visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
-    geometry_msgs::Vector3 r_vec;
+    geometry_msgs::Vector3 r_vec, r1, r2, p1, p2, pc, pc_est, t, t_est, k, k_est;
     Eigen::Vector3d linear_vel_eig, angular_vel_eig, force_e, torque_e, force_d, torque_d;
     geometry_msgs::WrenchStamped surface_wrench, force_control_twist;
     tf::Transform pc_transform;
@@ -287,8 +287,15 @@ namespace cartesian_controllers {
           adaptive_controller_.getForceControlValues(linear_vel_eig, angular_vel_eig);
           force_control_twist.header.frame_id = "mechanism_pc";
           force_control_twist.header.stamp = ros::Time::now();
-          tf::vectorEigenToMsg(linear_vel_eig, force_control_twist.wrench.force);
-          tf::vectorEigenToMsg(angular_vel_eig, force_control_twist.wrench.torque);
+          KDL::Twist twist_adaptive;
+          Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
+          twist_adaptive_eig.block<3,1>(0,0) = linear_vel_eig;
+          twist_adaptive_eig.block<3,1>(3,0) = angular_vel_eig;
+          tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
+          twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
+          tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
+          tf::vectorEigenToMsg(twist_adaptive_eig.block<3,1>(0,0), force_control_twist.wrench.force);
+          tf::vectorEigenToMsg(twist_adaptive_eig.block<3,1>(3,0), force_control_twist.wrench.torque);
           relative_twist_publisher_.publish(force_control_twist);
 
           tf::vectorEigenToMsg(pc_.translation() - p1_.translation(), feedback_.r1);
@@ -307,7 +314,15 @@ namespace cartesian_controllers {
           feedback_.absolute_twist.header.stamp = ros::Time::now();
           feedback_.relative_twist.header.stamp = ros::Time::now();
           adaptive_controller_.getErrors(force_e, torque_e, force_d, torque_d);
-
+          
+          tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
+          tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
+          tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
+          tf::vectorEigenToMsg(pc_est_.translation(), feedback_.pc_est);
+          tf::vectorEigenToMsg(translational_dof_ground_, feedback_.t);
+          tf::vectorEigenToMsg(translational_dof_est_, feedback_.t_est);
+          tf::vectorEigenToMsg(rotational_dof_ground_, feedback_.k);
+          tf::vectorEigenToMsg(rotational_dof_est_, feedback_.k_est);
           feedback_.force_error = force_e.norm();
           feedback_.force_d = force_d.norm();
           feedback_.torque_error = torque_e.norm();
@@ -464,7 +479,7 @@ namespace cartesian_controllers {
       kalman_estimator_.initialize(p2_.translation());
       rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, surface_normal).toRotationMatrix()*rotational_dof_ground_;
       rot_estimator_.initialize(rotational_dof_est_);
-      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
+      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(0*init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;
@@ -544,6 +559,7 @@ namespace cartesian_controllers {
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
       Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation(), w_r, discard;
+      Eigen::Vector3d rot_est_eig_frame, trans_est_eig_frame;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       double v_d, w_d;
       
@@ -563,10 +579,10 @@ namespace cartesian_controllers {
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
       tf::twistKDLToEigen(twist_adaptive, twist_adaptive_eig);
       ects_twist.block<6,1>(6,0) = twist_adaptive_eig;
-      adaptive_controller_.getEstimates(translational_dof_est_, discard);
-      trans_est_kdl.x(translational_dof_est_[0]);
-      trans_est_kdl.y(translational_dof_est_[1]);
-      trans_est_kdl.z(translational_dof_est_[2]);
+      adaptive_controller_.getEstimates(trans_est_eig_frame, rot_est_eig_frame);
+      trans_est_kdl.x(trans_est_eig_frame[0]);
+      trans_est_kdl.y(trans_est_eig_frame[1]);
+      trans_est_kdl.z(trans_est_eig_frame[2]);
       // rot_est_kdl.x(rotational_dof_est_[0]);
       // rot_est_kdl.y(rotational_dof_est_[1]);
       // rot_est_kdl.z(rotational_dof_est_[2]);
@@ -580,11 +596,19 @@ namespace cartesian_controllers {
       // rotational_dof_est_[2] = rot_est_kdl.z();
       w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
       
-      if (std::abs(w_d) > 0.005)
+      if (std::abs(w_d) > -0.005)
       {
         rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
       }
-
+      rot_est_kdl.x(rotational_dof_est_[0]);
+      rot_est_kdl.y(rotational_dof_est_[1]);
+      rot_est_kdl.z(rotational_dof_est_[2]);
+      rot_est_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*rot_est_kdl;
+      rot_est_eig_frame[0] = rot_est_kdl.x();
+      rot_est_eig_frame[1] = rot_est_kdl.y();
+      rot_est_eig_frame[2] = rot_est_kdl.z();
+      adaptive_controller_.initEstimates(trans_est_eig_frame, rot_est_eig_frame);
+      
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }

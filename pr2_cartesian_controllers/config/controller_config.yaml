@@ -100,7 +100,7 @@ folding_controller:
 
 mechanism_controller:
   action_server_name: mechanism_controller
-  rotational_gains: [0, 0, 0, 0, 0, 0] #[0, 0, 0, 0, 1, 0]
+  rotational_gains: [0, 0, 0, 0, 2, 0] #[0, 0, 0, 0, 1, 0]
   joint_error_lim: 0.025
   use_estimates: false
   rod_length: 0.10
@@ -109,9 +109,9 @@ mechanism_controller:
   k_force: 0.0
   estimator:
     Q:
-      data: [50.01, 0, 0,
-             0, 50.01, 0,
-             0, 0, 50.01]
+      data: [25.01, 0, 0,
+             0, 25.01, 0,
+             0, 0, 25.01]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,
@@ -123,13 +123,13 @@ mechanism_controller:
     
   rotational_estimator:
     Q:
-      data: [10, 0, 0,
-             0, 10, 0,
-             0, 0, 10]
+      data: [1000000.1, 0, 0,
+             0, 1000000.1, 0,
+             0, 0, 1000000.1]
     R:
-      data: [0.01, 0, 0,
-             0, 0.01, 0,
-             0, 0, 0.01]
+      data: [0.1, 0, 0,
+             0, 0.1, 0,
+             0, 0, 0.1]
 
   ects_controller:
     alpha: 0.5
@@ -145,7 +145,7 @@ mechanism_controller:
     alpha_force: 0.01
     beta_force: 0.01
     alpha_adapt_t: 2500.1
-    alpha_torque: 0.0
+    alpha_torque: 0 #0.5
     beta_torque: 0.00 
     alpha_adapt_r: 0 #40.0
     torque_slack: 0.0 # compensates for sensor bias. We don't want the robot to induce torque at the contact point

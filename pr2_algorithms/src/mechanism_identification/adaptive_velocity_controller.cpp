@@ -21,12 +21,12 @@ namespace manipulation_algorithms{
     Vector6d ref_twist;
 
     normal = t_.cross(r_);
-    torque_d = virtual_stick.cross(f_d_*normal);
+    torque_d = Eigen::Vector3d::Zero();
     stick_ = virtual_stick;
 
     force_error_ = wrench.block<3,1>(0,0) - f_d_*normal;
     // force_error_ = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error_ = wrench.block<3,1>(3,0) - torque_d; // must depend on the desired force and virtual stick
+    torque_error_ = wrench.block<3,1>(3,0).dot(t_)*t_ - torque_d; // must depend on the desired force and virtual stick
     // torque_error_ = (I - normal*normal.transpose())*torque_error_;
 
     if (torque_error_.norm() < torque_slack_)
@@ -89,7 +89,7 @@ namespace manipulation_algorithms{
   {
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     v_f = (I - t_*t_.transpose())*v_f_;
-    w_f = (I - r_*r_.transpose())*w_f_;
+    w_f = w_f_;
   }
 
   bool AdaptiveController::getParams(const ros::NodeHandle &n)

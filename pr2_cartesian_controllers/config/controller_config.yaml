@@ -71,8 +71,8 @@ approach_controller:
 move_controller:
   action_server_name: move_controller
   max_allowed_error: 0.025
-  velocity_gain: 20
-  error_threshold: 0.01
+  velocity_gain: 10
+  error_threshold: 0.02
   ik_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik
     arm_2: /pr2_right_arm_kinematics/get_ik
@@ -100,18 +100,18 @@ folding_controller:
 
 mechanism_controller:
   action_server_name: mechanism_controller
-  rotational_gains: [0, 0, 0, 0, 2, 0] #[0, 0, 0, 0, 1, 0]
+  rotational_gains: [0, 0, 0, 0, 1, 0] #[0, 0, 0, 0, 1, 0]
   joint_error_lim: 0.025
   use_estimates: false
-  rod_length: 0.10
+  rod_length: 0.11
   k_omega: 0.0
   k_v: 0.0
   k_force: 0.0
   estimator:
     Q:
-      data: [25.01, 0, 0,
-             0, 25.01, 0,
-             0, 0, 25.01]
+      data: [50.01, 0, 0,
+             0, 50.01, 0,
+             0, 0, 50.01]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,
@@ -127,9 +127,9 @@ mechanism_controller:
              0, 1000000.1, 0,
              0, 0, 1000000.1]
     R:
-      data: [0.1, 0, 0,
-             0, 0.1, 0,
-             0, 0, 0.1]
+      data: [0.001, 0, 0,
+             0, 0.001, 0,
+             0, 0, 0.001]
 
   ects_controller:
     alpha: 0.5
@@ -143,8 +143,8 @@ mechanism_controller:
 
   adaptive_estimator:
     alpha_force: 0.01
-    beta_force: 0.01
-    alpha_adapt_t: 2500.1
+    beta_force: 0.04
+    alpha_adapt_t: 5000.1
     alpha_torque: 0 #0.5
     beta_torque: 0.00 
     alpha_adapt_r: 0 #40.0

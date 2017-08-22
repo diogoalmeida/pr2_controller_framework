@@ -77,6 +77,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""Data reader arguments""")
     parser.add_argument("--prefix", type=str, help="The bag prefix")
     parser.add_argument("--directory", type=str, help="The bag directory")
+    parser.add_argument("--oneonly", action='store_true', help="True if meant to display only one")
     # parser.add_argument("--all", action='store_true', help="True if meant to parse all")
     # parser.add_argument("--pivot", action='store_true', help="True if meant to plot pivot")
     # parser.add_argument("--new", action='store_true', help="True if results are from latest action version")
@@ -104,90 +105,141 @@ if __name__ == '__main__':
 
         print(bag_prefix)
         print(log_directory_name)
-
-        for num in range(len(glob.glob(getDir() + "/" + bag_prefix + "*.bag"))):
+        
+        if args.oneonly:
             t = np.array([])
             error_pc = np.array([])
             error_trans = np.array([])
             error_rot = np.array([])
-
-            bag_name = bag_prefix + str(num + 1)
+            vs = np.array([])
+            wr = np.array([])
+            bag_name = bag_prefix
             bag = openBag(bag_name)
-
-            first = True
-            i = 0
+            
             for topic, msg, time in bag.read_messages():
                 t = np.append(t, [time.to_sec()])
 
                 error_pc = np.append(error_pc, [msg.feedback.pc_distance_error])
                 error_trans = np.append(error_trans, [msg.feedback.translational_angle_error])
                 error_rot = np.append(error_rot, [msg.feedback.rotational_angle_error])
-
-                if num == 0 or len(mean_error_p_c) <= i:
-                    mean_error_p_c = np.append(mean_error_p_c, [msg.feedback.pc_distance_error])
-                    mean_error_trans = np.append(mean_error_trans, [msg.feedback.translational_angle_error])
-                    mean_error_rot = np.append(mean_error_rot, [msg.feedback.rotational_angle_error])
-
-                else:
-                    mean_error_p_c[i] = (mean_error_p_c[i] + msg.feedback.pc_distance_error)
-                    mean_error_trans[i] = mean_error_trans[i] + msg.feedback.translational_angle_error
-                    mean_error_rot[i] = (mean_error_rot[i] + msg.feedback.rotational_angle_error)
-
-                    i = i + 1
+                # print(msg.feedback.relative_twist.twist.linear.x**2 + msg.feedback.relative_twist.twist.linear.y**2 + msg.feedback.relative_twist.twist.linear.z**2)
+                vs = np.append(vs, [np.sqrt(msg.feedback.relative_twist.twist.linear.x**2 + msg.feedback.relative_twist.twist.linear.y**2 + msg.feedback.relative_twist.twist.linear.z**2)])
+                wr = np.append(wr, [np.sqrt(msg.feedback.relative_twist.twist.angular.x**2 + msg.feedback.relative_twist.twist.angular.y**2 + msg.feedback.relative_twist.twist.angular.z**2)])
 
             # Print one set of results
             if len(t) > 0:
                 t = t - t[0]
-
+                
+                matplotlib.rcParams['figure.figsize'] = (14, 5)
                 plt.figure(1)
-                plt.subplot(311)
-                plt.plot(t, error_pc, color=gray)
+                plt.subplot(411)
+                plt.plot(t, vs, 'k')
+                plt.grid(True)
+                
+                plt.subplot(412)
+                plt.plot(t, wr, 'k')
+                plt.grid(True)
+                
+                plt.subplot(413)
+                plt.plot(t, error_pc, 'k')
                 plt.grid(True)
 
-                plt.subplot(312)
-                plt.plot(t, error_trans, color=gray)
+                plt.subplot(414)
+                plt.plot(t, error_trans, 'k')
                 plt.grid(True)
 
-                plt.subplot(313)
-                plt.plot(t, error_rot, color=gray)
-                plt.grid(True)
+                # plt.subplot(313)
+                # plt.plot(t, error_rot, color=gray)
+                # plt.grid(True)
 
             else:
                 print("error, no t")
+                
+        else:
 
-        print(num)
-        mean_error_p_c = mean_error_p_c/(num + 1)
-        mean_error_trans = mean_error_trans/(num + 1)
-        mean_error_rot = mean_error_rot/(num + 1)
-        plt.figure(1)
+            for num in range(len(glob.glob(getDir() + "/" + bag_prefix + "*.bag"))):
+                t = np.array([])
+                error_pc = np.array([])
+                error_trans = np.array([])
+                error_rot = np.array([])
 
-        title_offset = 1.05
-        t_final = 30
+                bag_name = bag_prefix + str(num + 1)
+                bag = openBag(bag_name)
 
-        plt.subplot(311)
-        addLabelledPlot(t, mean_error_p_c[0:len(t)], "$\|p_c - \hat{p}_c\|$", 'k')
-        plt.xlim(0.0, t_final)
-        plt.ylim(-0.1, 0.2)
-        plt.ylabel('[m]')
-        plt.title('Contact point error norm error, $\|p_c - \hat{p}_c\|$', y=title_offset)
+                first = True
+                i = 0
+                for topic, msg, time in bag.read_messages():
+                    t = np.append(t, [time.to_sec()])
 
-        plt.subplot(312)
-        # addLabelledPlot(t, mean_x_c_hat[0:len(t)], '$\hat{x}_c$', 'k')
-        plt.plot(t, mean_error_trans[0:len(t)], 'k')
-        plt.xlim(0.0, t_final)
-        plt.ylim(-0.8, 0.8)
-        plt.title('Translational estimation error angle, $\hat{x}_c - x_c$', y=title_offset)
-        plt.ylabel('[rad]')
+                    error_pc = np.append(error_pc, [msg.feedback.pc_distance_error])
+                    error_trans = np.append(error_trans, [msg.feedback.translational_angle_error])
+                    error_rot = np.append(error_rot, [msg.feedback.rotational_angle_error])
 
-        plt.subplot(313)
-        plt.plot(t, mean_error_rot[0:len(t)], 'k')
-        plt.title('Rotational estimation error angle, $f_d - \hat{f}_{c_y}$', y=title_offset)
-        plt.xlim(0.0, t_final)
-        plt.ylim(-0.8, 0.8)
-        plt.ylabel('[rad]')
-        plt.xlabel('Time [s]')
-        # plt.subplot(313)
-        # addLabelledPlot(t, f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
-        plt.tight_layout()
-        saveFig(bag_prefix)
-        plt.show()
+                    if num == 0 or len(mean_error_p_c) <= i:
+                        mean_error_p_c = np.append(mean_error_p_c, [msg.feedback.pc_distance_error])
+                        mean_error_trans = np.append(mean_error_trans, [msg.feedback.translational_angle_error])
+                        mean_error_rot = np.append(mean_error_rot, [msg.feedback.rotational_angle_error])
+
+                    else:
+                        mean_error_p_c[i] = (mean_error_p_c[i] + msg.feedback.pc_distance_error)
+                        mean_error_trans[i] = mean_error_trans[i] + msg.feedback.translational_angle_error
+                        mean_error_rot[i] = (mean_error_rot[i] + msg.feedback.rotational_angle_error)
+
+                        i = i + 1
+
+                # Print one set of results
+                if len(t) > 0:
+                    t = t - t[0]
+
+                    plt.figure(1)
+                    plt.subplot(211)
+                    plt.plot(t, error_pc, color=gray)
+                    plt.grid(True)
+
+                    plt.subplot(212)
+                    plt.plot(t, error_trans, color=gray)
+                    plt.grid(True)
+
+                    # plt.subplot(313)
+                    # plt.plot(t, error_rot, color=gray)
+                    # plt.grid(True)
+
+                else:
+                    print("error, no t")
+
+            print(num)
+            mean_error_p_c = mean_error_p_c/(num + 1)
+            mean_error_trans = mean_error_trans/(num + 1)
+            mean_error_rot = mean_error_rot/(num + 1)
+            plt.figure(1)
+
+            title_offset = 1.05
+            t_final = 14
+
+            plt.subplot(211)
+            addLabelledPlot(t, mean_error_p_c[0:len(t)], "$\|p_c - \hat{p}_c\|$", 'k')
+            plt.xlim(0.0, t_final)
+            plt.ylim(-0.1, 0.1)
+            plt.ylabel('[m]')
+            plt.title('Contact point error norm error, $\|p_c - \hat{p}_c\|$', y=title_offset)
+
+            plt.subplot(212)
+            # addLabelledPlot(t, mean_x_c_hat[0:len(t)], '$\hat{x}_c$', 'k')
+            plt.plot(t, mean_error_trans[0:len(t)], 'k')
+            plt.xlim(0.0, t_final)
+            plt.ylim(-0.4, 0.4)
+            plt.title('Translational estimation error angle, $\theta_{t}$', y=title_offset)
+            plt.ylabel('[rad]')
+
+            # plt.subplot(313)
+            # plt.plot(t, mean_error_rot[0:len(t)], 'k')
+            # plt.title('Rotational estimation error angle, $f_d - \hat{f}_{c_y}$', y=title_offset)
+            # plt.xlim(0.0, t_final)
+            # plt.ylim(-0.8, 0.8)
+            # plt.ylabel('[rad]')
+            # plt.xlabel('Time [s]')
+            # plt.subplot(313)
+            # addLabelledPlot(t, f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
+    plt.tight_layout()
+    saveFig(bag_prefix)
+    plt.show()

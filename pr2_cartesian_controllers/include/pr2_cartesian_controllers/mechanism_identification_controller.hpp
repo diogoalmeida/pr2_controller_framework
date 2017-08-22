@@ -6,6 +6,7 @@
 #include <pr2_algorithms/mechanism_identification/ects_controller.hpp>
 #include <pr2_algorithms/mechanism_identification/adaptive_velocity_controller.hpp>
 #include <pr2_algorithms/mechanism_identification/kalman_filter.hpp>
+#include <pr2_algorithms/mechanism_identification/rotational_kalman.hpp>
 #include <tf/transform_broadcaster.h>
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/Marker.h>
@@ -38,7 +39,8 @@ private:
 
 private:
   // estimator
-  manipulation_algorithms::KalmanEstimator estimator_;
+  manipulation_algorithms::KalmanEstimator kalman_estimator_;
+  manipulation_algorithms::RotationalEstimator rot_estimator_;
   // controller
   manipulation_algorithms::AdaptiveController adaptive_controller_;
   boost::shared_ptr<manipulation_algorithms::ECTSController> ects_controller_;

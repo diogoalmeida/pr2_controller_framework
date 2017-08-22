@@ -16,7 +16,6 @@ bag = None
 init_log_time = rospy.Time()
 max_log_duration = rospy.Duration(-1)
 log_directory_name = " "
-sub_type = None
 subscriber = None
 
 def feedbackCallback(feedback_msg):
@@ -81,23 +80,32 @@ def loadParams():
     global subscription_topic_name
     global toggle_logging_service_name
     global log_directory_name
+    global log_type
 
-    if rospy.has_param('/manipulation_client/experiment/logging/logging_topic'):
-        subscription_topic_name = rospy.get_param("/manipulation_client/experiment/logging/logging_topic")
+    ns = rospy.get_name()
+
+    if rospy.has_param(ns + '/logging_topic'):
+        subscription_topic_name = rospy.get_param(ns + "/logging_topic")
     else:
-        rospy.logerr("Missing logging topic name (experiment/logging/logging_topic)")
+        rospy.logerr("Missing logging topic name (%s/logging_topic)" % (ns))
         return False
 
-    if rospy.has_param('/manipulation_client/experiment/logging/toggle_logging_service'):
-        toggle_logging_service_name = rospy.get_param("/manipulation_client/experiment/logging/toggle_logging_service")
+    if rospy.has_param(ns + '/toggle_logging_service'):
+        toggle_logging_service_name = rospy.get_param(ns + "/toggle_logging_service")
     else:
-        rospy.logerr("Missing toggle logging service name (experiment/logging/toggle_logging_service)")
+        rospy.logerr("Missing toggle logging service name (%s/toggle_logging_service)" % (ns))
         return False
 
-    if rospy.has_param('/manipulation_client/experiment/logging/log_directory'):
-        log_directory_name = rospy.get_param("/manipulation_client/experiment/logging/log_directory")
+    if rospy.has_param(ns + '/log_directory'):
+        log_directory_name = rospy.get_param(ns + "/log_directory")
     else:
-        rospy.logerr("Missing toggle logging service name (experiment/logging/log_directory)")
+        rospy.logerr("Missing toggle logging service name (%s/log_directory)" % (ns))
+        return False
+
+    if rospy.has_param(ns + '/log_type'):
+        log_type = rospy.get_param(ns + "/log_type")
+    else:
+        rospy.logerr("Missing toggle logging service name (%s/log_type)" % (ns))
         return False
 
     return True
@@ -105,16 +113,23 @@ def loadParams():
 if __name__ == '__main__':
     rospy.init_node('data_logger')
     global sub_type
+    global log_type
+
+    rospy.loginfo("Data logger started")
 
     if loadParams():
         logging_service = rospy.Service(toggle_logging_service_name, LogMessages, loggingCallback)
 
-        if len(sys.argv) > 1:
-            if sys.argv[1] == "debug":
-                sub_type = pr2_algorithms.msg.TestBedFeedback
-            else:
-                sub_type = pr2_cartesian_controllers.msg.ManipulationControllerActionFeedback
-        else:
+        if log_type == "debug":
+            sub_type = pr2_algorithms.msg.TestBedFeedback
+        elif log_type == "manipulation":
             sub_type = pr2_cartesian_controllers.msg.ManipulationControllerActionFeedback
+        elif log_type == "folding":
+            sub_type = pr2_cartesian_controllers.msg.FoldingControllerActionFeedback
+        elif log_type == "mechanism":
+            sub_type = pr2_cartesian_controllers.msg.MechanismIdentificationActionFeedback
+        else:
+            rospy.logerr("unknwon log type: " + log_type)
+            exit()
 
         rospy.spin()

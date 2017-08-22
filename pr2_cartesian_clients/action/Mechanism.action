@@ -5,7 +5,6 @@ bool use_nullspace
 int32 rod_arm
 int32 surface_arm
 float64 goal_force
-float64 goal_torque
 float64 nullspace_gain
 float64 init_t_error
 float64 init_k_error

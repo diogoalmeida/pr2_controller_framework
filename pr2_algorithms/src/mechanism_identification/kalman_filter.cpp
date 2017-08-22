@@ -64,7 +64,7 @@ namespace manipulation_algorithms{
     w1 = x_dot_e1.block<3, 1>(3, 0);
     force = wrench_e2.block<3,1>(0, 0);
     torque = wrench_e2.block<3,1>(3, 0);
-    
+
     A = computeSkewSymmetric(w1);
     C = -computeSkewSymmetric(force);
 

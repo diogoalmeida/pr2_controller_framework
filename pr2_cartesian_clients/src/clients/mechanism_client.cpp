@@ -497,6 +497,7 @@ void MechanismClient::runExperiment()
         }
         controller_runner_.runController("l_arm_controller");
         controller_runner_.runController("r_arm_controller");
+        sleep(1.0);
 
         if (!controller_runner_.runController(mechanism_controller_name_))
         {
@@ -523,6 +524,7 @@ void MechanismClient::runExperiment()
             ROS_WARN("Error calling the logging service, will not be able to log experiment");
           }
         }
+        sleep(1.0);
 
         mechanism_goal.rod_arm = rod_arm_;
         mechanism_goal.alpha = 0.5;
@@ -559,6 +561,7 @@ void MechanismClient::runExperiment()
           }
         }
 
+        sleep(1.0);
         {
           pr2_cartesian_clients::LogMessages srv;
           srv.request.log_type = srv.request.SAVE_BAG;

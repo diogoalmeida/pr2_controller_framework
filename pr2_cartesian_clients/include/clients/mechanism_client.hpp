@@ -116,13 +116,12 @@ namespace manipulation{
     std::string base_link_name_, surface_frame_name_;
     std::string gravity_compensation_service_name_;
     int num_of_experiments_, current_iter_, rod_arm_, surface_arm_;
-    bool use_vision_, sim_mode_, use_nullspace_, use_estimates_;
+    bool use_vision_, sim_mode_, use_nullspace_, use_estimates_, scale_alpha_;
     pr2_cartesian_clients::ExclusiveControllerRunner controller_runner_;
 
     std::default_random_engine noise_generator_;
-    std::uniform_real_distribution<double> noise_x_d_;
-    std::uniform_real_distribution<double> noise_theta_d_;
-    std::uniform_real_distribution<double> noise_f_d_;
+    std::uniform_real_distribution<double> noise_t_;
+    std::uniform_real_distribution<double> noise_k_;
   };
   }
 #endif

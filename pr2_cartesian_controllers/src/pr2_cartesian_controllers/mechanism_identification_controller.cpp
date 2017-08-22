@@ -131,6 +131,7 @@ namespace cartesian_controllers {
     init_k_error_ = goal->init_k_error;
 
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
+    ects_controller_->setAlpha(goal->alpha);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;
 

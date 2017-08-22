@@ -23,6 +23,7 @@ MechanismClient::MechanismClient()
   action_server_->registerPreemptCallback(boost::bind(&MechanismClient::preemptCB, this));
   feedback_thread_ = boost::thread(&MechanismClient::publishFeedback, this);
   current_iter_ = 0;
+  scale_alpha_ = false;
 }
 
 MechanismClient::~MechanismClient()
@@ -312,25 +313,23 @@ void MechanismClient::goalCB()
       init_t_error_ = goal->init_t_error;
       init_k_error_ = goal->init_k_error;
       km_ = goal->nullspace_gain;
+      scale_alpha_ = goal->scale_alpha;
 
-      if (goal->randomize_desired_state)
+      if (goal->randomize_initial_error)
       {
-        noise_x_d_ = std::uniform_real_distribution<double>(goal->x_min, goal->x_max);
-        noise_theta_d_ = std::uniform_real_distribution<double>(goal->theta_min, goal->theta_max);
-        noise_f_d_ = std::uniform_real_distribution<double>(goal->f_min, goal->f_max);
+        noise_t_ = std::uniform_real_distribution<double>(goal->t_min, goal->t_max);
+        noise_k_ = std::uniform_real_distribution<double>(goal->k_min, goal->k_max);
       }
       else
       {
-        noise_x_d_ = std::uniform_real_distribution<double>(0, 0);
-        noise_theta_d_ = std::uniform_real_distribution<double>(0, 0);
-        noise_f_d_ = std::uniform_real_distribution<double>(0, 0);
+        noise_t_ = std::uniform_real_distribution<double>(0, 0);
+        noise_k_ = std::uniform_real_distribution<double>(0, 0);
       }
     }
     else
     {
-      noise_x_d_ = std::uniform_real_distribution<double>(0, 0);
-      noise_theta_d_ = std::uniform_real_distribution<double>(0, 0);
-      noise_f_d_ = std::uniform_real_distribution<double>(0, 0);
+      noise_t_ = std::uniform_real_distribution<double>(0, 0);
+      noise_k_ = std::uniform_real_distribution<double>(0, 0);
     }
   }
   else
@@ -526,6 +525,7 @@ void MechanismClient::runExperiment()
         }
 
         mechanism_goal.rod_arm = rod_arm_;
+        mechanism_goal.alpha = 0.5;
         mechanism_goal.surface_arm = surface_arm_;
         mechanism_goal.vd_amplitude = vd_amp_;
         mechanism_goal.wd_amplitude = wd_amp_;
@@ -535,8 +535,8 @@ void MechanismClient::runExperiment()
         mechanism_goal.use_nullspace = use_nullspace_;
         mechanism_goal.use_estimates = use_estimates_;
         mechanism_goal.nullspace_gain = km_;
-        mechanism_goal.init_t_error = init_t_error_;
-        mechanism_goal.init_k_error = init_k_error_;
+        mechanism_goal.init_t_error = init_t_error_ + noise_t_(noise_generator_);
+        mechanism_goal.init_k_error = init_k_error_ + noise_k_(noise_generator_);
 
         bool mechanism_timeout = false;
         if (!monitorActionGoal<pr2_cartesian_controllers::MechanismIdentificationAction,

@@ -1,5 +1,6 @@
 # Empty goal
 bool use_goal # if false, will keep current values
+bool scale_alpha
 bool use_estimates
 bool use_nullspace
 int32 rod_arm
@@ -15,13 +16,11 @@ float64 vd_amp
 float64 wd_amp
 float64 vd_freq
 float64 wd_freq
-bool randomize_desired_state
-float64 x_min
-float64 x_max
-float64 theta_min
-float64 theta_max
-float64 f_min
-float64 f_max
+bool randomize_initial_error
+float64 t_min
+float64 t_max
+float64 k_min
+float64 k_max
 
 int32 LEFT = 0
 int32 RIGHT = 1

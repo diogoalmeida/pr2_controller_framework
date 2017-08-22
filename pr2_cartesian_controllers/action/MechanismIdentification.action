@@ -1,6 +1,7 @@
 # Goal: triggers the controller.
 int32 rod_arm
 int32 surface_arm
+float64 alpha
 float64 goal_force
 float64 vd_amplitude
 float64 vd_frequency

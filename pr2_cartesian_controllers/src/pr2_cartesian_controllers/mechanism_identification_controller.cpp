@@ -176,7 +176,7 @@ namespace cartesian_controllers {
   void MechanismIdentificationController::publishFeedback()
   {
     visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
-    geometry_msgs::Vector3 r_vec;
+    geometry_msgs::Vector3 r_vec, r1, r2, p1, p2, pc, pc_est, t, t_est, k, k_est;
     Eigen::Vector3d linear_vel_eig, angular_vel_eig, force_e, torque_e, force_d, torque_d;
     geometry_msgs::WrenchStamped surface_wrench, force_control_twist;
     tf::Transform pc_transform;
@@ -314,7 +314,15 @@ namespace cartesian_controllers {
           feedback_.absolute_twist.header.stamp = ros::Time::now();
           feedback_.relative_twist.header.stamp = ros::Time::now();
           adaptive_controller_.getErrors(force_e, torque_e, force_d, torque_d);
-
+          
+          tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
+          tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
+          tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
+          tf::vectorEigenToMsg(pc_est_.translation(), feedback_.pc_est);
+          tf::vectorEigenToMsg(translational_dof_ground_, feedback_.t);
+          tf::vectorEigenToMsg(translational_dof_est_, feedback_.t_est);
+          tf::vectorEigenToMsg(rotational_dof_ground_, feedback_.k);
+          tf::vectorEigenToMsg(rotational_dof_est_, feedback_.k_est);
           feedback_.force_error = force_e.norm();
           feedback_.force_d = force_d.norm();
           feedback_.torque_error = torque_e.norm();

@@ -27,6 +27,11 @@ geometry_msgs/Vector3 r2
 geometry_msgs/Vector3 p1
 geometry_msgs/Vector3 p2
 geometry_msgs/Vector3 pc
+geometry_msgs/Vector3 pc_est
+geometry_msgs/Vector3 t
+geometry_msgs/Vector3 t_est
+geometry_msgs/Vector3 k
+geometry_msgs/Vector3 k_est
 geometry_msgs/WrenchStamped surface_wrench
 float64 task_compatibility
 float64 alpha

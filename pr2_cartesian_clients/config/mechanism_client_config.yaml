@@ -11,7 +11,7 @@ initialization:
     mechanism_timeout: 500
   gravity_compensation_service_name: /gravity_compensation/calibrate_bias
   server_timeout: 2
-  exclude_controller_names: [base_controller, base_odometry, head_traj_controller, laser_tilt_controller, torso_controller, r_gripper_controller, l_gripper_controller, r_arm_controller, l_arm_controller]
+  exclude_controller_names: [base_controller, base_odometry, head_traj_controller, laser_tilt_controller, torso_controller, r_gripper_controller, l_gripper_controller, r_arm_controller, l_arm_controller, head_camera_trigger, l_forearm_cam_trigger, r_forearm_cam_trigger]
 
 experiment:
   use_nullspace: true

@@ -70,7 +70,7 @@ approach_controller:
 
 move_controller:
   action_server_name: move_controller
-  max_allowed_error: 0.005
+  max_allowed_error: 0.002
   velocity_gain: 80
   error_threshold: 0.02
   ik_service_name:

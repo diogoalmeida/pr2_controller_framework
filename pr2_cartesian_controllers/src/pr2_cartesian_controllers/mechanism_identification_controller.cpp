@@ -333,7 +333,7 @@ namespace cartesian_controllers {
           feedback_.rotational_angle_error = std::acos(rotational_dof_ground_.dot(rotational_dof_est_));
           
           // normal = translational_dof_ground_.cross(rotational_dof_ground_);
-          feedback_.pc_distance_error = ((I - rotational_dof_ground_*rotational_dof_ground_.transpose())*pc_est_.translation() - pc_.translation()).norm();
+          feedback_.pc_distance_error = ((I - rotational_dof_ground_*rotational_dof_ground_.transpose())*(pc_est_.translation() - pc_.translation())).norm();
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

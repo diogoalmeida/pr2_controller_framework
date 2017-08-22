@@ -70,8 +70,8 @@ approach_controller:
 
 move_controller:
   action_server_name: move_controller
-  max_allowed_error: 0.025
-  velocity_gain: 10
+  max_allowed_error: 0.005
+  velocity_gain: 80
   error_threshold: 0.02
   ik_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik
@@ -100,7 +100,7 @@ folding_controller:
 
 mechanism_controller:
   action_server_name: mechanism_controller
-  rotational_gains: [0, 0, 0, 0, 1, 0] #[0, 0, 0, 0, 1, 0]
+  rotational_gains: [0, 0, 0, 0, 0, 0] #[0, 0, 0, 0, 1, 0]
   joint_error_lim: 0.025
   use_estimates: false
   rod_length: 0.11

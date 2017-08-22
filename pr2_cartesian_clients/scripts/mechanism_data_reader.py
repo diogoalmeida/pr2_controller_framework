@@ -94,6 +94,8 @@ if __name__ == '__main__':
     matplotlib.rcParams['lines.linewidth'] = 1
     matplotlib.rcParams['figure.subplot.wspace'] = 0.4
     matplotlib.rcParams['figure.subplot.hspace'] = 0.25
+    t_final = 14    
+    title_offset = 1.05
 
     if loadParams():
 
@@ -132,24 +134,40 @@ if __name__ == '__main__':
             if len(t) > 0:
                 t = t - t[0]
                 
-                matplotlib.rcParams['figure.figsize'] = (14, 5)
+                matplotlib.rcParams['figure.figsize'] = (14, 9)
                 plt.figure(1)
                 plt.subplot(411)
                 plt.plot(t, vs, 'k')
                 plt.plot(t, vforce, 'r')
                 plt.grid(True)
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.05, 0.05)
+                plt.ylabel('[m/s]')
+                plt.title('Commanded velocities', y=title_offset)
                 
                 plt.subplot(412)
                 plt.plot(t, wr, 'k')
                 plt.grid(True)
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.1, 0.1)
+                plt.ylabel('[rad/s]')
+                plt.title('Commanded relative angular velocity', y=title_offset)
                 
                 plt.subplot(413)
                 plt.plot(t, error_pc, 'k')
                 plt.grid(True)
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.1, 0.1)
+                plt.ylabel('[m]')
+                plt.title('Contact point error norm error, $\|p_c - \hat{p}_c\|$', y=title_offset)
 
                 plt.subplot(414)
                 plt.plot(t, error_trans, 'k')
                 plt.grid(True)
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.4, 0.4)
+                plt.ylabel('[rad]')
+                plt.title('Translational DOF angle error', y=title_offset)
 
                 # plt.subplot(313)
                 # plt.plot(t, error_rot, color=gray)
@@ -215,9 +233,6 @@ if __name__ == '__main__':
             mean_error_trans = mean_error_trans/(num + 1)
             mean_error_rot = mean_error_rot/(num + 1)
             plt.figure(1)
-
-            title_offset = 1.05
-            t_final = 14
 
             plt.subplot(211)
             addLabelledPlot(t, mean_error_p_c[0:len(t)], "$\|p_c - \hat{p}_c\|$", 'k')

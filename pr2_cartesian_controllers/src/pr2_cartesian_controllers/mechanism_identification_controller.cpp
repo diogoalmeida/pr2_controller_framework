@@ -178,7 +178,8 @@ namespace cartesian_controllers {
   {
     visualization_msgs::Marker pc_marker, pc_est_marker, p1_marker, p2_marker, r1_marker, r1_est_marker, r2_marker, r2_est_marker, trans_marker, rot_marker, trans_est_marker, rot_est_marker;
     geometry_msgs::Vector3 r_vec, r1, r2, p1, p2, pc, pc_est, t, t_est, k, k_est;
-    Eigen::Vector3d linear_vel_eig, angular_vel_eig, force_e, torque_e, force_d, torque_d;
+    Eigen::Vector3d linear_vel_eig, angular_vel_eig, force_e, torque_e, force_d, torque_d, normal;
+    Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     geometry_msgs::WrenchStamped surface_wrench, force_control_twist;
     tf::Transform pc_transform;
 
@@ -330,7 +331,9 @@ namespace cartesian_controllers {
           feedback_.torque_d = torque_d.norm();
           feedback_.translational_angle_error = std::acos(translational_dof_ground_.dot(translational_dof_est_));
           feedback_.rotational_angle_error = std::acos(rotational_dof_ground_.dot(rotational_dof_est_));
-          feedback_.pc_distance_error = (pc_est_.translation() - pc_.translation()).norm();
+          
+          // normal = translational_dof_ground_.cross(rotational_dof_ground_);
+          feedback_.pc_distance_error = ((I - rotational_dof_ground_*rotational_dof_ground_.transpose())*pc_est_.translation() - pc_.translation()).norm();
           action_server_->publishFeedback(feedback_);
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

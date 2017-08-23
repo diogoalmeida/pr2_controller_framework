@@ -1,6 +1,7 @@
 # Empty goal
 bool use_goal # if false, will keep current values
 bool scale_alpha
+int32 alpha_granularity
 bool use_estimates
 bool use_nullspace
 int32 rod_arm

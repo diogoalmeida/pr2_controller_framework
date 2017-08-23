@@ -197,13 +197,15 @@ if __name__ == '__main__':
                 
                 for topic, msg, time in bag.read_messages(start_time = rospy.Time(end_time)):
                     alphas = np.append(alphas, [msg.feedback.alpha])
-                
+            
+            print(alphas)
             alpha_values = np.unique(alphas)
             num_bars = len(alpha_values)
             error_pc = np.zeros([num_bars])
             dev_pc = np.zeros([num_bars])
             error_trans = np.zeros([num_bars])
             dev_trans = np.zeros([num_bars])
+            total = np.zeros([num_bars])
             
             for num in range(len(glob.glob(getDir() + "/" + bag_prefix + "*.bag"))):
                 bag_name = bag_prefix + str(num + 1)
@@ -219,12 +221,13 @@ if __name__ == '__main__':
                     
                     error_pc[index] = error_pc[index] + msg.feedback.pc_distance_error
                     error_trans[index] = error_trans[index] + msg.feedback.translational_angle_error
-                    # break
+                    total[index] = total[index] + 1 
+                    break
                     # print("hehe")
                     
             for i in range(0, len(error_pc)):
-                error_pc[i] = error_pc[i]/(num + 1)
-                error_trans[i] = error_trans[i]/(num + 1)
+                error_pc[i] = error_pc[i]/(total[i])
+                error_trans[i] = error_trans[i]/(total[i])
                 
             for num in range(len(glob.glob(getDir() + "/" + bag_prefix + "*.bag"))):
                 bag_name = bag_prefix + str(num + 1)
@@ -240,9 +243,14 @@ if __name__ == '__main__':
                     
                     dev_pc[index] = dev_pc[index] + (msg.feedback.pc_distance_error - error_pc[index])**2
                     dev_trans[index] = dev_trans[index] + (msg.feedback.translational_angle_error - error_trans[index])**2
+                    break
                     
-            dev_pc[index] = np.sqrt(dev_pc[index]/(num + 1))
-            dev_trans[index] = np.sqrt(dev_trans[index]/(num + 1))
+            
+            for i in range(0, len(dev_pc)):
+                print("total")
+                print(total[i])
+                dev_pc[i] = np.sqrt(dev_pc[i]/(total[i]))
+                dev_trans[i] = np.sqrt(dev_trans[i]/(total[i]))
                 
             plt.figure(1)
             plt.subplot(211)

@@ -31,3 +31,4 @@ int32 RIGHT = 1
 # Provide status of what's being run as feedback
 string current_action
 string progress
+float64 alpha

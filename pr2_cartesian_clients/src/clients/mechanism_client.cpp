@@ -467,7 +467,7 @@ void MechanismClient::runExperiment()
             boost::lock_guard<boost::mutex> guard(reference_mutex_);
             current_action_ = move_action_name_;
           }
-                    
+          
           move_goal.desired_pose[rod_arm_] = initial_rod_pose_;
           move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
           

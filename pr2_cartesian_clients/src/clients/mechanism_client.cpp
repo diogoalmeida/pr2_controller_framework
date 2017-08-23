@@ -23,6 +23,7 @@ MechanismClient::MechanismClient()
   action_server_->registerPreemptCallback(boost::bind(&MechanismClient::preemptCB, this));
   feedback_thread_ = boost::thread(&MechanismClient::publishFeedback, this);
   current_iter_ = 0;
+  alpha_granularity_ = 0;
 }
 
 MechanismClient::~MechanismClient()
@@ -313,6 +314,7 @@ void MechanismClient::goalCB()
       init_k_error_ = goal->init_k_error;
       km_ = goal->nullspace_gain;
       scale_alpha_ = goal->scale_alpha;
+      alpha_granularity_ = goal->alpha_granularity;
 
       if (goal->randomize_initial_error)
       {
@@ -374,7 +376,7 @@ void MechanismClient::runExperiment()
 {
   ros::Time init, curr;
   bool got_eef_pose = false;
-  int current_iter = 1;
+  int current_iter = 1, num_alpha_iter = 1;
 
   action_server_->start();
   ROS_INFO("Started the mechanism client action server: %s", cartesian_client_action_name_.c_str());
@@ -448,134 +450,141 @@ void MechanismClient::runExperiment()
       std::cin.get();
       closeGripper(left_gripper_client_);
       closeGripper(right_gripper_client_);
-
-      while(action_server_->isActive() && current_iter <= num_of_experiments_)
+      double alpha = 0.5;
+      
+      if (scale_alpha_)
       {
-        // Send rod arm to right initial pose
+        num_alpha_iter = alpha_granularity_;
+        alpha = 0;
+      }
+      
+      for (int i = 0; i <= alpha_granularity_ && action_server_->isActive(); i++)
+      {
+        while(action_server_->isActive() && current_iter <= num_of_experiments_)
         {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = move_action_name_;
-        }
-
-        move_goal.desired_pose[rod_arm_] = initial_rod_pose_;
-        move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
-
-        if (!controller_runner_.runController(move_controller_name_))
-        {
-          ROS_ERROR("Failed to run the controller %s", move_action_name_.c_str());
-          action_server_->setAborted();
-          continue;
-        }
-        
-        sleep(1.0);
-        controller_runner_.stopController("l_arm_controller");
-        controller_runner_.stopController("r_arm_controller");
-
-        bool move_timeout = false;
-        if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
-                              pr2_cartesian_controllers::MoveGoal,
-                              pr2_cartesian_clients::MechanismAction>
-                                (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
-        {
-          ROS_ERROR("Error in the move action. Aborting.");
-          action_server_->setAborted();
-          continue;
-        }
-        ROS_INFO("Move action succeeded!");
-
-        // if(!gravity_compensation_client_.call(srv))
-        // {
-        //   ROS_ERROR("Error calling the gravity compensation server!");
-        //   // action_server_->setAborted();
-        //   // return;
-        // }
-
-        {
-          boost::lock_guard<boost::mutex> guard(reference_mutex_);
-          current_action_ = mechanism_action_name_;
-          current_iter_ = current_iter;
-        }
-        controller_runner_.runController("l_arm_controller");
-        controller_runner_.runController("r_arm_controller");
-        sleep(1.0);
-
-        if (!controller_runner_.runController(mechanism_controller_name_))
-        {
-          ROS_ERROR("Failed to run the controller %s", mechanism_action_name_.c_str());
-          action_server_->setAborted();
-          continue;
-        }
-
-        sleep(1.0);
-        controller_runner_.stopController("l_arm_controller");
-        controller_runner_.stopController("r_arm_controller");
-
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-        std::string bag_name;
-        bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(current_iter);
-        ROS_INFO("Running experiment %d/%d", current_iter, num_of_experiments_);
-        {
-          pr2_cartesian_clients::LogMessages srv;
-          srv.request.log_type = srv.request.START_LOGGING;
-          srv.request.name = bag_name;
-          srv.request.max_record_time = mechanism_action_time_limit_ + 10;
-          if (!logging_service_client_.call(srv))
+          // Send rod arm to right initial pose
           {
-            ROS_WARN("Error calling the logging service, will not be able to log experiment");
+            boost::lock_guard<boost::mutex> guard(reference_mutex_);
+            current_action_ = move_action_name_;
           }
-        }
-        sleep(1.0);
-
-        mechanism_goal.rod_arm = rod_arm_;
-        mechanism_goal.alpha = 0.5;
-        mechanism_goal.surface_arm = surface_arm_;
-        mechanism_goal.vd_amplitude = vd_amp_;
-        mechanism_goal.wd_amplitude = wd_amp_;
-        mechanism_goal.vd_frequency = vd_freq_;
-        mechanism_goal.wd_frequency = wd_freq_;
-        mechanism_goal.goal_force = goal_force_;
-        mechanism_goal.use_nullspace = use_nullspace_;
-        mechanism_goal.use_estimates = use_estimates_;
-        mechanism_goal.nullspace_gain = km_;
-        mechanism_goal.init_t_error = init_t_error_ + noise_t_(noise_generator_);
-        mechanism_goal.init_k_error = init_k_error_ + noise_k_(noise_generator_);
-
-        bool mechanism_timeout = false;
-        if (!monitorActionGoal<pr2_cartesian_controllers::MechanismIdentificationAction,
-                              pr2_cartesian_controllers::MechanismIdentificationGoal,
-                              pr2_cartesian_clients::MechanismAction>
-                                (mechanism_action_client_, mechanism_goal, action_server_, server_timeout_, mechanism_action_time_limit_, mechanism_timeout))
-        {
-          if (!mechanism_timeout)
+                    
+          move_goal.desired_pose[rod_arm_] = initial_rod_pose_;
+          move_goal.desired_pose[surface_arm_] = initial_surface_pose_;
+          
+          if (!controller_runner_.runController(move_controller_name_))
           {
-            ROS_ERROR("Error in the mechanism action.");
-            {
-              pr2_cartesian_clients::LogMessages srv;
-              srv.request.log_type = srv.request.DISCARD_BAG;
-              if (!logging_service_client_.call(srv))
-              {
-                ROS_WARN("Error calling the logging service, will not be able to log experiment");
-              }
-            }
+            ROS_ERROR("Failed to run the controller %s", move_action_name_.c_str());
+            action_server_->setAborted();
             continue;
           }
-        }
-
-        sleep(1.0);
-        {
-          pr2_cartesian_clients::LogMessages srv;
-          srv.request.log_type = srv.request.SAVE_BAG;
-          if (!logging_service_client_.call(srv))
+          
+          sleep(1.0);
+          controller_runner_.stopController("l_arm_controller");
+          controller_runner_.stopController("r_arm_controller");
+          
+          bool move_timeout = false;
+          if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
+            pr2_cartesian_controllers::MoveGoal,
+            pr2_cartesian_clients::MechanismAction>
+            (move_action_client_, move_goal, action_server_, server_timeout_, move_action_time_limit_, move_timeout))
+            {
+              ROS_ERROR("Error in the move action. Aborting.");
+              action_server_->setAborted();
+              continue;
+            }
+          ROS_INFO("Move action succeeded!");
+          
+          // if(!gravity_compensation_client_.call(srv))
+          // {
+          //   ROS_ERROR("Error calling the gravity compensation server!");
+          //   // action_server_->setAborted();
+          //   // return;
+          // }
+          
           {
-            ROS_WARN("Error calling the logging service, will not be able to log experiment");
+            boost::lock_guard<boost::mutex> guard(reference_mutex_);
+            current_action_ = mechanism_action_name_;
+            current_iter_ = current_iter;
           }
+          controller_runner_.runController("l_arm_controller");
+          controller_runner_.runController("r_arm_controller");
+          
+          if (!controller_runner_.runController(mechanism_controller_name_))
+          {
+            ROS_ERROR("Failed to run the controller %s", mechanism_action_name_.c_str());
+            action_server_->setAborted();
+            continue;
+          }
+          
+          sleep(1.0);
+          controller_runner_.stopController("l_arm_controller");
+          controller_runner_.stopController("r_arm_controller");
+          
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+          std::string bag_name;
+          bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(current_iter);
+          ROS_INFO("Running experiment %d/%d", current_iter, num_of_experiments_);
+          {
+            pr2_cartesian_clients::LogMessages srv;
+            srv.request.log_type = srv.request.START_LOGGING;
+            srv.request.name = bag_name;
+            srv.request.max_record_time = mechanism_action_time_limit_ + 10;
+            if (!logging_service_client_.call(srv))
+            {
+              ROS_WARN("Error calling the logging service, will not be able to log experiment");
+            }
+          }
+            
+          mechanism_goal.rod_arm = rod_arm_;
+          mechanism_goal.alpha = 0.5;
+          mechanism_goal.surface_arm = surface_arm_;
+          mechanism_goal.vd_amplitude = vd_amp_;
+          mechanism_goal.wd_amplitude = wd_amp_;
+          mechanism_goal.vd_frequency = vd_freq_;
+          mechanism_goal.wd_frequency = wd_freq_;
+          mechanism_goal.goal_force = goal_force_;
+          mechanism_goal.use_nullspace = use_nullspace_;
+          mechanism_goal.use_estimates = use_estimates_;
+          mechanism_goal.nullspace_gain = km_;
+          mechanism_goal.init_t_error = init_t_error_ + noise_t_(noise_generator_);
+          mechanism_goal.init_k_error = init_k_error_ + noise_k_(noise_generator_);
+          
+          bool mechanism_timeout = false;
+          if (!monitorActionGoal<pr2_cartesian_controllers::MechanismIdentificationAction,
+            pr2_cartesian_controllers::MechanismIdentificationGoal,
+            pr2_cartesian_clients::MechanismAction>
+            (mechanism_action_client_, mechanism_goal, action_server_, server_timeout_, mechanism_action_time_limit_, mechanism_timeout))
+            {
+              if (!mechanism_timeout)
+              {
+                ROS_ERROR("Error in the mechanism action.");
+                {
+                  pr2_cartesian_clients::LogMessages srv;
+                  srv.request.log_type = srv.request.DISCARD_BAG;
+                  if (!logging_service_client_.call(srv))
+                  {
+                    ROS_WARN("Error calling the logging service, will not be able to log experiment");
+                  }
+                }
+                continue;
+              }
+            }
+            
+          {
+            pr2_cartesian_clients::LogMessages srv;
+            srv.request.log_type = srv.request.SAVE_BAG;
+            if (!logging_service_client_.call(srv))
+            {
+              ROS_WARN("Error calling the logging service, will not be able to log experiment");
+            }
+            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+          }
+          current_iter++;
+          ros::spinOnce();
+          boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
         }
-        current_iter++;
-        ros::spinOnce();
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
+        alpha += 1/alpha_granularity_;
       }
-
       ROS_INFO("Experiment done!");
       controller_runner_.unloadAll();
       openGripper(left_gripper_client_);
@@ -588,7 +597,7 @@ void MechanismClient::runExperiment()
     {
       got_eef_pose = false;
     }
-
+    
     current_iter = 1;
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));

@@ -255,10 +255,15 @@ if __name__ == '__main__':
             plt.figure(1)
             plt.subplot(211)
             plt.bar(alpha_values - 0.025, error_pc, width=0.05, yerr = dev_pc, ecolor='k')
+            plt.xlim(-0.025, 1.025)
+            plt.ylabel('[m]')
             plt.grid(True)
             
             plt.subplot(212)
             plt.bar(alpha_values - 0.025, error_trans, width=0.05, yerr = dev_trans, ecolor='k')
+            plt.ylabel('[rad]')
+            plt.xlim(-0.025, 1.025)
+            plt.xlabel('$\\alpha$')
             plt.grid(True)
             
         else:

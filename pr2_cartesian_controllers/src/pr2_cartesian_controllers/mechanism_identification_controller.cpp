@@ -83,6 +83,7 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::goalCB()
   {
+    ROS_INFO("Mechanism goal callback");
     boost::shared_ptr<const pr2_cartesian_controllers::MechanismIdentificationGoal> goal = action_server_->acceptNewGoal();
     {
       boost::lock_guard<boost::mutex>guard(reference_mutex_);

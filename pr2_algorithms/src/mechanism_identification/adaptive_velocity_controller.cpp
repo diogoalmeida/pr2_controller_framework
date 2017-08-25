@@ -26,7 +26,7 @@ namespace manipulation_algorithms{
 
     force_error_ = wrench.block<3,1>(0,0) - f_d_*normal;
     // force_error_ = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error_ = wrench.block<3,1>(3,0).dot(t_)*t_; 
+    torque_error_ = wrench.block<3,1>(3,0); 
     // torque_error_ = (I - normal*normal.transpose())*torque_error_;
 
     if (torque_error_.norm() < torque_slack_)

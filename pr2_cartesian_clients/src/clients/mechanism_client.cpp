@@ -436,8 +436,8 @@ void MechanismClient::runExperiment()
         if(!gravity_compensation_client_.call(srv))
         {
           ROS_ERROR("Error calling the gravity compensation server!");
-          // action_server_->setAborted();
-          // return;
+          action_server_->setAborted();
+          return;
         }
         sleep(1.0);
       }
@@ -461,9 +461,9 @@ void MechanismClient::runExperiment()
       int total_iter = 0;
       for (int i = 0; i <= alpha_granularity_ && action_server_->isActive(); i++)
       {
-        feedback_.alpha = alpha;
         while(action_server_->isActive() && current_iter <= num_of_experiments_)
         {
+          feedback_.alpha = alpha;
           total_iter++;
           // Send rod arm to right initial pose
           {
@@ -481,7 +481,6 @@ void MechanismClient::runExperiment()
             continue;
           }
           
-          sleep(1.0);
           controller_runner_.stopController("l_arm_controller");
           controller_runner_.stopController("r_arm_controller");
           
@@ -496,7 +495,7 @@ void MechanismClient::runExperiment()
               continue;
             }
           ROS_INFO("Move action succeeded!");
-          
+          sleep(1.0);
           // if(!gravity_compensation_client_.call(srv))
           // {
           //   ROS_ERROR("Error calling the gravity compensation server!");
@@ -519,7 +518,6 @@ void MechanismClient::runExperiment()
             continue;
           }
           
-          sleep(1.0);
           controller_runner_.stopController("l_arm_controller");
           controller_runner_.stopController("r_arm_controller");
           
@@ -583,12 +581,15 @@ void MechanismClient::runExperiment()
             boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
           }
           current_iter++;
+          if (scale_alpha_)
+          {
+            alpha += (double) 1/alpha_granularity_;
+          }
           ros::spinOnce();
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
         }
+        alpha = 0;
         current_iter = 1;
-        alpha += (double) 1/alpha_granularity_;
-        ROS_INFO("NEW ALPHA IS %.2f. ALPHA_GRANULARITY: %d", alpha, alpha_granularity_);
       }
       ROS_INFO("Experiment done!");
       controller_runner_.unloadAll();

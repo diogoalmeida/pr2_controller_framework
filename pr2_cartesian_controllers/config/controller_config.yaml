@@ -71,8 +71,8 @@ approach_controller:
 move_controller:
   action_server_name: move_controller
   max_allowed_error: 0.04
-  velocity_gain: 20
-  error_threshold: 0.01
+  velocity_gain: 15
+  error_threshold: 0.015
   ik_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik
     arm_2: /pr2_right_arm_kinematics/get_ik

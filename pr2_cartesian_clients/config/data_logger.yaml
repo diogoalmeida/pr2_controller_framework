@@ -1,4 +1,4 @@
 logging_topic: /realtime_loop/mechanism_controller/feedback
 toggle_logging_service: /data_logger/toggle
-log_directory: mechanism/preliminary_results
+log_directory: mechanism/alpha_scale_results_alternated
 log_type: mechanism

@@ -454,14 +454,17 @@ void MechanismClient::runExperiment()
       
       if (scale_alpha_)
       {
+        ROS_INFO("Scalling alpha!");
         num_alpha_iter = alpha_granularity_;
         alpha = 0;
       }
-      
+      int total_iter = 0;
       for (int i = 0; i <= alpha_granularity_ && action_server_->isActive(); i++)
       {
+        feedback_.alpha = alpha;
         while(action_server_->isActive() && current_iter <= num_of_experiments_)
         {
+          total_iter++;
           // Send rod arm to right initial pose
           {
             boost::lock_guard<boost::mutex> guard(reference_mutex_);
@@ -522,7 +525,7 @@ void MechanismClient::runExperiment()
           
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
           std::string bag_name;
-          bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(current_iter);
+          bag_name = std::string(bag_prefix_) + std::string("_") + std::to_string(total_iter);
           ROS_INFO("Running experiment %d/%d", current_iter, num_of_experiments_);
           {
             pr2_cartesian_clients::LogMessages srv;
@@ -536,7 +539,7 @@ void MechanismClient::runExperiment()
           }
             
           mechanism_goal.rod_arm = rod_arm_;
-          mechanism_goal.alpha = 0.5;
+          mechanism_goal.alpha = alpha;
           mechanism_goal.surface_arm = surface_arm_;
           mechanism_goal.vd_amplitude = vd_amp_;
           mechanism_goal.wd_amplitude = wd_amp_;
@@ -583,7 +586,9 @@ void MechanismClient::runExperiment()
           ros::spinOnce();
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000/feedback_hz_));
         }
-        alpha += 1/alpha_granularity_;
+        current_iter = 1;
+        alpha += (double) 1/alpha_granularity_;
+        ROS_INFO("NEW ALPHA IS %.2f. ALPHA_GRANULARITY: %d", alpha, alpha_granularity_);
       }
       ROS_INFO("Experiment done!");
       controller_runner_.unloadAll();

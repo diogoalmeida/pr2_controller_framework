@@ -587,31 +587,31 @@ namespace cartesian_controllers {
       trans_est_kdl.x(trans_est_eig_frame[0]);
       trans_est_kdl.y(trans_est_eig_frame[1]);
       trans_est_kdl.z(trans_est_eig_frame[2]);
-      // rot_est_kdl.x(rotational_dof_est_[0]);
-      // rot_est_kdl.y(rotational_dof_est_[1]);
-      // rot_est_kdl.z(rotational_dof_est_[2]);
+      rot_est_kdl.x(rot_est_eig_frame[0]);
+      rot_est_kdl.y(rot_est_eig_frame[1]);
+      rot_est_kdl.z(rot_est_eig_frame[2]);
       trans_est_kdl = eef_grasp_kdl[surface_arm_].M*trans_est_kdl;
-      // rot_est_kdl = eef_grasp_kdl[surface_arm_].M*rot_est_kdl;
+      rot_est_kdl = eef_grasp_kdl[surface_arm_].M*rot_est_kdl;
       translational_dof_est_[0] = trans_est_kdl.x();
       translational_dof_est_[1] = trans_est_kdl.y();
       translational_dof_est_[2] = trans_est_kdl.z();
-      // rotational_dof_est_[0] = rot_est_kdl.x();
-      // rotational_dof_est_[1] = rot_est_kdl.y();
-      // rotational_dof_est_[2] = rot_est_kdl.z();
+      rotational_dof_est_[0] = rot_est_kdl.x();
+      rotational_dof_est_[1] = rot_est_kdl.y();
+      rotational_dof_est_[2] = rot_est_kdl.z();
       w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
       
-      if (std::abs(w_d) > -0.005)
-      {
-        rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
-      }
-      rot_est_kdl.x(rotational_dof_est_[0]);
-      rot_est_kdl.y(rotational_dof_est_[1]);
-      rot_est_kdl.z(rotational_dof_est_[2]);
-      rot_est_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*rot_est_kdl;
-      rot_est_eig_frame[0] = rot_est_kdl.x();
-      rot_est_eig_frame[1] = rot_est_kdl.y();
-      rot_est_eig_frame[2] = rot_est_kdl.z();
-      adaptive_controller_.initEstimates(trans_est_eig_frame, rot_est_eig_frame);
+      // if (std::abs(w_d) > -0.005)
+      // {
+      //   rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
+      // }
+      // rot_est_kdl.x(rotational_dof_est_[0]);
+      // rot_est_kdl.y(rotational_dof_est_[1]);
+      // rot_est_kdl.z(rotational_dof_est_[2]);
+      // rot_est_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*rot_est_kdl;
+      // rot_est_eig_frame[0] = rot_est_kdl.x();
+      // rot_est_eig_frame[1] = rot_est_kdl.y();
+      // rot_est_eig_frame[2] = rot_est_kdl.z();
+      // adaptive_controller_.initEstimates(trans_est_eig_frame, rot_est_eig_frame);
       
       // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;

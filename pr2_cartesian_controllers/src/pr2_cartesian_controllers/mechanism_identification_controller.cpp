@@ -130,6 +130,8 @@ namespace cartesian_controllers {
     use_estimates_ = goal->use_estimates;
     init_t_error_ = goal->init_t_error;
     init_k_error_ = goal->init_k_error;
+    
+    angle_gen_ = std::uniform_real_distribution<double>(0, 2*M_PI);
 
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     ects_controller_->setAlpha(goal->alpha);
@@ -481,10 +483,21 @@ namespace cartesian_controllers {
 
     if (!has_initial_)
     {
+      double t_angle = angle_gen_(noise_generator_);
+      double k_angle = angle_gen_(noise_generator_);
+      Eigen::Quaterniond base_rot;
+      
+      Eigen::Vector3d t_cone_vector, k_cone_vector;
+      t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
+      k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
+      tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
+      t_cone_vector = base_rot*t_cone_vector;
+      k_cone_vector = base_rot*k_cone_vector;
+      
       kalman_estimator_.initialize(p2_.translation());
-      rotational_dof_est_ = Eigen::AngleAxisd(init_k_error_, surface_normal).toRotationMatrix()*rotational_dof_ground_;
+      rotational_dof_est_ = k_cone_vector;
       rot_estimator_.initialize(rotational_dof_est_);
-      adaptive_controller_.initEstimates(Eigen::AngleAxisd(init_t_error_, rot_ground_in_frame).toRotationMatrix()*trans_ground_in_frame, Eigen::AngleAxisd(init_k_error_, trans_ground_in_frame).toRotationMatrix()*rot_ground_in_frame); // Initialize with ground truth for now
+      adaptive_controller_.initEstimates(t_cone_vector, k_cone_vector);
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;

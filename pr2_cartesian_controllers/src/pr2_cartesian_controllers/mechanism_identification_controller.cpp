@@ -514,7 +514,7 @@ namespace cartesian_controllers {
       k_cone_vector << sin(k_angle)*sin(init_k_error_), cos(init_k_error_), cos(k_angle)*sin(init_k_error_);
       sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), std::abs(cos(phi_sphere)*sin(theta_sphere));
       sphere_vector = base_rot*sphere_vector;
-      pc_est_.translation() = pc_.translation() + init_pc_error_*sphere_vector;
+      pc_est_.translation() = p2_.translation() + init_pc_error_*sphere_vector;
       
       kalman_estimator_.initialize(pc_est_.translation());
       rot_estimator_.initialize(rotational_dof_est_);

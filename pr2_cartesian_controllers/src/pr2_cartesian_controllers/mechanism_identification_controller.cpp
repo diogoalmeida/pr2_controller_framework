@@ -509,9 +509,11 @@ namespace cartesian_controllers {
       Eigen::Quaterniond base_rot;
       
       // t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
-      t_cone_vector << cos(init_t_error_), sin(init_t_error_)*sin(t_angle), std::abs(cos(t_angle)*sin(init_t_error_));
+      // t_cone_vector << cos(init_t_error_), sin(init_t_error_)*sin(t_angle), std::abs(cos(t_angle)*sin(init_t_error_));
+      t_cone_vector << cos(init_t_error_), 0, sin(init_t_error_);
       // k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
-      k_cone_vector << sin(k_angle)*sin(init_k_error_), cos(init_k_error_), cos(k_angle)*sin(init_k_error_);
+      // k_cone_vector << sin(k_angle)*sin(init_k_error_), cos(init_k_error_), cos(k_angle)*sin(init_k_error_);
+      k_cone_vector << 0, cos(init_k_error_), sin(init_k_error_);
       sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), std::abs(cos(phi_sphere)*sin(theta_sphere));
       sphere_vector = base_rot*sphere_vector;
       pc_est_.translation() = p2_.translation() + init_pc_error_*sphere_vector;

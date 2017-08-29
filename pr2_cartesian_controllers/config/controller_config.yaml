@@ -72,7 +72,7 @@ move_controller:
   action_server_name: move_controller
   max_allowed_error: 0.04
   velocity_gain: 15
-  error_threshold: 0.015
+  error_threshold: 0.02
   ik_service_name:
     arm_1: /pr2_left_arm_kinematics/get_ik
     arm_2: /pr2_right_arm_kinematics/get_ik
@@ -143,8 +143,8 @@ mechanism_controller:
 
   adaptive_estimator:
     alpha_force: 0.005
-    beta_force: 0.01
-    alpha_adapt_t: 2500.1
+    beta_force: 0.02
+    alpha_adapt_t: 2000.1
     alpha_torque: 0 #0.2
     beta_torque: 0 #0.05 
     alpha_adapt_r: 0 # 50.0

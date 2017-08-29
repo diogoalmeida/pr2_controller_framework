@@ -325,13 +325,15 @@ if __name__ == '__main__':
                     print("error, no t")
 
             print(num)
+            print(t)
             mean_error_p_c = mean_error_p_c/(num + 1)
             mean_error_trans = mean_error_trans/(num + 1)
             mean_error_rot = mean_error_rot/(num + 1)
             plt.figure(1)
 
             plt.subplot(311)
-            addLabelledPlot(t, mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
+            print(len(mean_error_p_c[0:len(t)]))
+            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
             plt.xlim(0.0, t_final)
             plt.ylim(0.0, 0.15)
             plt.ylabel('[m]')
@@ -340,7 +342,7 @@ if __name__ == '__main__':
             # plt.title('Contact point error norm error, $\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$', y=title_offset)
 
             plt.subplot(312)
-            addLabelledPlot(t, mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
+            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
             plt.xlim(0.0, t_final)
             plt.ylim(0.0, 0.7)
             # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
@@ -348,7 +350,7 @@ if __name__ == '__main__':
             plt.ylabel('[rad]')
 
             plt.subplot(313)
-            addLabelledPlot(t, mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
+            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
             plt.xlim(0.0, t_final)
             plt.ylim(0, 0.7)
             plt.ylabel('[rad]')

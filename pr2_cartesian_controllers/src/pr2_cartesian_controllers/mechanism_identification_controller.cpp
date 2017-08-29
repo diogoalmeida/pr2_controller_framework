@@ -139,6 +139,7 @@ namespace cartesian_controllers {
     use_estimates_ = goal->use_estimates;
     init_t_error_ = goal->init_t_error;
     init_k_error_ = goal->init_k_error;
+    init_pc_error_ = goal->init_pc_error;
     
     angle_gen_ = std::uniform_real_distribution<double>(0, 2*M_PI);
     

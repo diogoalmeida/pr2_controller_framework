@@ -12,7 +12,7 @@ namespace manipulation_algorithms{
     max_nullspace_velocities_ = 0;
     gradient_delta_ = 0.0001;
     epsilon_ = Vector14d::Zero();
-    optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
+    // optimization_thread_ = boost::thread(boost::bind(&ECTSController::optimizationTaskLoop, this));
     q1_.resize(chain_1.getNrOfJoints());
     KDL::SetToZero(q1_);
     q2_.resize(chain_2.getNrOfJoints());

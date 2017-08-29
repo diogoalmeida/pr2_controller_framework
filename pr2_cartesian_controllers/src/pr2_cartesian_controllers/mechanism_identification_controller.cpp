@@ -90,10 +90,14 @@ namespace cartesian_controllers {
       finished_acquiring_goal_ = false;
       has_joint_positions_ = false;
     }
+    
+    ROS_INFO("Got mutex");
 
     cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle(ros::this_node::getName() + "/mechanism_identification_config")));
     cfg_server_->setCallback(cfg_callback_);
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
+
+    ROS_INFO("Initialized cfg; ects");
 
     if(!ects_controller_->getParams(nh_))
     {
@@ -118,6 +122,8 @@ namespace cartesian_controllers {
       action_server_->setAborted(result_);
       return;
     }
+    
+    ROS_INFO("Got parameters");
 
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
@@ -132,12 +138,16 @@ namespace cartesian_controllers {
     init_k_error_ = goal->init_k_error;
     
     angle_gen_ = std::uniform_real_distribution<double>(0, 2*M_PI);
-
+    
+    ROS_INFO("Parsed goal");
+    
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     ects_controller_->setAlpha(goal->alpha);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;
-
+    
+    ROS_INFO("Finished initialization");
+    
     try
     {
       // get the relationship between kinematic chain end-effector and
@@ -168,7 +178,9 @@ namespace cartesian_controllers {
       action_server_->setAborted();
       return;
     }
-
+    
+    ROS_INFO("Got tf");
+    
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
       finished_acquiring_goal_ = true;

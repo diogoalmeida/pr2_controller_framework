@@ -76,7 +76,7 @@ typedef Eigen::Matrix<double, 6, 1> Vector6d;
     void getErrors(Eigen::Vector3d &force_e, Eigen::Vector3d &torque_e, Eigen::Vector3d &desired_force, Eigen::Vector3d &desired_torque);
 
   private:
-    double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, v_d_amp_, w_d_amp_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_, torque_slack_;
+    double alpha_force_, beta_force_, alpha_torque_, beta_torque_, f_d_, v_d_amp_, w_d_amp_, v_freq, w_freq, alpha_adapt_t_, alpha_adapt_r_, torque_slack_, normal_bias_;
     Eigen::Vector3d t_, r_, int_force_, int_torque_, v_f_, w_f_, force_error_, torque_error_, stick_;
 
     /**

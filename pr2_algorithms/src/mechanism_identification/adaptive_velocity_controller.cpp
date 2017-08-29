@@ -8,6 +8,7 @@ namespace manipulation_algorithms{
     int_torque_ = Eigen::Vector3d::Zero();
     v_f_ = Eigen::Vector3d::Zero();
     w_f_ = Eigen::Vector3d::Zero();
+    normal_bias_ = 0.0;
     t_ << 1, 0, 0;
     r_ << 0, 0, 1;
   }
@@ -26,7 +27,7 @@ namespace manipulation_algorithms{
 
     force_error_ = wrench.block<3,1>(0,0) - f_d_*normal;
     // force_error_ = wrench.block<3,1>(0,0) - f_d_*wrench.block<3,1>(0,0).normalized();
-    torque_error_ = wrench.block<3,1>(3,0); 
+    torque_error_ = (wrench.block<3,1>(3,0) - normal_bias_*normal); 
     // torque_error_ = (I - normal*normal.transpose())*torque_error_;
 
     if (torque_error_.norm() < torque_slack_)
@@ -133,6 +134,12 @@ namespace manipulation_algorithms{
     if (!n.getParam("/mechanism_controller/adaptive_estimator/torque_slack", torque_slack_))
     {
       ROS_ERROR("Missing torque slack value (/adaptive_estimator/torque_slack)");
+      return false;
+    }
+    
+    if (!n.getParam("/mechanism_controller/adaptive_estimator/torque_bias", normal_bias_))
+    {
+      ROS_ERROR("Missing torque bias value (/adaptive_estimator/torque_bias)");
       return false;
     }
 

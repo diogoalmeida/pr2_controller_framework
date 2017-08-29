@@ -109,9 +109,9 @@ mechanism_controller:
   k_force: 0.0
   estimator:
     Q:
-      data: [200.01, 0, 0,
-             0, 200.01, 0,
-             0, 0, 200.01]
+      data: [100.01, 0, 0,
+             0, 100.01, 0,
+             0, 0, 100.01]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,
@@ -123,9 +123,9 @@ mechanism_controller:
     
   rotational_estimator:
     Q:
-      data: [1000000.1, 0, 0,
-             0, 1000000.1, 0,
-             0, 0, 1000000.1]
+      data: [50.1, 0, 0,
+             0, 50.1, 0,
+             0, 0, 50.1]
     R:
       data: [0.001, 0, 0,
              0, 0.001, 0,
@@ -144,8 +144,9 @@ mechanism_controller:
   adaptive_estimator:
     alpha_force: 0.005
     beta_force: 0.02
-    alpha_adapt_t: 2000.1
-    alpha_torque: 0 #0.2
-    beta_torque: 0 #0.05 
-    alpha_adapt_r: 0 # 50.0
+    alpha_adapt_t: 1000.1
+    alpha_torque: 1.0
+    beta_torque: 0.01
+    alpha_adapt_r: 50.0
     torque_slack: 0.0 # compensates for sensor bias. We don't want the robot to induce torque at the contact point
+    torque_bias: 0.2

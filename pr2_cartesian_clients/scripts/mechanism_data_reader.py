@@ -253,13 +253,19 @@ if __name__ == '__main__':
                 dev_trans[i] = np.sqrt(dev_trans[i]/(total[i]))
                 
             plt.figure(1)
-            plt.subplot(211)
+            plt.subplot(311)
             plt.bar(alpha_values - 0.025, error_pc, width=0.05, yerr = dev_pc, ecolor='k')
             plt.xlim(-0.025, 1.025)
             plt.ylabel('[m]')
             plt.grid(True)
             
-            plt.subplot(212)
+            plt.subplot(312)
+            plt.bar(alpha_values - 0.025, error_rot, width=0.05, yerr = dev_rot, ecolor='k')
+            plt.xlim(-0.025, 1.025)
+            plt.ylabel('[m]')
+            plt.grid(True)
+            
+            plt.subplot(313)
             plt.bar(alpha_values - 0.025, error_trans, width=0.05, yerr = dev_trans, ecolor='k')
             plt.ylabel('[rad]')
             plt.xlim(-0.025, 1.025)
@@ -303,17 +309,17 @@ if __name__ == '__main__':
                     t = t - t[0]
 
                     plt.figure(1)
-                    plt.subplot(211)
+                    plt.subplot(311)
                     plt.plot(t, error_pc, color=gray)
                     plt.grid(True)
 
-                    plt.subplot(212)
+                    plt.subplot(312)
                     plt.plot(t, error_trans, color=gray)
                     plt.grid(True)
 
-                    # plt.subplot(313)
-                    # plt.plot(t, error_rot, color=gray)
-                    # plt.grid(True)
+                    plt.subplot(313)
+                    plt.plot(t, error_rot, color=gray)
+                    plt.grid(True)
 
                 else:
                     print("error, no t")
@@ -324,7 +330,7 @@ if __name__ == '__main__':
             mean_error_rot = mean_error_rot/(num + 1)
             plt.figure(1)
 
-            plt.subplot(211)
+            plt.subplot(311)
             addLabelledPlot(t, mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
             plt.xlim(0.0, t_final)
             plt.ylim(0.0, 0.15)
@@ -333,7 +339,7 @@ if __name__ == '__main__':
             
             # plt.title('Contact point error norm error, $\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$', y=title_offset)
 
-            plt.subplot(212)
+            plt.subplot(312)
             addLabelledPlot(t, mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
             plt.xlim(0.0, t_final)
             plt.ylim(0.0, 0.7)
@@ -341,15 +347,13 @@ if __name__ == '__main__':
             # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
             plt.ylabel('[rad]')
 
-            # plt.subplot(313)
-            # plt.plot(t, mean_error_rot[0:len(t)], 'k')
+            plt.subplot(313)
+            addLabelledPlot(t, mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
+            plt.xlim(0.0, t_final)
+            plt.ylim(0, 0.7)
+            plt.ylabel('[rad]')
+            plt.xlabel('Time [s]')
             # plt.title('Rotational estimation error angle, $f_d - \hat{f}_{c_y}$', y=title_offset)
-            # plt.xlim(0.0, t_final)
-            # plt.ylim(-0.8, 0.8)
-            # plt.ylabel('[rad]')
-            # plt.xlabel('Time [s]')
-            # plt.subplot(313)
-            # addLabelledPlot(t, f_c_hat[0:len(t)], '$\hat{f}_c$', 'k')
     plt.tight_layout()
     saveFig(bag_prefix)
     plt.show()

@@ -95,6 +95,9 @@ namespace cartesian_controllers {
 
     cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle(ros::this_node::getName() + "/mechanism_identification_config")));
     cfg_server_->setCallback(cfg_callback_);
+    
+    ROS_INFO("ECTS");
+    
     ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
 
     ROS_INFO("Initialized cfg; ects");
@@ -506,7 +509,7 @@ namespace cartesian_controllers {
       // t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
       t_cone_vector << cos(init_t_error_), sin(init_t_error_)*sin(t_angle), -cos(t_angle)*sin(init_t_error_);
       // k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
-      k_cone_vector << -sin(k_angle)*cos(init_k_error_), cos(k_angle)*cos(init_k_error_), sin(init_k_error_);
+      k_cone_vector << sin(k_angle)*sin(init_k_error_), -cos(k_angle)*sin(init_k_error_), cos(init_k_error_);
       sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), -cos(phi_sphere)*sin(theta_sphere);
       tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
       t_cone_vector = base_rot*t_cone_vector;

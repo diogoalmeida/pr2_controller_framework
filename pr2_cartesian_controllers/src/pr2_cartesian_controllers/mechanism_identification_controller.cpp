@@ -512,17 +512,17 @@ namespace cartesian_controllers {
       // k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
       k_cone_vector << sin(k_angle)*sin(init_k_error_), cos(init_k_error_), cos(k_angle)*sin(init_k_error_);
       sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), -cos(phi_sphere)*sin(theta_sphere);
-      tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
-      t_cone_vector = base_rot*t_cone_vector;
-      k_cone_vector = base_rot*k_cone_vector;
       sphere_vector = base_rot*sphere_vector;
-      rotational_dof_est_ = k_cone_vector;
-      translational_dof_est_ = t_cone_vector;
       pc_est_.translation() = p2_.translation() + init_pc_error_*sphere_vector;
       
       kalman_estimator_.initialize(pc_est_.translation());
       rot_estimator_.initialize(rotational_dof_est_);
       adaptive_controller_.initEstimates(t_cone_vector, k_cone_vector);
+      tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
+      t_cone_vector = base_rot*t_cone_vector;
+      k_cone_vector = base_rot*k_cone_vector;
+      rotational_dof_est_ = k_cone_vector;
+      translational_dof_est_ = t_cone_vector;
       adaptive_controller_.setReferenceForce(goal_force_);
       elapsed_ = ros::Time(0);
       has_initial_ = true;

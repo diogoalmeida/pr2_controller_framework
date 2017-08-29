@@ -423,7 +423,8 @@ void MechanismClient::runExperiment()
         action_server_->setAborted();
         continue;
       }
-
+      
+      sleep(1.5);
       controller_runner_.stopController("l_arm_controller");
       controller_runner_.stopController("r_arm_controller");
 
@@ -491,8 +492,9 @@ void MechanismClient::runExperiment()
             continue;
           }
           
-          controller_runner_.stopController("l_arm_controller");
-          controller_runner_.stopController("r_arm_controller");
+          // sleep(1.5);
+          // controller_runner_.stopController("l_arm_controller");
+          // controller_runner_.stopController("r_arm_controller");
           
           bool move_timeout = false;
           if (!monitorActionGoal<pr2_cartesian_controllers::MoveAction,
@@ -505,7 +507,7 @@ void MechanismClient::runExperiment()
               continue;
             }
           ROS_INFO("Move action succeeded!");
-          sleep(1.0);
+
           // if(!gravity_compensation_client_.call(srv))
           // {
           //   ROS_ERROR("Error calling the gravity compensation server!");
@@ -518,8 +520,8 @@ void MechanismClient::runExperiment()
             current_action_ = mechanism_action_name_;
             current_iter_ = current_iter;
           }
-          controller_runner_.runController("l_arm_controller");
-          controller_runner_.runController("r_arm_controller");
+          // controller_runner_.runController("l_arm_controller");
+          // controller_runner_.runController("r_arm_controller");
           
           if (!controller_runner_.runController(mechanism_controller_name_))
           {
@@ -528,8 +530,9 @@ void MechanismClient::runExperiment()
             continue;
           }
           
-          controller_runner_.stopController("l_arm_controller");
-          controller_runner_.stopController("r_arm_controller");
+          // sleep(1.5);
+          // controller_runner_.stopController("l_arm_controller");
+          // controller_runner_.stopController("r_arm_controller");
           
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
           std::string bag_name;

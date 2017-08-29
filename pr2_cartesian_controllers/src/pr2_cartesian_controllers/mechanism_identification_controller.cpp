@@ -495,10 +495,11 @@ namespace cartesian_controllers {
     
     if (!has_initial_)
     {  
-      double t_angle = angle_gen_(noise_generator_);
-      double k_angle = angle_gen_(noise_generator_);
-      double theta_sphere = angle_gen_(noise_generator_);
-      double phi_sphere = angle_gen_(noise_generator_);
+      std::mt19937 gen(rd_());
+      double t_angle = angle_gen_(gen);
+      double k_angle = angle_gen_(gen);
+      double theta_sphere = angle_gen_(gen);
+      double phi_sphere = angle_gen_(gen);
       Eigen::Vector3d t_cone_vector, k_cone_vector, sphere_vector;
       Eigen::Quaterniond base_rot;
       
@@ -510,8 +511,9 @@ namespace cartesian_controllers {
       k_cone_vector = base_rot*k_cone_vector;
       rotational_dof_est_ = k_cone_vector;
       translational_dof_est_ = t_cone_vector;
+      pc_est_.translation() = p2_.translation() + init_pc_error_*sphere_vector;
       
-      kalman_estimator_.initialize(p2_.translation() + init_pc_error_*sphere_vector);
+      kalman_estimator_.initialize(pc_est_.translation());
       rot_estimator_.initialize(rotational_dof_est_);
       adaptive_controller_.initEstimates(t_cone_vector, k_cone_vector);
       adaptive_controller_.setReferenceForce(goal_force_);
@@ -650,7 +652,7 @@ namespace cartesian_controllers {
     {
       // translational_dof_est_ = translational_dof_ground_;
       // rotational_dof_est_ = rotational_dof_ground_;
-      pc_est_ = pc_;
+      // pc_est_ = pc_;
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }

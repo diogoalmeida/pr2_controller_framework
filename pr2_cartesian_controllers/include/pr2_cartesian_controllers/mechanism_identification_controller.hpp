@@ -60,7 +60,7 @@ private:
   std::vector<double> comp_gains_;
   ros::Time elapsed_;
   std::uniform_real_distribution<double> angle_gen_;
-  std::default_random_engine noise_generator_;
+  std::random_device rd_;
 
   void dynamicReconfigureCallback(const pr2_cartesian_controllers::MechanismIdentificationConfig &config, uint32_t level);
 

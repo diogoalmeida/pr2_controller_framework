@@ -492,25 +492,25 @@ namespace cartesian_controllers {
     contact_torque = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(3,0);
     p1_ = grasp_point_frame[rod_arm_];
     p2_ = grasp_point_frame[surface_arm_];
-
-    double t_angle = angle_gen_(noise_generator_);
-    double k_angle = angle_gen_(noise_generator_);
-    double theta_sphere = angle_gen_(noise_generator_);
-    double phi_sphere = angle_gen_(noise_generator_);
-    Eigen::Vector3d t_cone_vector, k_cone_vector, sphere_vector;
-    Eigen::Quaterniond base_rot;
-    
-    t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
-    k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
-    sphere_vector << cos(theta_sphere)*cos(phi_sphere), cos(theta_sphere)*sin(phi_sphere), -sin(theta_sphere);
-    tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
-    t_cone_vector = base_rot*t_cone_vector;
-    k_cone_vector = base_rot*k_cone_vector;
-    rotational_dof_est_ = k_cone_vector;
-    translational_dof_est_ = t_cone_vector;
     
     if (!has_initial_)
     {  
+      double t_angle = angle_gen_(noise_generator_);
+      double k_angle = angle_gen_(noise_generator_);
+      double theta_sphere = angle_gen_(noise_generator_);
+      double phi_sphere = angle_gen_(noise_generator_);
+      Eigen::Vector3d t_cone_vector, k_cone_vector, sphere_vector;
+      Eigen::Quaterniond base_rot;
+      
+      t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
+      k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
+      sphere_vector << cos(theta_sphere)*cos(phi_sphere), cos(theta_sphere)*sin(phi_sphere), -sin(theta_sphere);
+      tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M, base_rot);
+      t_cone_vector = base_rot*t_cone_vector;
+      k_cone_vector = base_rot*k_cone_vector;
+      rotational_dof_est_ = k_cone_vector;
+      translational_dof_est_ = t_cone_vector;
+      
       kalman_estimator_.initialize(p2_.translation() + init_pc_error_*sphere_vector);
       rot_estimator_.initialize(rotational_dof_est_);
       adaptive_controller_.initEstimates(t_cone_vector, k_cone_vector);
@@ -648,8 +648,8 @@ namespace cartesian_controllers {
     }
     else
     {
-      translational_dof_est_ = translational_dof_ground_;
-      rotational_dof_est_ = rotational_dof_ground_;
+      // translational_dof_est_ = translational_dof_ground_;
+      // rotational_dof_est_ = rotational_dof_ground_;
       pc_est_ = pc_;
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;

@@ -111,7 +111,7 @@ namespace manipulation{
     double move_action_time_limit_, mechanism_action_time_limit_;
     pr2_cartesian_clients::MechanismFeedback feedback_;
 
-    double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, goal_torque_, km_, init_t_error_, init_k_error_;
+    double vd_amp_, vd_freq_, wd_amp_, wd_freq_, goal_force_, goal_torque_, km_, init_t_error_, init_k_error_, init_pc_error_;
     geometry_msgs::PoseStamped initial_rod_pose_, initial_surface_pose_;
     std::string base_link_name_, surface_frame_name_;
     std::string gravity_compensation_service_name_;
@@ -122,6 +122,7 @@ namespace manipulation{
     std::default_random_engine noise_generator_;
     std::uniform_real_distribution<double> noise_t_;
     std::uniform_real_distribution<double> noise_k_;
+    std::uniform_real_distribution<double> noise_pc_;
   };
   }
 #endif

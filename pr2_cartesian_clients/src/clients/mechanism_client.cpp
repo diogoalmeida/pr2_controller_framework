@@ -116,6 +116,12 @@ bool MechanismClient::loadParams()
     ROS_ERROR("No initial rotational dof error defined (experiment/init_k_error)");
     return false;
   }
+  
+  if(!nh_.getParam("experiment/init_pc_error", init_pc_error_))
+  {
+    ROS_ERROR("No initial contact point estimation error defined (experiment/init_pc_error)");
+    return false;
+  }
 
   if(!nh_.getParam("initialization/actionlib_server_names/mechanism_action_name", mechanism_action_name_))
   {
@@ -312,6 +318,7 @@ void MechanismClient::goalCB()
       use_estimates_ = goal->use_estimates;
       init_t_error_ = goal->init_t_error;
       init_k_error_ = goal->init_k_error;
+      init_pc_error_ = goal->init_pc_error;
       km_ = goal->nullspace_gain;
       scale_alpha_ = goal->scale_alpha;
       alpha_granularity_ = goal->alpha_granularity;
@@ -320,17 +327,20 @@ void MechanismClient::goalCB()
       {
         noise_t_ = std::uniform_real_distribution<double>(goal->t_min, goal->t_max);
         noise_k_ = std::uniform_real_distribution<double>(goal->k_min, goal->k_max);
+        noise_pc_ = std::uniform_real_distribution<double>(goal->pc_min, goal->pc_max);
       }
       else
       {
         noise_t_ = std::uniform_real_distribution<double>(0, 0);
         noise_k_ = std::uniform_real_distribution<double>(0, 0);
+        noise_pc_ = std::uniform_real_distribution<double>(0, 0);
       }
     }
     else
     {
       noise_t_ = std::uniform_real_distribution<double>(0, 0);
       noise_k_ = std::uniform_real_distribution<double>(0, 0);
+      noise_pc_ = std::uniform_real_distribution<double>(0, 0);
     }
   }
   else
@@ -549,6 +559,7 @@ void MechanismClient::runExperiment()
           mechanism_goal.nullspace_gain = km_;
           mechanism_goal.init_t_error = init_t_error_ + noise_t_(noise_generator_);
           mechanism_goal.init_k_error = init_k_error_ + noise_k_(noise_generator_);
+          mechanism_goal.init_pc_error = init_pc_error_ + noise_pc_(noise_generator_);
           
           bool mechanism_timeout = false;
           if (!monitorActionGoal<pr2_cartesian_controllers::MechanismIdentificationAction,

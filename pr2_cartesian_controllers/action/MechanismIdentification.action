@@ -10,6 +10,7 @@ float64 wd_frequency
 float64 nullspace_gain
 float64 init_t_error
 float64 init_k_error
+float64 init_pc_error
 bool use_nullspace
 bool use_estimates
 

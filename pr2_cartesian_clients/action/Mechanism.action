@@ -10,6 +10,7 @@ float64 goal_force
 float64 nullspace_gain
 float64 init_t_error
 float64 init_k_error
+float64 init_pc_error
 float64 mechanism_timeout
 int32 num_of_experiments
 std_msgs/String bag_prefix
@@ -22,6 +23,8 @@ float64 t_min
 float64 t_max
 float64 k_min
 float64 k_max
+float64 pc_min
+float64 pc_max
 
 int32 LEFT = 0
 int32 RIGHT = 1

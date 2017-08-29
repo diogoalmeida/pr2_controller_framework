@@ -503,9 +503,11 @@ namespace cartesian_controllers {
       Eigen::Vector3d t_cone_vector, k_cone_vector, sphere_vector;
       Eigen::Quaterniond base_rot;
       
-      t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
-      k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
-      sphere_vector << cos(theta_sphere)*cos(phi_sphere), cos(theta_sphere)*sin(phi_sphere), -sin(theta_sphere);
+      // t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
+      t_cone_vector << cos(init_t_error_), sin(init_t_error_)*sin(t_angle), -cos(t_angle)*sin(init_t_error_);
+      // k_cone_vector << cos(init_k_error_)*cos(k_angle), cos(init_k_error_)*sin(k_angle), -sin(init_k_error_);
+      k_cone_vector << cos(init_k_error_), sin(init_k_error_)*sin(k_angle), -cos(k_angle)*sin(init_k_error_);
+      sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), -cos(phi_sphere)*sin(theta_sphere);
       tf::quaternionKDLToEigen (sensor_frame_to_base_[surface_arm_].M.Inverse(), base_rot);
       t_cone_vector = base_rot*t_cone_vector;
       k_cone_vector = base_rot*k_cone_vector;

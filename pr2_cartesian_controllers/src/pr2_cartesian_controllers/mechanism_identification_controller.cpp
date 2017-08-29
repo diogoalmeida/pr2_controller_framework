@@ -496,6 +496,7 @@ namespace cartesian_controllers {
     contact_torque = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]).block<3,1>(3,0);
     p1_ = grasp_point_frame[rod_arm_];
     p2_ = grasp_point_frame[surface_arm_];
+    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     
     if (!has_initial_)
     {  
@@ -529,7 +530,6 @@ namespace cartesian_controllers {
     }
 
     elapsed_ += dt;
-    pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
     pc_.linear() =  p1_.linear();
     pc_est_.linear() =  p1_.linear();
 

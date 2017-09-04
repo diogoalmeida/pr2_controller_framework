@@ -47,3 +47,5 @@ float64 pc_distance_error
 float64 vs
 float64 vforce
 float64 wr
+float64 v_d
+float64 w_d

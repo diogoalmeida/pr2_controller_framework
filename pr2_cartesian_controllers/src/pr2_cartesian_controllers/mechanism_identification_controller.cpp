@@ -610,7 +610,10 @@ namespace cartesian_controllers {
       
       v_d = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec());
       w_d = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec());
-
+      
+      feedback_.v_d = v_d;
+      feedback_.w_d = w_d;
+      
       r_2_kdl.x(r_2[0]); 
       r_2_kdl.y(r_2[1]); 
       r_2_kdl.z(r_2[2]); 

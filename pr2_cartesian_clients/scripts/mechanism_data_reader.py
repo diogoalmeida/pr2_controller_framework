@@ -79,6 +79,8 @@ if __name__ == '__main__':
     parser.add_argument("--directory", type=str, help="The bag directory")
     parser.add_argument("--oneonly", action='store_true', help="True if meant to display only one")
     parser.add_argument("--alpha", action='store_true', help="Plot alpha histogram")
+    parser.add_argument("--trans", action='store_true', help="Plot translational dof")
+    parser.add_argument("--rot", action='store_true', help="Plot rotational dof")
     # parser.add_argument("--all", action='store_true', help="True if meant to parse all")
     # parser.add_argument("--pivot", action='store_true', help="True if meant to plot pivot")
     # parser.add_argument("--new", action='store_true', help="True if results are from latest action version")
@@ -89,8 +91,14 @@ if __name__ == '__main__':
     mean_error_p_c = np.array([])
     mean_error_trans = np.array([])
     mean_error_rot = np.array([])
-
-    matplotlib.rcParams['figure.figsize'] = (7, 5)
+    vs = np.array([])
+    wr = np.array([])
+    
+    if args.trans or args.rot:
+        matplotlib.rcParams['figure.figsize'] = (7, 7.5)
+    else:
+        matplotlib.rcParams['figure.figsize'] = (7, 12.5)
+        
     matplotlib.rcParams['font.size'] = 14
     matplotlib.rcParams['lines.linewidth'] = 1
     matplotlib.rcParams['figure.subplot.wspace'] = 0.4
@@ -148,8 +156,8 @@ if __name__ == '__main__':
                 plt.ylim(-0.05, 0.05)
                 plt.ylabel('[m/s]')
                 # plt.title('Commanded velocities', y=title_offset)
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
-                # plt.legend(loc=0, fontsize='medium')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(loc=0, fontsize='large')
                 
                 plt.subplot(412)
                 plt.plot(t, wr, 'k', label='$\\omega_r$')
@@ -157,7 +165,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(-0.1, 0.1)
                 plt.ylabel('[rad/s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Commanded relative angular velocity, $\\omega_r$', y=title_offset)
                 
                 plt.subplot(413)
@@ -166,7 +174,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.1)
                 plt.ylabel('[m]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Contact point error norm error, $\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$', y=title_offset)
 
                 plt.subplot(414)
@@ -175,7 +183,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.7)
                 plt.ylabel('[rad]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Translational DOF angle error $\\theta_t$', y=title_offset)
 
                 # plt.subplot(313)
@@ -288,17 +296,19 @@ if __name__ == '__main__':
                 for topic, msg, time in bag.read_messages():
                     t = np.append(t, [time.to_sec()])
 
-                    error_pc = np.append(error_pc, [msg.feedback.pc_distance_error])
+                    error_pc = np.append(error_pc, [abs(msg.feedback.pc_distance_error - 0.0)])
                     error_trans = np.append(error_trans, [msg.feedback.translational_angle_error])
                     error_rot = np.append(error_rot, [msg.feedback.rotational_angle_error])
 
                     if num == 0 or len(mean_error_p_c) <= i:
-                        mean_error_p_c = np.append(mean_error_p_c, [msg.feedback.pc_distance_error])
+                        mean_error_p_c = np.append(mean_error_p_c, [abs(msg.feedback.pc_distance_error - 0.0)])
                         mean_error_trans = np.append(mean_error_trans, [msg.feedback.translational_angle_error])
                         mean_error_rot = np.append(mean_error_rot, [msg.feedback.rotational_angle_error])
+                        vs = np.append(vs, [msg.feedback.vs])
+                        wr = np.append(vs, [msg.feedback.wr])
 
                     else:
-                        mean_error_p_c[i] = (mean_error_p_c[i] + msg.feedback.pc_distance_error)
+                        mean_error_p_c[i] = (mean_error_p_c[i] + abs(msg.feedback.pc_distance_error - 0.0))
                         mean_error_trans[i] = mean_error_trans[i] + msg.feedback.translational_angle_error
                         mean_error_rot[i] = (mean_error_rot[i] + msg.feedback.rotational_angle_error)
 
@@ -309,18 +319,47 @@ if __name__ == '__main__':
                     t = t - t[0]
 
                     plt.figure(1)
-                    plt.subplot(311)
-                    plt.plot(t, error_pc, color=gray)
-                    plt.grid(True)
+                    if args.trans:
+                        plt.subplot(311)
+                        plt.plot(t, error_pc, color=gray)
+                        plt.grid(True)
+                        
+                        plt.subplot(312)
+                        plt.grid(True)
+                        
+                        plt.subplot(313)
+                        plt.plot(t, error_trans, color=gray)
+                        plt.grid(True)
+                    elif args.rot:
+                        plt.subplot(311)
+                        plt.plot(t, error_pc, color=gray)
+                        plt.grid(True)
+                        
+                        plt.subplot(312)
+                        plt.grid(True)
+                    
+                        plt.subplot(313)
+                        plt.plot(t, error_rot, color=gray)
+                        plt.grid(True)
+                    else:
+                        plt.subplot(511)
+                        plt.plot(t, error_pc, color=gray)
+                        plt.grid(True)
+                        
+                        plt.subplot(512)
+                        plt.grid(True)
 
-                    plt.subplot(312)
-                    plt.plot(t, error_trans, color=gray)
-                    plt.grid(True)
-
-                    plt.subplot(313)
-                    plt.plot(t, error_rot, color=gray)
-                    plt.grid(True)
-
+                        plt.subplot(513)
+                        plt.plot(t, error_trans, color=gray)
+                        plt.grid(True)
+                        
+                        plt.subplot(514)
+                        plt.grid(True)
+                        
+                        plt.subplot(515)
+                        plt.plot(t, error_rot, color=gray)
+                        plt.grid(True)
+                        
                 else:
                     print("error, no t")
 
@@ -330,32 +369,97 @@ if __name__ == '__main__':
             mean_error_trans = mean_error_trans/(num + 1)
             mean_error_rot = mean_error_rot/(num + 1)
             plt.figure(1)
-
-            plt.subplot(311)
-            print(len(mean_error_p_c[0:len(t)]))
-            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
-            plt.xlim(0.0, t_final)
-            plt.ylim(0.0, 0.15)
-            plt.ylabel('[m]')
-            # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
             
-            # plt.title('Contact point error norm error, $\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$', y=title_offset)
+            if args.trans:
+                plt.subplot(311)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0.0, 0.15)
+                plt.ylabel('[m]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                plt.title('Translational identification results', y=title_offset)
+                
+                plt.subplot(312)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], vs[0:len(t)], "$v_d$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.04, 0.04)
+                plt.ylabel('[m/s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
-            plt.subplot(312)
-            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
-            plt.xlim(0.0, t_final)
-            plt.ylim(0.0, 0.7)
-            # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='medium', fancybox=True, shadow=True)
-            # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
-            plt.ylabel('[rad]')
+                plt.subplot(313)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0.0, 0.4)
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
+                plt.ylabel('[rad]')
+                plt.xlabel('Time [s]')
+                
+            elif args.rot:
+                plt.subplot(311)
+                print(len(mean_error_p_c[0:len(t)]))
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0.0, 0.15)
+                plt.ylabel('[m]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                plt.title('Rotational identification results', y=title_offset)
+                
+                plt.subplot(312)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], wr[0:len(t)], "$\omega_d$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.04, 0.04)
+                plt.ylabel('[rad/s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                
+                plt.subplot(313)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0, 0.4)
+                plt.ylabel('[rad]')
+                plt.xlabel('Time [s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                
+            else:
+                plt.subplot(511)
+                print(len(mean_error_p_c[0:len(t)]))
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0.0, 0.15)
+                plt.ylabel('[m]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                plt.title('Simultaneous identification results', y=title_offset)
+                
+                plt.subplot(512)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], vs[0:len(t)], "$v_d$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.04, 0.04)
+                plt.ylabel('[m/s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
-            plt.subplot(313)
-            addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
-            plt.xlim(0.0, t_final)
-            plt.ylim(0, 0.7)
-            plt.ylabel('[rad]')
-            plt.xlabel('Time [s]')
-            # plt.title('Rotational estimation error angle, $f_d - \hat{f}_{c_y}$', y=title_offset)
+                plt.subplot(513)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0.0, 0.4)
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
+                plt.ylabel('[rad]')
+                
+                plt.subplot(514)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], wr[0:len(t)], "$\omega_d$", 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(-0.04, 0.04)
+                plt.ylabel('[rad/s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                
+                plt.subplot(515)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
+                plt.xlim(0.0, t_final)
+                plt.ylim(0, 0.7)
+                plt.ylabel('[rad]')
+                plt.xlabel('Time [s]')
+                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+
     plt.tight_layout()
     saveFig(bag_prefix)
     plt.show()

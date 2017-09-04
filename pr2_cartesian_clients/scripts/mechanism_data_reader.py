@@ -103,7 +103,7 @@ if __name__ == '__main__':
     matplotlib.rcParams['lines.linewidth'] = 1
     matplotlib.rcParams['figure.subplot.wspace'] = 0.4
     matplotlib.rcParams['figure.subplot.hspace'] = 0.25
-    t_final = 19    
+    t_final = 24    
     title_offset = 1.05
     label_h = 1
     label_v = 1
@@ -376,7 +376,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.15)
                 plt.ylabel('[m]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 plt.title('Translational identification results', y=title_offset)
                 
                 plt.subplot(312)
@@ -384,13 +384,13 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(-0.04, 0.04)
                 plt.ylabel('[m/s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
                 plt.subplot(313)
                 addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.4)
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
                 plt.ylabel('[rad]')
                 plt.xlabel('Time [s]')

@@ -540,12 +540,12 @@ namespace cartesian_controllers {
     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
     // Get wrench in surface frame written in base frame coordinates
     wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
-    wrench_eig[0] = adjust_x_force_*wrench_eig[0]; // compensates for miscalibration
-    wrench_eig[1] = adjust_y_force_*wrench_eig[1];
+    wrench_eig[0] = 0*adjust_x_force_*wrench_eig[0]; // compensates for miscalibration
+    wrench_eig[1] = 0*adjust_y_force_*wrench_eig[1];
     wrench_eig[2] = adjust_z_force_*wrench_eig[2]; 
-    wrench_eig[3] = wrench_eig[3]/adjust_z_force_;
+    wrench_eig[3] = 0*wrench_eig[3]/adjust_z_force_;
     wrench_eig[4] = wrench_eig[4]/adjust_z_force_;
-    wrench_eig[5] = wrench_eig[5]/adjust_y_force_;
+    wrench_eig[5] = 0*wrench_eig[5]/adjust_y_force_;
     tf::wrenchEigenToKDL(wrench_eig, wrench_kdl);
     wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);

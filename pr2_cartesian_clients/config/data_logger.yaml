@@ -1,4 +1,4 @@
 logging_topic: /realtime_loop/mechanism_controller/feedback
 toggle_logging_service: /data_logger/toggle
-log_directory: mechanism/full_identification_results_2
+log_directory: mechanism/translation_axis_only_2
 log_type: mechanism

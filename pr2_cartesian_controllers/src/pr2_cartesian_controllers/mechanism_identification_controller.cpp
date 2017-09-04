@@ -284,8 +284,8 @@ namespace cartesian_controllers {
           getMarkerPoints(p2_.translation(), pc_est_.translation(), r2_est_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_ground_, trans_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_ground_, rot_marker);
-          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_est_marker);
-          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_est_marker);
+          getMarkerPoints(pc_est_.translation(), pc_est_.translation() + 0.1*translational_dof_est_, trans_est_marker);
+          getMarkerPoints(pc_est_.translation(), pc_est_.translation() + 0.1*rotational_dof_est_, rot_est_marker);
 
           pc_pub_.publish(pc_marker);
           pc_est_pub_.publish(pc_est_marker);

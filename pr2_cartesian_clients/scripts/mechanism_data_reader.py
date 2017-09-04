@@ -304,8 +304,8 @@ if __name__ == '__main__':
                         mean_error_p_c = np.append(mean_error_p_c, [abs(msg.feedback.pc_distance_error - 0.0)])
                         mean_error_trans = np.append(mean_error_trans, [msg.feedback.translational_angle_error])
                         mean_error_rot = np.append(mean_error_rot, [msg.feedback.rotational_angle_error])
-                        vs = np.append(vs, [msg.feedback.vs])
-                        wr = np.append(vs, [msg.feedback.wr])
+                        vs = np.append(vs, [msg.feedback.v_d])
+                        wr = np.append(vs, [msg.feedback.w_d])
 
                     else:
                         mean_error_p_c[i] = (mean_error_p_c[i] + abs(msg.feedback.pc_distance_error - 0.0))
@@ -389,7 +389,7 @@ if __name__ == '__main__':
                 plt.subplot(313)
                 addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
                 plt.xlim(0.0, t_final)
-                plt.ylim(0.0, 0.4)
+                plt.ylim(0.0, 1.0)
                 # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
                 plt.ylabel('[rad]')
@@ -402,7 +402,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.15)
                 plt.ylabel('[m]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 plt.title('Rotational identification results', y=title_offset)
                 
                 plt.subplot(312)
@@ -410,15 +410,15 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(-0.04, 0.04)
                 plt.ylabel('[rad/s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 
                 plt.subplot(313)
                 addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
                 plt.xlim(0.0, t_final)
-                plt.ylim(0, 0.4)
+                plt.ylim(0, 1.0)
                 plt.ylabel('[rad]')
                 plt.xlabel('Time [s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 
             else:
                 plt.subplot(511)
@@ -427,7 +427,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.15)
                 plt.ylabel('[m]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 plt.title('Simultaneous identification results', y=title_offset)
                 
                 plt.subplot(512)
@@ -435,13 +435,13 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(-0.04, 0.04)
                 plt.ylabel('[m/s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
                 plt.subplot(513)
                 addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
                 plt.xlim(0.0, t_final)
                 plt.ylim(0.0, 0.4)
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
                 plt.ylabel('[rad]')
                 
@@ -450,7 +450,7 @@ if __name__ == '__main__':
                 plt.xlim(0.0, t_final)
                 plt.ylim(-0.04, 0.04)
                 plt.ylabel('[rad/s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
                 
                 plt.subplot(515)
                 addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_rot[0:len(t)], '$\\theta_k$', 'k')
@@ -458,7 +458,7 @@ if __name__ == '__main__':
                 plt.ylim(0, 0.7)
                 plt.ylabel('[rad]')
                 plt.xlabel('Time [s]')
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
     plt.tight_layout()
     saveFig(bag_prefix)

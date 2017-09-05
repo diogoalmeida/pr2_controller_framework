@@ -109,16 +109,16 @@ mechanism_controller:
   k_force: 0.0
   estimator:
     Q:
-      data: [250.01, 0, 0,
-             0, 250.01, 0,
-             0, 0, 250.01]
+      data: [25.01, 0, 0,
+             0, 25.01, 0,
+             0, 0, 25.01]
     R:
       data: [0.01, 0, 0,
              0, 0.01, 0,
              0, 0, 0.01]
     constant_gain: 0.001
     adjust_x_force: 1.0 #1.0  # Obtained from experiments with the force torque sensor
-    adjust_y_force: 2.04 #2.04 #1.87 
+    adjust_y_force: 1.87 #2.04 #1.87 
     adjust_z_force: 1.24 #1.24
     
   rotational_estimator:

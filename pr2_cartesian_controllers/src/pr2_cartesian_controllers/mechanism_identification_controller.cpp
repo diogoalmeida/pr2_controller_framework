@@ -549,8 +549,8 @@ namespace cartesian_controllers {
     tf::wrenchEigenToKDL(wrench_eig, wrench_kdl);
     wrench_kdl = sensor_frame_to_base_[surface_arm_].M*wrench_kdl;
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
-    wrench_eig.block<3,1>(0,0) = wrench_eig.block<3,1>(0,0).dot(surface_normal)*surface_normal;
-    wrench_eig.block<3,1>(3,0) = wrench_eig.block<3,1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
+    // wrench_eig.block<3,1>(0,0) = wrench_eig.block<3,1>(0,0).dot(surface_normal)*surface_normal;
+    // wrench_eig.block<3,1>(3,0) = wrench_eig.block<3,1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
     // wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
     
     // surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);

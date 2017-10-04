@@ -35,6 +35,7 @@ namespace cartesian_controllers {
     use_nullspace_ = false;
     has_joint_positions_ = false;
     use_kalman_gain_ = true;
+    position_control_ = false;
     wrench2_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("surface_frame_wrench", 1);
     relative_twist_publisher_ = nh_.advertise<geometry_msgs::WrenchStamped>("commanded_relative_twist", 1);
     feedback_thread_ = boost::thread(boost::bind(&MechanismIdentificationController::publishFeedback, this));
@@ -83,24 +84,17 @@ namespace cartesian_controllers {
 
   void MechanismIdentificationController::goalCB()
   {
-    ROS_INFO("Mechanism goal callback");
     boost::shared_ptr<const pr2_cartesian_controllers::MechanismIdentificationGoal> goal = action_server_->acceptNewGoal();
     {
       boost::lock_guard<boost::mutex>guard(reference_mutex_);
       finished_acquiring_goal_ = false;
       has_joint_positions_ = false;
     }
-    
-    ROS_INFO("Got mutex");
 
     cfg_server_.reset(new dynamic_reconfigure::Server<pr2_cartesian_controllers::MechanismIdentificationConfig>(ros::NodeHandle(ros::this_node::getName() + "/mechanism_identification_config")));
     cfg_server_->setCallback(cfg_callback_);
-    
-    ROS_INFO("ECTS");
-    
-    ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
 
-    ROS_INFO("Initialized cfg; ects");
+    ects_controller_.reset(new manipulation_algorithms::ECTSController(chain_[0], chain_[1]));
 
     if(!ects_controller_->getParams(nh_))
     {
@@ -125,8 +119,6 @@ namespace cartesian_controllers {
       action_server_->setAborted(result_);
       return;
     }
-    
-    ROS_INFO("Got parameters");
 
     rod_arm_ = goal->rod_arm;
     surface_arm_ = goal->surface_arm;
@@ -140,18 +132,14 @@ namespace cartesian_controllers {
     init_t_error_ = goal->init_t_error;
     init_k_error_ = goal->init_k_error;
     init_pc_error_ = goal->init_pc_error;
-    
+
     angle_gen_ = std::uniform_real_distribution<double>(0, 2*M_PI);
-    
-    ROS_INFO("Parsed goal");
-    
+
     ects_controller_->setNullspaceGain(goal->nullspace_gain);
     ects_controller_->setAlpha(goal->alpha);
     initTwistController(comp_gains_, base_link_, ft_frame_id_[surface_arm_]);
     geometry_msgs::PoseStamped pose_in, pose_out;
-    
-    ROS_INFO("Finished initialization");
-    
+
     try
     {
       // get the relationship between kinematic chain end-effector and
@@ -182,9 +170,7 @@ namespace cartesian_controllers {
       action_server_->setAborted();
       return;
     }
-    
-    ROS_INFO("Got tf");
-    
+
     {
       boost::lock_guard<boost::mutex> guard(reference_mutex_);
       finished_acquiring_goal_ = true;
@@ -335,7 +321,7 @@ namespace cartesian_controllers {
           feedback_.absolute_twist.header.stamp = ros::Time::now();
           feedback_.relative_twist.header.stamp = ros::Time::now();
           adaptive_controller_.getErrors(force_e, torque_e, force_d, torque_d);
-          
+
           tf::vectorEigenToMsg(p1_.translation(), feedback_.p1);
           tf::vectorEigenToMsg(p2_.translation(), feedback_.p2);
           tf::vectorEigenToMsg(pc_.translation(), feedback_.pc);
@@ -350,7 +336,7 @@ namespace cartesian_controllers {
           feedback_.torque_d = torque_d.norm();
           feedback_.translational_angle_error = std::acos(translational_dof_ground_.dot(translational_dof_est_));
           feedback_.rotational_angle_error = std::acos(rotational_dof_ground_.dot(rotational_dof_est_));
-          
+
           // normal = translational_dof_ground_.cross(rotational_dof_ground_);
           feedback_.pc_distance_error = ((I - rotational_dof_ground_*rotational_dof_ground_.transpose())*(pc_est_.translation() - pc_.translation())).norm();
           action_server_->publishFeedback(feedback_);
@@ -497,9 +483,9 @@ namespace cartesian_controllers {
     p1_ = grasp_point_frame[rod_arm_];
     p2_ = grasp_point_frame[surface_arm_];
     pc_.translation() = p1_.translation() + rod_length_*p1_.matrix().block<3,1>(0,0); // it is assumed (just in the ground truth data) that the rod is aligned with the x axis of the grasp frame
-    
+
     if (!has_initial_)
-    {  
+    {
       std::mt19937 gen(rd_());
       double t_angle = angle_gen_(gen);
       double k_angle = angle_gen_(gen);
@@ -507,7 +493,7 @@ namespace cartesian_controllers {
       double phi_sphere = angle_gen_(gen);
       Eigen::Vector3d t_cone_vector, k_cone_vector, sphere_vector;
       Eigen::Quaterniond base_rot;
-      
+
       // t_cone_vector << cos(init_t_error_)*cos(t_angle), cos(init_t_error_)*sin(t_angle), -sin(init_t_error_);
       // t_cone_vector << cos(init_t_error_), sin(init_t_error_)*sin(t_angle), std::abs(cos(t_angle)*sin(init_t_error_));
       t_cone_vector << cos(init_t_error_), 0, sin(init_t_error_);
@@ -517,7 +503,7 @@ namespace cartesian_controllers {
       sphere_vector << cos(theta_sphere), sin(theta_sphere)*sin(phi_sphere), std::abs(cos(phi_sphere)*sin(theta_sphere));
       sphere_vector = base_rot*sphere_vector;
       pc_est_.translation() = p2_.translation() + init_pc_error_*sphere_vector;
-      
+
       kalman_estimator_.initialize(pc_est_.translation());
       rot_estimator_.initialize(rotational_dof_est_);
       adaptive_controller_.initEstimates(t_cone_vector, k_cone_vector);
@@ -542,7 +528,7 @@ namespace cartesian_controllers {
     wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
     wrench_eig[0] = adjust_x_force_*wrench_eig[0]; // compensates for miscalibration
     wrench_eig[1] = adjust_y_force_*wrench_eig[1];
-    wrench_eig[2] = adjust_z_force_*wrench_eig[2]; 
+    wrench_eig[2] = adjust_z_force_*wrench_eig[2];
     wrench_eig[3] = wrench_eig[3]/adjust_z_force_;
     wrench_eig[4] = wrench_eig[4]/adjust_z_force_;
     wrench_eig[5] = wrench_eig[5]/adjust_y_force_;
@@ -551,39 +537,6 @@ namespace cartesian_controllers {
     tf::wrenchKDLToEigen(wrench_kdl, wrench_eig);
     wrench_eig.block<3,1>(0,0) = wrench_eig.block<3,1>(0,0).dot(surface_normal)*surface_normal;
     wrench_eig.block<3,1>(3,0) = wrench_eig.block<3,1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
-    // wrench_eig = wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]);
-    
-    // surface_normal = translational_dof_ground_.cross(rotational_dof_ground_);
-    // // Eigen::AngleAxisd rot_t_eig(rotation_t_, translational_dof_ground_);
-    // // Eigen::AngleAxisd rot_k_eig(rotation_k_, rotational_dof_ground_);
-    // // Eigen::AngleAxisd rot_n_eig(rotation_n_, surface_normal);
-    // KDL::Rotation rot_t, rot_k, rot_n;
-    // KDL::Vector t, k, n;
-    //   
-    // t.x(translational_dof_ground_[0]);
-    // t.y(translational_dof_ground_[1]);
-    // t.z(translational_dof_ground_[2]);
-    // k.x(rotational_dof_ground_[0]);
-    // k.y(rotational_dof_ground_[1]);
-    // k.z(rotational_dof_ground_[2]);
-    // n.x(surface_normal[0]);
-    // n.y(surface_normal[1]);
-    // n.z(surface_normal[2]);
-    // 
-    // rot_t = rot_t.Rot(t, rotation_t_);
-    // rot_k = rot_k.Rot(k, rotation_k_);
-    // rot_n = rot_n.Rot(n, rotation_n_);
-    // 
-    // wrench_kdl = rot_t*wrench_kdl;
-    // wrench_kdl = rot_k*wrench_kdl;
-    // wrench_kdl = rot_n*wrench_kdl;
-    
-    // tf::wrenchKDLToEigen(wrench_kdl, wrench_eig_modified_);
-    
-    wrench_eig_modified_ = wrench_eig;
-    // wrench_eig_modified_.block<3, 1>(0,0) = wrench_eig.block<3, 1>(0,0).dot(surface_normal)*surface_normal;
-    // wrench_eig_modified_.block<3, 1>(0,0) = (I - rotational_dof_ground_*rotational_dof_ground_.transpose() )*wrench_eig.block<3, 1>(0,0);
-    // wrench_eig_modified_.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
 
     if (use_estimates_)
     {
@@ -591,40 +544,42 @@ namespace cartesian_controllers {
       if (use_kalman_gain_)
       {
         pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = p2_.translation() + pc_est_.translation().dot(translational_dof_ground_)*translational_dof_ground_;
-        // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec()); // HACK: Test KF without normal force  
-        // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
-        // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
       }
       else
       {
         pc_est_.translation() = kalman_estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
-        // pc_est_.translation() = kalman_estimator_.estimateConstant(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec());
       }
 
-      // ects_twist.block<6,1>(6,0) = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec()), wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec()), dt.toSec());
-      // wrench_eig.block<3, 1>(3,0) = wrench_eig.block<3, 1>(3,0).dot(rotational_dof_ground_)*rotational_dof_ground_;
       KDL::Twist twist_adaptive;
       KDL::Vector trans_est_kdl, rot_est_kdl, r_2_kdl;
       Eigen::Vector3d r_2 = pc_est_.translation() - p2_.translation(), w_r, discard;
       Eigen::Vector3d rot_est_eig_frame, trans_est_eig_frame;
       Eigen::Matrix<double, 6, 1> twist_adaptive_eig;
       double v_d, w_d;
-      
-      v_d = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec());
-      w_d = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec());
-      
+
+      if (position_control_)
+      {
+        // TODO
+        v_d = 0;
+        w_d = 0;
+      }
+      else
+      {
+        v_d = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec());
+        w_d = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec());
+      }
+
       feedback_.v_d = v_d;
       feedback_.w_d = w_d;
-      
-      r_2_kdl.x(r_2[0]); 
-      r_2_kdl.y(r_2[1]); 
-      r_2_kdl.z(r_2[2]); 
+
+      r_2_kdl.x(r_2[0]);
+      r_2_kdl.y(r_2[1]);
+      r_2_kdl.z(r_2[2]);
       r_2_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*r_2_kdl;
       r_2[0] = r_2_kdl.x();
       r_2[1] = r_2_kdl.y();
       r_2[2] = r_2_kdl.z();
-      
+
       twist_adaptive_eig = adaptive_controller_.control(wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), r_2, v_d, w_d, dt.toSec());
       tf::twistEigenToKDL(twist_adaptive_eig, twist_adaptive);
       twist_adaptive = sensor_frame_to_base_[surface_arm_].M*twist_adaptive;
@@ -646,28 +601,9 @@ namespace cartesian_controllers {
       rotational_dof_est_[1] = rot_est_kdl.y();
       rotational_dof_est_[2] = rot_est_kdl.z();
       w_r = eef_twist_eig[surface_arm_].block<3,1>(3,0) - eef_twist_eig[rod_arm_].block<3,1>(3,0);
-      
-      // if (std::abs(w_d) > -0.005)
-      // {
-      //   rotational_dof_est_ = rot_estimator_.estimate(w_r, dt.toSec());
-      // }
-      // rot_est_kdl.x(rotational_dof_est_[0]);
-      // rot_est_kdl.y(rotational_dof_est_[1]);
-      // rot_est_kdl.z(rotational_dof_est_[2]);
-      // rot_est_kdl = eef_grasp_kdl[surface_arm_].M.Inverse()*rot_est_kdl;
-      // rot_est_eig_frame[0] = rot_est_kdl.x();
-      // rot_est_eig_frame[1] = rot_est_kdl.y();
-      // rot_est_eig_frame[2] = rot_est_kdl.z();
-      // adaptive_controller_.initEstimates(trans_est_eig_frame, rot_est_eig_frame);
-      
-      // ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
-      // ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }
     else
     {
-      // translational_dof_est_ = translational_dof_ground_;
-      // rotational_dof_est_ = rotational_dof_ground_;
-      // pc_est_ = pc_;
       ects_twist.block<3,1>(6,0) = vd_amp_*sin(2*M_PI*vd_freq_*elapsed_.toSec())*translational_dof_ground_;
       ects_twist.block<3,1>(9,0) = wd_amp_*sin(2*M_PI*wd_freq_*elapsed_.toSec())*rotational_dof_ground_;
     }
@@ -688,23 +624,17 @@ namespace cartesian_controllers {
     feedback_.vs = ects_twist.block<3,1>(6,0).dot(translational_dof_est_);
     feedback_.vforce = ects_twist.block<3,1>(6,0).dot(surface_normal);
     feedback_.wr = ects_twist.block<3,1>(9,0).dot(rotational_dof_est_);
-    
-    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // want to stay aligned with the surface_arm
+
+    comp_twist = twist_controller_->computeError(eef_grasp_kdl[rod_arm_], eef_grasp_kdl[surface_arm_]); // enables arm alignment if we want to test, e.g., just the performance of the translational component (assumed knowledge of manipulation plane)
     tf::twistKDLToEigen(comp_twist, comp_twist_eig);
     ects_twist.block<6,1>(6,0) += comp_twist_eig;
-    // ikvel_[rod_arm_]->CartToJnt(joint_positions_[rod_arm_], comp_twist, commanded_joint_velocities[rod_arm_]);
-    // comp_twist = twist_controller_->computeError(eef_grasp_kdl[surface_arm_], eef_grasp_kdl[rod_arm_]);
-    // ikvel_[surface_arm_]->CartToJnt(joint_positions_[surface_arm_], comp_twist, commanded_joint_velocities[surface_arm_]);
-
-    // tf::twistKDLToEigen(comp_twist.RefPoint(eef_to_grasp_[rod_arm_].p), comp_twist_eig);
-    // joint_commands = ects_controller_->control(pc_.translation() - eef1, pc_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
     joint_commands = ects_controller_->control(pc_est_.translation() - eef1, pc_est_.translation() - eef2, joint_positions_[rod_arm_], joint_positions_[surface_arm_], ects_twist.block<6,1>(0,0), ects_twist.block<6,1>(6,0));
 
     for (unsigned int i = 0; i < 7; i++)
     {
       commanded_joint_velocities[rod_arm_](i) = joint_commands[i];
       commanded_joint_velocities[surface_arm_](i) = joint_commands[i + 7];
-      
+
       if (std::abs(target_joint_positions_[rod_arm_](i) - joint_positions_[rod_arm_](i)) < joint_error_lim_)
       {
         target_joint_positions_[rod_arm_](i) += commanded_joint_velocities[rod_arm_](i)*dt.toSec();
@@ -714,7 +644,6 @@ namespace cartesian_controllers {
       {
         target_joint_positions_[surface_arm_](i) += commanded_joint_velocities[surface_arm_](i)*dt.toSec();
       }
-
     }
 
     std::vector<int> joint_index(2, 0);
@@ -725,7 +654,6 @@ namespace cartesian_controllers {
       if (hasJoint(chain_[rod_arm_], current_state.name[i]))
       {
         control_output.position[i] = target_joint_positions_[rod_arm_](joint_index[rod_arm_]);
-        // control_output.position[i] = joint_positions_[rod_arm](joint_index[rod_arm]) + commanded_joint_velocities[rod_arm](joint_index[rod_arm_])*dt.toSec();
         control_output.velocity[i] = commanded_joint_velocities[rod_arm_](joint_index[rod_arm_]);
         joint_index[rod_arm_]++;
       }
@@ -733,7 +661,6 @@ namespace cartesian_controllers {
       if (hasJoint(chain_[surface_arm_], current_state.name[i]))
       {
         control_output.position[i] = target_joint_positions_[surface_arm_](joint_index[surface_arm_]);
-        // control_output.position[i] = joint_positions_[surface_arm_](joint_index[surface_arm_]) + commanded_joint_velocities[surface_arm_](joint_index[surface_arm_])*dt.toSec();
         control_output.velocity[i] = commanded_joint_velocities[surface_arm_](joint_index[surface_arm_]);
         joint_index[surface_arm_]++;
       }

@@ -1,6 +1,6 @@
 # PR2 Controller Framework #
 
-This repository stores the packages used to support manipulation experiments in a PR2 robot. It implements a set of cartesian controllers that share a common joint controller. The controllers run in the PR2 realtime loop and expose an actionlib interface to allow for remote execution. 
+This repository stores the packages used to support manipulation experiments in a PR2 robot. It implements a set of cartesian controllers that share a common joint controller. The controllers run in the PR2 realtime loop and expose an actionlib interface to allow for remote execution. Works with ROS **hydro** or **indigo**. 
 
 ## Packages in this repository ##
 

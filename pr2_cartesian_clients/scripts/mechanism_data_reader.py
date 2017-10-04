@@ -95,7 +95,7 @@ if __name__ == '__main__':
     wr = np.array([])
     
     if args.trans or args.rot:
-        matplotlib.rcParams['figure.figsize'] = (7, 5)
+        matplotlib.rcParams['figure.figsize'] = (7, 3)
     else:
         matplotlib.rcParams['figure.figsize'] = (7, 7.5)
         
@@ -103,11 +103,13 @@ if __name__ == '__main__':
     matplotlib.rcParams['lines.linewidth'] = 1
     matplotlib.rcParams['figure.subplot.wspace'] = 0.4
     matplotlib.rcParams['figure.subplot.hspace'] = 0.25
-    t_final = 24    
+    t_final = 15    
     title_offset = 1.05
     label_h = 1
     label_v = 1
     loc = 'upper right'
+    min_pc_error = 100000
+    min_pc_error_index = -1
 
     if loadParams():
 
@@ -304,8 +306,8 @@ if __name__ == '__main__':
                         mean_error_p_c = np.append(mean_error_p_c, [abs(msg.feedback.pc_distance_error - 0.0)])
                         mean_error_trans = np.append(mean_error_trans, [msg.feedback.translational_angle_error])
                         mean_error_rot = np.append(mean_error_rot, [msg.feedback.rotational_angle_error])
-                        vs = np.append(vs, [msg.feedback.v_d])
-                        wr = np.append(wr, [msg.feedback.w_d])
+                        # vs = np.append(vs, [msg.feedback.v_d])
+                        # wr = np.append(wr, [msg.feedback.w_d])
 
                     else:
                         mean_error_p_c[i] = (mean_error_p_c[i] + abs(msg.feedback.pc_distance_error - 0.0))
@@ -320,16 +322,19 @@ if __name__ == '__main__':
 
                     plt.figure(1)
                     if args.trans:
-                        plt.subplot(211)
-                        plt.plot(t, error_pc, color=gray)
+                        # plt.subplot(211)
+                        plt.plot(t, error_pc*100, color=gray)
                         plt.grid(True)
+                        if error_pc[-1] < min_pc_error:
+                            min_pc_error = error_pc[-1]
+                            min_pc_error_index = num
                         # 
                         # plt.subplot(312)
                         # plt.grid(True)
                         
-                        plt.subplot(212)
-                        plt.plot(t, error_trans, color=gray)
-                        plt.grid(True)
+                        # plt.subplot(212)
+                        # plt.plot(t, error_trans, color=gray)
+                        # plt.grid(True)
                     elif args.rot:
                         plt.subplot(211)
                         plt.plot(t, error_pc, color=gray)
@@ -365,19 +370,24 @@ if __name__ == '__main__':
 
             print(num)
             print(t)
+            print("min pc error:")
+            print(min_pc_error)
+            print("min pc error index:")
+            print(min_pc_error_index)
+            
             mean_error_p_c = mean_error_p_c/(num + 1)
             mean_error_trans = mean_error_trans/(num + 1)
             mean_error_rot = mean_error_rot/(num + 1)
             plt.figure(1)
             
             if args.trans:
-                plt.subplot(211)
-                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)], "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
+                # plt.subplot(211)
+                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_p_c[0:len(t)]*100, "$\|\mathbf{p}_c - \hat{\mathbf{p}}_c\|$", 'k')
                 plt.xlim(0.0, t_final)
-                plt.ylim(0.0, 0.15)
-                plt.ylabel('[m]')
+                plt.ylim(0.0, 10.0)
+                plt.ylabel('[cm]')
                 plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
-                plt.title('Translational identification results', y=title_offset)
+                plt.title('Contact point estimator', y=title_offset)
                 
                 # plt.subplot(312)
                 # addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], vs[0:len(t)], "$v_d$", 'k')
@@ -386,13 +396,13 @@ if __name__ == '__main__':
                 # plt.ylabel('[m/s]')
                 # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
 
-                plt.subplot(212)
-                addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
-                plt.xlim(0.0, t_final)
-                plt.ylim(0.0, 1.0)
-                plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
-                # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
-                plt.ylabel('[rad]')
+                # plt.subplot(212)
+                # addLabelledPlot(t[0:len(mean_error_p_c[0:len(t)])], mean_error_trans[0:len(t)], '$\\theta_{t}$', 'k')
+                # plt.xlim(0.0, t_final)
+                # plt.ylim(0.0, 1.0)
+                # plt.legend(bbox_to_anchor=(label_h, label_v), loc=loc, ncol=2, fontsize='large', fancybox=True, shadow=True)
+                # # plt.title('Translational estimation error angle, $\\theta_{t}$', y=title_offset)
+                # plt.ylabel('[rad]')
                 plt.xlabel('Time [s]')
                 
             elif args.rot:

@@ -284,8 +284,8 @@ namespace cartesian_controllers {
           getMarkerPoints(p2_.translation(), pc_est_.translation(), r2_est_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_ground_, trans_marker);
           getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_ground_, rot_marker);
-          getMarkerPoints(pc_est_.translation(), pc_est_.translation() + 0.1*translational_dof_est_, trans_est_marker);
-          getMarkerPoints(pc_est_.translation(), pc_est_.translation() + 0.1*rotational_dof_est_, rot_est_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*translational_dof_est_, trans_est_marker);
+          getMarkerPoints(pc_.translation(), pc_.translation() + 0.1*rotational_dof_est_, rot_est_marker);
 
           pc_pub_.publish(pc_marker);
           pc_est_pub_.publish(pc_est_marker);
@@ -591,6 +591,7 @@ namespace cartesian_controllers {
       if (use_kalman_gain_)
       {
         pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig, dt.toSec());
+        // pc_est_.translation() = p2_.translation() + pc_est_.translation().dot(translational_dof_ground_)*translational_dof_ground_;
         // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrench_eig_modified_, dt.toSec()); // HACK: Test KF without normal force  
         // pc_est_.translation() = kalman_estimator_.estimate(p1_.translation(), eef_twist_eig[rod_arm_], p2_.translation(), wrenchInFrame(surface_arm_, ft_frame_id_[surface_arm_]), dt.toSec());
         // pc_est_.translation() = p2_.translation() + p2_.linear()*(pc_est_.translation() - p2_.translation());
